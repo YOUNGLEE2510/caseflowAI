@@ -11,8 +11,19 @@ __pycache__/
 !.env.example
 .DS_Store
 coverage/
-artifacts/e2e-results/
 playwright-report/
 uploads/
 models/*.joblib
-artifacts/open-data/
+
+# Artifacts, exports, temp — không cần trên repo
+artifacts/
+exports/
+tmp/
+tools/
+scripts/
+
+# Office temp files
+~$*
+
+# Generated docs
+*.pdf

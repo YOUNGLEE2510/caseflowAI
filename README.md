@@ -70,7 +70,6 @@ Tài liệu OpenAPI của dịch vụ AI: `http://127.0.0.1:8001/docs`.
 
 Đánh giá SLA trên CSV đã gán nhãn: `python -m apps.ai.evaluate_sla --dataset path/to/sla.csv`. Các cột bắt buộc: `elapsedHours,dueHours,transfers,workload,remainingSteps,priority,breached`. Công cụ không tự tạo dữ liệu để báo cáo kết quả thực tế.
 
-Tiến độ kế hoạch nâng cấp: [PLAN_IMPLEMENTATION_STATUS.md](docs/PLAN_IMPLEMENTATION_STATUS.md).
 
 `npm run seed` chỉ tạo dữ liệu khi tổ chức demo chưa tồn tại. `npm run seed:force` xóa và tạo lại dữ liệu demo; không dùng lệnh này với database sản xuất.
 
@@ -78,7 +77,6 @@ Integration test và E2E dùng MongoDB tạm, không sử dụng Atlas trong `.e
 
 Trang **Vận hành** dành cho quản lý/quản trị hiển thị kết nối MongoDB, AI, lưu tệp, hồ sơ quá hạn và nhật ký. Tệp hiện nằm trên ổ đĩa cục bộ; MongoDB chỉ giữ metadata.
 
-Báo cáo nâng cấp, giới hạn hiện tại và danh sách hạ tầng cần bổ sung: [UPGRADE_REVIEW_2026-09-08.md](docs/UPGRADE_REVIEW_2026-09-08.md).
 
 ## Luồng demo đề xuất
 
