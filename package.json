@@ -1,0 +1,32 @@
+{
+  "name": "caseflow-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-assisted service operations platform for multi-domain case management.",
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB,AI -c cyan,green,yellow \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:ai\"",
+    "dev:web": "npm run dev --workspace=@caseflow/web",
+    "dev:api": "npm run dev --workspace=@caseflow/api",
+    "dev:ai": "python -m uvicorn apps.ai.app:app --host 127.0.0.1 --port 8001",
+    "dev:ai:watch": "python -m uvicorn apps.ai.app:app --reload --host 127.0.0.1 --port 8001",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspace=@caseflow/api && python -m pytest apps/ai/tests -q",
+    "test:e2e": "playwright test",
+    "evaluate:ai": "python apps/ai/evaluate.py",
+    "seed": "npm run seed --workspace=@caseflow/api",
+    "seed:force": "npm run seed:force --workspace=@caseflow/api",
+    "start": "npm run start --workspace=@caseflow/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "concurrently": "^9.1.2",
+    "mongodb-memory-server": "^10.2.0"
+  }
+}

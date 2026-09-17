@@ -1,0 +1,141 @@
+/* Human-centered visual refresh */
+
+:root {
+  --ink: #17201d;
+  --muted: #52605b;
+  --subtle: #74817c;
+  --canvas: #f4f6f5;
+  --surface-soft: #f8faf9;
+  --border: #dfe5e2;
+  --border-strong: #cbd5d1;
+  --brand: #176b57;
+  --brand-dark: #115241;
+  --brand-subtle: #eaf5f0;
+  --selected: #dcefe8;
+  --ai: #6b4c78;
+  --ai-bg: #faf7fb;
+  --ai-border: #a98ab5;
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: "Open Sans", "Segoe UI", Arial, sans-serif;
+}
+
+h1,
+h2,
+h3,
+.button,
+.nav-item.active {
+  font-weight: 600;
+}
+
+.eyebrow,
+.nav-section-label,
+.data-table th,
+.service-list-heading,
+.user-list-heading {
+  text-transform: none;
+}
+
+.eyebrow,
+.nav-section-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.data-table th,
+.service-list-heading,
+.user-list-heading {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.page-header h1,
+.detail-header h1,
+.requester-welcome h1 {
+  font-size: 27px;
+  line-height: 1.28;
+}
+
+.panel-heading {
+  border-bottom-color: rgba(203, 213, 209, 0.72);
+}
+
+.locale-switcher {
+  width: fit-content;
+  height: 34px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+
+.locale-switcher > svg {
+  margin: 0 4px 0 3px;
+}
+
+.locale-switcher button {
+  width: 34px;
+  height: 26px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.locale-switcher button:hover {
+  color: var(--ink);
+  background: #edf1ef;
+}
+
+.locale-switcher button.active {
+  color: var(--brand-dark);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(23, 32, 29, 0.12);
+}
+
+.locale-switcher-compact {
+  height: 32px;
+  padding: 2px;
+}
+
+.locale-switcher-compact button {
+  width: 30px;
+  height: 26px;
+}
+
+.login-form-area {
+  position: relative;
+}
+
+.login-locale {
+  position: absolute;
+  top: 24px;
+  right: 32px;
+}
+
+.login-visual-overlay {
+  background: rgba(15, 39, 32, 0.43);
+}
+
+.login-visual-copy {
+  padding-left: 18px;
+  border-left: 3px solid rgba(255, 255, 255, 0.78);
+}
+
+.demo-switcher {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+

@@ -1,0 +1,89 @@
+:root {
+  font-family: "Open Sans", "Segoe UI", Arial, sans-serif;
+  color: #17211e;
+  background: #f2f5f3;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #17211e;
+  --muted: #65736e;
+  --subtle: #87928e;
+  --canvas: #f2f5f3;
+  --surface: #ffffff;
+  --surface-soft: #f7f9f8;
+  --border: #dce3e0;
+  --border-strong: #c9d3cf;
+  --brand: #155c4d;
+  --brand-dark: #10473c;
+  --blue: #2f6d91;
+  --amber: #b7791f;
+  --red: #b13b3b;
+  --purple: #73558d;
+  --green: #4f7a55;
+  --sidebar: #17211e;
+  --sidebar-muted: #aebbb6;
+  --shadow: 0 8px 22px rgba(26, 42, 36, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 25px;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+h3 {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+small {
+  color: var(--muted);
+}

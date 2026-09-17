@@ -1,0 +1,91 @@
+﻿model,text,expected,predicted,correct
+word_tfidf_svm,Cổng học trực tuyến báo tài khoản không tồn tại dù em vẫn dùng email trường,it_access,it_access,true
+word_tfidf_svm,Em không nhận được mã xác thực để mở lại tài khoản,it_access,it_access,true
+word_tfidf_svm,Mạng wifi ký túc xá liên tục yêu cầu đăng nhập lại,it_access,general_support,false
+word_tfidf_svm,Trang SIS trắng màn hình sau khi nhập đúng mật khẩu,it_access,it_access,true
+word_tfidf_svm,Xin mở quyền truy cập kho phần mềm dành cho sinh viên,it_access,it_access,true
+word_tfidf_svm,Kết quả môn cơ sở dữ liệu chưa được ghi vào bảng điểm,academic_records,academic_records,true
+word_tfidf_svm,Em muốn hỏi hồ sơ xét công nhận tốt nghiệp còn thiếu gì,academic_records,academic_records,true
+word_tfidf_svm,Hai ca thi cuối kỳ của em diễn ra cùng một thời gian,academic_records,academic_records,true
+word_tfidf_svm,Hệ thống không cho đăng ký lớp dù em đã học môn tiên quyết,academic_records,academic_records,true
+word_tfidf_svm,Xin rút môn học đã đăng ký trong kỳ này,academic_records,academic_records,true
+word_tfidf_svm,Em cần làm lại thẻ sinh viên vì thẻ cũ bị gãy,student_services,student_services,true
+word_tfidf_svm,Cho em hỏi thủ tục xin giấy giới thiệu thực tập,student_services,student_services,true
+word_tfidf_svm,Thông tin ngày sinh trên hồ sơ sinh viên đang bị sai,student_services,student_services,true
+word_tfidf_svm,Em chưa nhận được kết quả xét điểm rèn luyện,student_services,student_services,true
+word_tfidf_svm,Cần xác nhận sinh viên để hoàn thiện hồ sơ bảo hiểm,student_services,student_services,true
+word_tfidf_svm,Máy chiếu ở giảng đường B3 không hiển thị hình ảnh,facilities,facilities,true
+word_tfidf_svm,Ổ cắm điện trong phòng A2-204 có dấu hiệu chập cháy,facilities,facilities,true
+word_tfidf_svm,Thang máy khu nhà C dừng giữa tầng,facilities,facilities,true
+word_tfidf_svm,Phòng thực hành không có kết nối điện cho máy tính,facilities,facilities,true
+word_tfidf_svm,Bóng đèn hành lang tầng bốn đã hỏng nhiều ngày,facilities,facilities,true
+word_tfidf_svm,Ngân hàng đã trừ tiền nhưng học phí chưa được cập nhật,finance,finance,true
+word_tfidf_svm,Em cần bản xác nhận hoàn thành nghĩa vụ tài chính,finance,finance,true
+word_tfidf_svm,Khoản học phí bị ghi nhận hai lần trên công nợ,finance,finance,true
+word_tfidf_svm,Xin hướng dẫn thủ tục hoàn lại tiền đã đóng thừa,finance,finance,true
+word_tfidf_svm,Cổng thanh toán không tạo được mã giao dịch,finance,finance,true
+word_tfidf_svm,Tôi chưa biết vấn đề này thuộc phòng ban nào,general_support,general_support,true
+word_tfidf_svm,Xin cung cấp số điện thoại của cán bộ phụ trách,general_support,general_support,true
+word_tfidf_svm,Tôi cần được hướng dẫn về một thủ tục chưa có trong danh mục,general_support,general_support,true
+word_tfidf_svm,Mong nhà trường liên hệ để trao đổi thêm về phản ánh này,general_support,general_support,true
+word_tfidf_svm,Tôi muốn góp ý về chất lượng phục vụ tại bộ phận một cửa,general_support,general_support,true
+word_tfidf_logreg,Cổng học trực tuyến báo tài khoản không tồn tại dù em vẫn dùng email trường,it_access,it_access,true
+word_tfidf_logreg,Em không nhận được mã xác thực để mở lại tài khoản,it_access,it_access,true
+word_tfidf_logreg,Mạng wifi ký túc xá liên tục yêu cầu đăng nhập lại,it_access,it_access,true
+word_tfidf_logreg,Trang SIS trắng màn hình sau khi nhập đúng mật khẩu,it_access,it_access,true
+word_tfidf_logreg,Xin mở quyền truy cập kho phần mềm dành cho sinh viên,it_access,it_access,true
+word_tfidf_logreg,Kết quả môn cơ sở dữ liệu chưa được ghi vào bảng điểm,academic_records,academic_records,true
+word_tfidf_logreg,Em muốn hỏi hồ sơ xét công nhận tốt nghiệp còn thiếu gì,academic_records,academic_records,true
+word_tfidf_logreg,Hai ca thi cuối kỳ của em diễn ra cùng một thời gian,academic_records,academic_records,true
+word_tfidf_logreg,Hệ thống không cho đăng ký lớp dù em đã học môn tiên quyết,academic_records,academic_records,true
+word_tfidf_logreg,Xin rút môn học đã đăng ký trong kỳ này,academic_records,academic_records,true
+word_tfidf_logreg,Em cần làm lại thẻ sinh viên vì thẻ cũ bị gãy,student_services,student_services,true
+word_tfidf_logreg,Cho em hỏi thủ tục xin giấy giới thiệu thực tập,student_services,student_services,true
+word_tfidf_logreg,Thông tin ngày sinh trên hồ sơ sinh viên đang bị sai,student_services,student_services,true
+word_tfidf_logreg,Em chưa nhận được kết quả xét điểm rèn luyện,student_services,student_services,true
+word_tfidf_logreg,Cần xác nhận sinh viên để hoàn thiện hồ sơ bảo hiểm,student_services,student_services,true
+word_tfidf_logreg,Máy chiếu ở giảng đường B3 không hiển thị hình ảnh,facilities,facilities,true
+word_tfidf_logreg,Ổ cắm điện trong phòng A2-204 có dấu hiệu chập cháy,facilities,facilities,true
+word_tfidf_logreg,Thang máy khu nhà C dừng giữa tầng,facilities,facilities,true
+word_tfidf_logreg,Phòng thực hành không có kết nối điện cho máy tính,facilities,facilities,true
+word_tfidf_logreg,Bóng đèn hành lang tầng bốn đã hỏng nhiều ngày,facilities,facilities,true
+word_tfidf_logreg,Ngân hàng đã trừ tiền nhưng học phí chưa được cập nhật,finance,finance,true
+word_tfidf_logreg,Em cần bản xác nhận hoàn thành nghĩa vụ tài chính,finance,finance,true
+word_tfidf_logreg,Khoản học phí bị ghi nhận hai lần trên công nợ,finance,finance,true
+word_tfidf_logreg,Xin hướng dẫn thủ tục hoàn lại tiền đã đóng thừa,finance,finance,true
+word_tfidf_logreg,Cổng thanh toán không tạo được mã giao dịch,finance,finance,true
+word_tfidf_logreg,Tôi chưa biết vấn đề này thuộc phòng ban nào,general_support,general_support,true
+word_tfidf_logreg,Xin cung cấp số điện thoại của cán bộ phụ trách,general_support,general_support,true
+word_tfidf_logreg,Tôi cần được hướng dẫn về một thủ tục chưa có trong danh mục,general_support,general_support,true
+word_tfidf_logreg,Mong nhà trường liên hệ để trao đổi thêm về phản ánh này,general_support,general_support,true
+word_tfidf_logreg,Tôi muốn góp ý về chất lượng phục vụ tại bộ phận một cửa,general_support,general_support,true
+char_tfidf_logreg,Cổng học trực tuyến báo tài khoản không tồn tại dù em vẫn dùng email trường,it_access,it_access,true
+char_tfidf_logreg,Em không nhận được mã xác thực để mở lại tài khoản,it_access,it_access,true
+char_tfidf_logreg,Mạng wifi ký túc xá liên tục yêu cầu đăng nhập lại,it_access,general_support,false
+char_tfidf_logreg,Trang SIS trắng màn hình sau khi nhập đúng mật khẩu,it_access,it_access,true
+char_tfidf_logreg,Xin mở quyền truy cập kho phần mềm dành cho sinh viên,it_access,it_access,true
+char_tfidf_logreg,Kết quả môn cơ sở dữ liệu chưa được ghi vào bảng điểm,academic_records,academic_records,true
+char_tfidf_logreg,Em muốn hỏi hồ sơ xét công nhận tốt nghiệp còn thiếu gì,academic_records,academic_records,true
+char_tfidf_logreg,Hai ca thi cuối kỳ của em diễn ra cùng một thời gian,academic_records,academic_records,true
+char_tfidf_logreg,Hệ thống không cho đăng ký lớp dù em đã học môn tiên quyết,academic_records,academic_records,true
+char_tfidf_logreg,Xin rút môn học đã đăng ký trong kỳ này,academic_records,academic_records,true
+char_tfidf_logreg,Em cần làm lại thẻ sinh viên vì thẻ cũ bị gãy,student_services,student_services,true
+char_tfidf_logreg,Cho em hỏi thủ tục xin giấy giới thiệu thực tập,student_services,student_services,true
+char_tfidf_logreg,Thông tin ngày sinh trên hồ sơ sinh viên đang bị sai,student_services,student_services,true
+char_tfidf_logreg,Em chưa nhận được kết quả xét điểm rèn luyện,student_services,student_services,true
+char_tfidf_logreg,Cần xác nhận sinh viên để hoàn thiện hồ sơ bảo hiểm,student_services,student_services,true
+char_tfidf_logreg,Máy chiếu ở giảng đường B3 không hiển thị hình ảnh,facilities,facilities,true
+char_tfidf_logreg,Ổ cắm điện trong phòng A2-204 có dấu hiệu chập cháy,facilities,facilities,true
+char_tfidf_logreg,Thang máy khu nhà C dừng giữa tầng,facilities,facilities,true
+char_tfidf_logreg,Phòng thực hành không có kết nối điện cho máy tính,facilities,facilities,true
+char_tfidf_logreg,Bóng đèn hành lang tầng bốn đã hỏng nhiều ngày,facilities,facilities,true
+char_tfidf_logreg,Ngân hàng đã trừ tiền nhưng học phí chưa được cập nhật,finance,finance,true
+char_tfidf_logreg,Em cần bản xác nhận hoàn thành nghĩa vụ tài chính,finance,finance,true
+char_tfidf_logreg,Khoản học phí bị ghi nhận hai lần trên công nợ,finance,finance,true
+char_tfidf_logreg,Xin hướng dẫn thủ tục hoàn lại tiền đã đóng thừa,finance,finance,true
+char_tfidf_logreg,Cổng thanh toán không tạo được mã giao dịch,finance,finance,true
+char_tfidf_logreg,Tôi chưa biết vấn đề này thuộc phòng ban nào,general_support,general_support,true
+char_tfidf_logreg,Xin cung cấp số điện thoại của cán bộ phụ trách,general_support,general_support,true
+char_tfidf_logreg,Tôi cần được hướng dẫn về một thủ tục chưa có trong danh mục,general_support,general_support,true
+char_tfidf_logreg,Mong nhà trường liên hệ để trao đổi thêm về phản ánh này,general_support,general_support,true
+char_tfidf_logreg,Tôi muốn góp ý về chất lượng phục vụ tại bộ phận một cửa,general_support,general_support,true

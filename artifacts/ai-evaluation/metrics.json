@@ -1,0 +1,308 @@
+{
+  "metadata": {
+    "generatedAt": "2026-09-12T08:58:37.173269+00:00",
+    "dataset": "E:\\Do_An_Tot_Nghiep\\apps\\ai\\tests\\fixtures\\evaluation_demo.csv",
+    "datasetKind": "demo_holdout",
+    "trainingSamples": 60,
+    "evaluationSamples": 30,
+    "labelDistribution": {
+      "it_access": 5,
+      "academic_records": 5,
+      "student_services": 5,
+      "facilities": 5,
+      "finance": 5,
+      "general_support": 5
+    },
+    "warning": "Demo holdout metrics validate the evaluation pipeline only; they are not evidence of production quality."
+  },
+  "models": {
+    "word_tfidf_svm": {
+      "accuracy": 0.9667,
+      "precisionMacro": 0.9722,
+      "recallMacro": 0.9667,
+      "f1Macro": 0.9663,
+      "f1Micro": 0.9667,
+      "perCategory": {
+        "it_access": {
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1": 0.8889,
+          "support": 5
+        },
+        "academic_records": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "student_services": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "facilities": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "finance": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "general_support": {
+          "precision": 0.8333,
+          "recall": 1.0,
+          "f1": 0.9091,
+          "support": 5
+        }
+      },
+      "confusionMatrix": [
+        [
+          4,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          5,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "errorCount": 1
+    },
+    "word_tfidf_logreg": {
+      "accuracy": 1.0,
+      "precisionMacro": 1.0,
+      "recallMacro": 1.0,
+      "f1Macro": 1.0,
+      "f1Micro": 1.0,
+      "perCategory": {
+        "it_access": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "academic_records": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "student_services": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "facilities": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "finance": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "general_support": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        }
+      },
+      "confusionMatrix": [
+        [
+          5,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          5,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "errorCount": 0
+    },
+    "char_tfidf_logreg": {
+      "accuracy": 0.9667,
+      "precisionMacro": 0.9722,
+      "recallMacro": 0.9667,
+      "f1Macro": 0.9663,
+      "f1Micro": 0.9667,
+      "perCategory": {
+        "it_access": {
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1": 0.8889,
+          "support": 5
+        },
+        "academic_records": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "student_services": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "facilities": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "finance": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 5
+        },
+        "general_support": {
+          "precision": 0.8333,
+          "recall": 1.0,
+          "f1": 0.9091,
+          "support": 5
+        }
+      },
+      "confusionMatrix": [
+        [
+          4,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          5,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "errorCount": 1
+    }
+  }
+}

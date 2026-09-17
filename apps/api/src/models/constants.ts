@@ -1,0 +1,11 @@
+import type mongoose from "mongoose";
+export const USER_ROLES = ["requester", "agent", "manager", "org_admin", "platform_admin"] as const;
+export const CASE_STATUSES = ["new", "triaged", "in_progress", "waiting", "resolved", "closed"] as const;
+export const PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+export const CHANNELS = ["portal", "phone", "email", "walk_in", "api"] as const;
+export const INCIDENT_STATUSES = ["monitoring", "investigating", "mitigated", "resolved"] as const;
+export const SEVERITY_LEVELS = ["low", "medium", "high", "critical"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+export type CaseStatus = (typeof CASE_STATUSES)[number];
+export type Priority = (typeof PRIORITIES)[number];
+export type ObjectId = mongoose.Types.ObjectId;

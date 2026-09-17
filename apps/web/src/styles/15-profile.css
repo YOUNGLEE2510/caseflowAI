@@ -1,0 +1,105 @@
+.profile-panel {
+  padding: 1.5rem;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.profile-name {
+  margin: 0;
+}
+
+.profile-role {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.profile-label {
+  color: var(--subtle);
+  font-size: 0.8125rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.profile-actions {
+  margin-top: 1.25rem;
+}
+
+.profile-form {
+  max-width: 480px;
+}
+
+.profile-color-picker {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.375rem;
+}
+
+.profile-color-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border 0.15s ease, transform 0.15s ease;
+}
+
+.profile-color-btn:hover {
+  transform: scale(1.1);
+}
+
+.profile-color-btn.active {
+  border: 3px solid var(--ink);
+  transform: scale(1.08);
+}
+
+.profile-form-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+}
+
+.profile-section-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.profile-password-form {
+  max-width: 400px;
+}
+
+.profile-activity-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-activity-list li {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.profile-activity-list time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,95 @@
+/* Case queue */
+
+.filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-row {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-box {
+  width: min(500px, 100%);
+  height: 40px;
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.compact-select {
+  height: 40px;
+  margin-left: 0;
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.status-tabs {
+  min-height: 44px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.status-tabs button {
+  min-width: 118px;
+  height: 40px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.status-tabs button.active {
+  border-bottom-color: var(--brand);
+  color: var(--brand-text);
+  background: transparent;
+  font-weight: 650;
+}
+
+.table-panel {
+  overflow: hidden;
+}
+
+.table-summary {
+  min-height: 56px;
+  padding: 0 20px;
+}
+
+.cases-table {
+  min-width: 940px;
+}
+
+.cases-table th:nth-child(1) { width: 11%; }
+
+.cases-table th:nth-child(2) { width: 34%; }
+
+.cases-table th:nth-child(3) { width: 18%; }
+
+.cases-table th:nth-child(4) { width: 15%; }
+
+.cases-table th:nth-child(5) { width: 12%; }
+
+.case-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.case-title-cell strong {
+  color: var(--ink);
+}
+
+.case-title-cell small {
+  color: var(--subtle);
+  font-size: 11px;
+}
+

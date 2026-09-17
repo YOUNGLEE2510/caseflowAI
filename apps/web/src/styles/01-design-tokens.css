@@ -1,0 +1,230 @@
+/* CaseFlow 2026 design system */
+
+:root {
+  color: #111a17;
+  background: #f6f8f7;
+  --ink: #111a17;
+  --muted: #4b5954;
+  --subtle: #697771;
+  --canvas: #f6f8f7;
+  --surface: #ffffff;
+  --surface-soft: #fbfcfb;
+  --surface-muted: #edf1ef;
+  --border: #dce3e0;
+  --border-strong: #c7d1cd;
+  --brand: #146b57;
+  --brand-dark: #0f5545;
+  --brand-text: #115646;
+  --brand-subtle: #ecf7f3;
+  --selected: #d6eee6;
+  --info: #1f506f;
+  --info-bg: #edf6fc;
+  --info-border: #80badf;
+  --warning: #80510d;
+  --warning-bg: #fff8e8;
+  --warning-border: #ecae33;
+  --danger: #8a302a;
+  --danger-bg: #fff1f0;
+  --danger-border: #eb7770;
+  --success: #285e31;
+  --success-bg: #eef8ef;
+  --success-border: #70c17b;
+  --ai: #624075;
+  --ai-bg: #f8f1fc;
+  --ai-border: #c790e3;
+  --blue: #2f6d91;
+  --amber: #b7791f;
+  --red: #b13b3b;
+  --purple: #73558d;
+  --green: #4f7a55;
+  --sidebar: #ffffff;
+  --sidebar-muted: #697771;
+  --shadow: 0 8px 24px rgba(17, 26, 23, 0.06);
+}
+
+body {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 34px;
+  font-weight: 650;
+}
+
+h2 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 650;
+}
+
+h3 {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+}
+
+.button {
+  min-height: 40px;
+  border-radius: 6px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: none;
+}
+
+.button-secondary {
+  border-color: var(--border);
+}
+
+.button-small {
+  min-height: 32px;
+  padding-inline: 12px;
+  font-size: 12px;
+}
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  border-radius: 6px;
+}
+
+.eyebrow {
+  margin-bottom: 6px;
+  color: var(--subtle);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.panel {
+  border-color: var(--border);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.panel-heading {
+  min-height: 64px;
+}
+
+.panel-heading h2 {
+  font-size: 18px;
+}
+
+.badge {
+  position: relative;
+  min-height: 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 3px 8px;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.badge-status {
+  border-radius: 999px;
+}
+
+.badge-status::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.badge-new {
+  color: var(--muted);
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+}
+
+.badge-triaged,
+.badge-in_progress {
+  color: var(--info);
+  border-color: var(--info-border);
+  background: var(--info-bg);
+}
+
+.badge-waiting {
+  color: var(--warning);
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.badge-resolved {
+  color: var(--success);
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.badge-closed {
+  color: var(--muted);
+  border-color: var(--border);
+  background: var(--surface-muted);
+}
+
+.badge-priority {
+  border-color: var(--info-border);
+  color: var(--info);
+  background: var(--info-bg);
+}
+
+.badge-priority::before {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: currentColor;
+  content: "";
+}
+
+.priority-high {
+  color: var(--warning);
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.priority-urgent {
+  color: var(--danger);
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.priority-low {
+  color: var(--muted);
+  border-color: var(--border);
+  background: var(--surface-muted);
+}
+
+.avatar {
+  position: relative;
+  color: var(--brand-text);
+  background: var(--brand-subtle) !important;
+}
+
+.avatar::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: #76c889;
+  content: "";
+}
+
+.text-link {
+  border: 0;
+  padding: 0;
+  color: var(--brand-text);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+

@@ -1,0 +1,74 @@
+{
+  "it_access": [
+    "không đăng nhập được tài khoản sinh viên",
+    "em quên mật khẩu cổng thông tin",
+    "wifi trong trường không kết nối được",
+    "email trường bị khóa và không nhận được thư",
+    "website đăng ký môn học bị treo",
+    "xin cấp quyền truy cập hệ thống học tập",
+    "tài khoản báo sai mật khẩu dù đã đặt lại",
+    "không vào được phần mềm quản lý sinh viên",
+    "cổng SIS báo lỗi khi đăng nhập",
+    "mạng internet phòng học không hoạt động"
+  ],
+  "academic_records": [
+    "điểm học phần chưa cập nhật trong bảng điểm",
+    "không đăng ký được môn đồ án tốt nghiệp",
+    "xin điều chỉnh điểm môn cấu trúc dữ liệu",
+    "học phần tiên quyết chưa được hệ thống ghi nhận",
+    "cần cấp bảng điểm có xác nhận",
+    "muốn hủy học phần đã đăng ký",
+    "lịch thi bị trùng hai môn",
+    "xin đăng ký bổ sung học phần",
+    "kết quả học tập bị thiếu một môn",
+    "cần kiểm tra điều kiện xét tốt nghiệp"
+  ],
+  "student_services": [
+    "xin giấy xác nhận sinh viên để vay vốn",
+    "em bị mất thẻ sinh viên cần cấp lại",
+    "hỏi kết quả xét học bổng khuyến khích",
+    "điểm rèn luyện chưa được cập nhật",
+    "xin giấy giới thiệu đi thực tập",
+    "cần xác nhận đang học tại trường",
+    "đăng ký tham gia hoạt động sinh viên",
+    "hồ sơ miễn giảm học phí cần giấy xác nhận",
+    "xin hỗ trợ thủ tục bảo hiểm sinh viên",
+    "thông tin cá nhân trên thẻ sinh viên bị sai"
+  ],
+  "facilities": [
+    "điều hòa phòng học không hoạt động",
+    "phòng học bị mất điện",
+    "máy chiếu trong giảng đường bị hỏng",
+    "nhà vệ sinh không có nước",
+    "bàn ghế trong lớp bị hư",
+    "đèn hành lang bị cháy",
+    "cửa phòng thí nghiệm không khóa được",
+    "ổ điện trong phòng học có tia lửa",
+    "thang máy tòa nhà dừng hoạt động",
+    "xin hỗ trợ thiết bị cho phòng học"
+  ],
+  "finance": [
+    "đã đóng học phí nhưng hệ thống vẫn báo nợ",
+    "xin cấp lại biên lai học phí",
+    "thanh toán học phí bị trừ tiền hai lần",
+    "cần hoàn lại khoản thu thừa",
+    "không thanh toán được qua ngân hàng",
+    "hỏi hạn nộp học phí học kỳ này",
+    "công nợ sinh viên hiển thị không đúng",
+    "xin xác nhận đã hoàn thành học phí",
+    "giao dịch thanh toán đang chờ xử lý",
+    "mức học phí trên hệ thống bị sai"
+  ],
+  "general_support": [
+    "tôi cần được hướng dẫn thêm",
+    "không biết yêu cầu này gửi cho bộ phận nào",
+    "xin hỗ trợ một vấn đề khác",
+    "cần gặp cán bộ phụ trách",
+    "tôi muốn phản ánh về chất lượng dịch vụ",
+    "vui lòng liên hệ lại với tôi",
+    "có một vấn đề chưa có trong danh mục",
+    "xin cung cấp thông tin đầu mối liên hệ",
+    "tôi cần tư vấn thủ tục chung",
+    "yêu cầu hỗ trợ chưa xác định"
+  ]
+}

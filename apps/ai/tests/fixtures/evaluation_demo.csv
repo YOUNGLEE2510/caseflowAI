@@ -1,0 +1,31 @@
+text,label
+"Cổng học trực tuyến báo tài khoản không tồn tại dù em vẫn dùng email trường",it_access
+"Em không nhận được mã xác thực để mở lại tài khoản",it_access
+"Mạng wifi ký túc xá liên tục yêu cầu đăng nhập lại",it_access
+"Trang SIS trắng màn hình sau khi nhập đúng mật khẩu",it_access
+"Xin mở quyền truy cập kho phần mềm dành cho sinh viên",it_access
+"Kết quả môn cơ sở dữ liệu chưa được ghi vào bảng điểm",academic_records
+"Em muốn hỏi hồ sơ xét công nhận tốt nghiệp còn thiếu gì",academic_records
+"Hai ca thi cuối kỳ của em diễn ra cùng một thời gian",academic_records
+"Hệ thống không cho đăng ký lớp dù em đã học môn tiên quyết",academic_records
+"Xin rút môn học đã đăng ký trong kỳ này",academic_records
+"Em cần làm lại thẻ sinh viên vì thẻ cũ bị gãy",student_services
+"Cho em hỏi thủ tục xin giấy giới thiệu thực tập",student_services
+"Thông tin ngày sinh trên hồ sơ sinh viên đang bị sai",student_services
+"Em chưa nhận được kết quả xét điểm rèn luyện",student_services
+"Cần xác nhận sinh viên để hoàn thiện hồ sơ bảo hiểm",student_services
+"Máy chiếu ở giảng đường B3 không hiển thị hình ảnh",facilities
+"Ổ cắm điện trong phòng A2-204 có dấu hiệu chập cháy",facilities
+"Thang máy khu nhà C dừng giữa tầng",facilities
+"Phòng thực hành không có kết nối điện cho máy tính",facilities
+"Bóng đèn hành lang tầng bốn đã hỏng nhiều ngày",facilities
+"Ngân hàng đã trừ tiền nhưng học phí chưa được cập nhật",finance
+"Em cần bản xác nhận hoàn thành nghĩa vụ tài chính",finance
+"Khoản học phí bị ghi nhận hai lần trên công nợ",finance
+"Xin hướng dẫn thủ tục hoàn lại tiền đã đóng thừa",finance
+"Cổng thanh toán không tạo được mã giao dịch",finance
+"Tôi chưa biết vấn đề này thuộc phòng ban nào",general_support
+"Xin cung cấp số điện thoại của cán bộ phụ trách",general_support
+"Tôi cần được hướng dẫn về một thủ tục chưa có trong danh mục",general_support
+"Mong nhà trường liên hệ để trao đổi thêm về phản ánh này",general_support
+"Tôi muốn góp ý về chất lượng phục vụ tại bộ phận một cửa",general_support

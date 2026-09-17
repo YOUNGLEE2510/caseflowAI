@@ -1,0 +1,6 @@
+.assignment-options { list-style: none; padding: 0; margin: 0; }
+.assignment-options li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
+.assignment-options li > div { min-width: 0; overflow-wrap: anywhere; }
+.assignment-options p { margin: 4px 0; font-size: 13px; }
+.assignment-options small { display: block; }
+.assignment-options button { flex-shrink: 0; width: 36px; height: 36px; }

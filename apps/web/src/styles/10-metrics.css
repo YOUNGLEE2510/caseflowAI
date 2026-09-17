@@ -1,0 +1,145 @@
+/* Metrics read as one operational strip instead of four cloned cards. */
+
+.operations-overview .metric-grid {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.operations-overview .metric-card {
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.operations-overview .metric-card:last-child {
+  border-right: 0;
+}
+
+.operations-overview .metric-card:nth-child(1) {
+  background: #eef7f3;
+}
+
+.operations-overview .metric-card:nth-child(2) .metric-icon {
+  color: #8a5d18;
+  background: #fff3d9;
+}
+
+.operations-overview .metric-card:nth-child(3) .metric-icon {
+  color: #2f6382;
+  background: #e8f3fa;
+}
+
+.operations-overview .metric-card:nth-child(4) .metric-icon {
+  color: #8b4747;
+  background: #faecec;
+}
+
+.priority-queue-panel .panel-heading,
+.service-catalog-panel .panel-heading,
+.user-list-panel .panel-heading {
+  border-bottom: 0;
+}
+
+.requester-ai-card,
+.ai-preview,
+.ai-insight-panel,
+.knowledge-search {
+  border-color: var(--border);
+  border-left: 3px solid var(--ai-border);
+  background: var(--surface);
+}
+
+.requester-ai-card {
+  color: var(--ink);
+}
+
+.knowledge-search {
+  padding: 22px 24px 24px;
+}
+
+.case-description {
+  border-color: var(--border);
+  border-left: 3px solid #7fa6bb;
+}
+
+.config-ai-note,
+.permission-note {
+  border-left: 3px solid #7fb18b;
+  background: #f8fbf8;
+}
+
+.incident-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.incident-card:first-child:nth-last-child(n + 2) {
+  grid-column: 1 / -1;
+  border-left: 3px solid var(--warning-border);
+}
+
+.incident-card:nth-child(3n + 2) .incident-icon {
+  color: #2f6382;
+  background: #e8f3fa;
+}
+
+.incident-card:nth-child(3n + 3) .incident-icon {
+  color: #744f7f;
+  background: #f4ebf7;
+}
+
+.article-list > article,
+.service-list > button,
+.user-list > button {
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+@media (max-width: 900px) {
+  .operations-overview .metric-card:nth-child(2) {
+    border-right: 0;
+  }
+
+  .operations-overview .metric-card:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .incident-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .incident-card:first-child:nth-last-child(n + 2) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .login-form-area {
+    padding-top: 58px;
+  }
+
+  .login-locale {
+    top: 14px;
+    right: 20px;
+  }
+
+  .login-visual-copy {
+    padding-left: 12px;
+  }
+
+  .notification-button {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: 8px;
+  }
+
+  .operations-overview .metric-grid {
+    gap: 0;
+  }
+}
+
