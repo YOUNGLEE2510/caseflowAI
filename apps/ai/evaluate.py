@@ -29,7 +29,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATASET = Path(__file__).with_name("tests") / "fixtures" / "evaluation_demo.csv"
-DEFAULT_OUTPUT = ROOT / "artifacts" / "ai-evaluation"
+DEFAULT_OUTPUT = ROOT / "docs" / "ai-evaluation"
 
 
 def load_evaluation_rows(path: Path) -> list[dict[str, str]]:

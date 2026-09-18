@@ -14,8 +14,10 @@ interface DownloadableAttachment {
   storagePath: string;
 }
 import { auditFromReq, logAudit } from "../services/helpers.js";
+import { authenticate } from "../middleware/auth.js";
 
 export const attachmentRouter = Router();
+attachmentRouter.use(authenticate);
 
 const UPLOAD_DIR = resolve(process.env.UPLOAD_DIR || join(process.cwd(), "uploads"));
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
