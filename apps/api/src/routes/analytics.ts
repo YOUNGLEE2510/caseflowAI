@@ -1,8 +1,10 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { requireRoles } from "../middleware/auth.js";
-import { AuditLog, CaseRecord, Incident, SLASnapshot } from "../models.js";
+import { AuditLog, CaseRecord, Incident, Organization, ServiceDefinition, SLASnapshot } from "../models.js";
 import { pageNumber } from "../services/casePolicy.js";
+import { buildReviewedTrainingCsv, type ReviewedCase } from "../services/trainingDataset.js";
+import { addBusinessHours, businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
 
 export const analyticsRouter = Router();
 
@@ -60,35 +62,30 @@ analyticsRouter.get(
     const days = Math.max(7, pageNumber(req.query.days, 30, 90));
     const since = new Date(Date.now() - days * 24 * 3_600_000);
 
-    const resolvedCases = await CaseRecord.aggregate([
-      {
-        $match: {
-          organizationId,
-          status: { $in: ["resolved", "closed"] },
-          resolvedAt: { $gte: since }
-        }
-      },
-      {
-        $project: {
-          team: 1,
-          serviceKey: 1,
-          breached: { $gt: ["$resolvedAt", "$dueAt"] },
-          durationHours: {
-            $divide: [{ $subtract: ["$resolvedAt", "$createdAt"] }, 3_600_000]
-          }
-        }
-      },
-      {
-        $group: {
-          _id: "$team",
-          total: { $sum: 1 },
-          breached: { $sum: { $cond: ["$breached", 1, 0] } },
-          onTime: { $sum: { $cond: ["$breached", 0, 1] } },
-          avgDurationHours: { $avg: "$durationHours" }
-        }
-      },
-      { $sort: { total: -1 } }
+    const [organization, services, resolvedRows] = await Promise.all([
+      Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean(),
+      ServiceDefinition.find({ organizationId, active: true }).select("key slaHours").lean(),
+      CaseRecord.find({ organizationId, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: since } })
+        .select("team serviceKey createdAt dueAt resolvedAt")
+        .lean()
     ]);
+    const calendar = organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings);
+    const slaHoursByService = new Map((services as unknown as Array<{ key: string; slaHours: number }>).map((service) => [service.key, service.slaHours]));
+    const grouped = new Map<string, { total: number; breached: number; onTime: number; durationHours: number }>();
+    for (const row of resolvedRows as unknown as Array<{ team: string; serviceKey: string; createdAt: Date; dueAt: Date; resolvedAt: Date | null }>) {
+      if (!row.resolvedAt) continue;
+      const configuredHours = slaHoursByService.get(row.serviceKey);
+      const dueAt = configuredHours === undefined ? new Date(row.dueAt) : addBusinessHours(new Date(row.createdAt), configuredHours, calendar);
+      const item = grouped.get(row.team) || { total: 0, breached: 0, onTime: 0, durationHours: 0 };
+      item.total += 1;
+      item.durationHours += businessHoursBetween(new Date(row.createdAt), new Date(row.resolvedAt), calendar);
+      if (new Date(row.resolvedAt) > dueAt) item.breached += 1;
+      else item.onTime += 1;
+      grouped.set(row.team, item);
+    }
+    const resolvedCases = [...grouped.entries()]
+      .map(([team, item]) => ({ _id: team, ...item, avgDurationHours: item.total ? item.durationHours / item.total : 0 }))
+      .sort((a, b) => b.total - a.total);
 
     const overall = resolvedCases.reduce(
       (acc, t) => ({
@@ -178,6 +175,44 @@ analyticsRouter.get(
         avgRisk: Number((p.avgRisk || 0).toFixed(2)),
         resolutionRate: p.assigned ? Number(((p.resolved / p.assigned) * 100).toFixed(1)) : 0
       }))
+    });
+  }
+);
+
+/* ═══════════════════════════════════════════════
+   CSAT: Điểm hài lòng do requester gửi sau xử lý
+   ═══════════════════════════════════════════════ */
+
+analyticsRouter.get(
+  "/csat",
+  requireRoles("manager", "org_admin", "platform_admin"),
+  async (req, res) => {
+    const organizationId = new mongoose.Types.ObjectId(req.auth!.organizationId);
+    const days = Math.max(7, pageNumber(req.query.days, 30, 365));
+    const since = new Date(Date.now() - days * 24 * 3_600_000);
+    const [summary] = await CaseRecord.aggregate([
+      { $match: { organizationId, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: since } } },
+      {
+        $group: {
+          _id: null,
+          eligible: { $sum: 1 },
+          responses: { $sum: { $cond: [{ $ne: ["$satisfaction", null] }, 1, 0] } },
+          average: { $avg: "$satisfaction" },
+          ratings: { $push: "$satisfaction" }
+        }
+      }
+    ]);
+    const distribution = [1, 2, 3, 4, 5].map((rating) => ({
+      rating,
+      count: (summary?.ratings || []).filter((value: number | null) => value === rating).length
+    }));
+    const responses = summary?.responses || 0;
+    res.json({
+      eligible: summary?.eligible || 0,
+      responses,
+      responseRate: summary?.eligible ? Number(((responses / summary.eligible) * 100).toFixed(1)) : null,
+      averageScore: responses ? Number((summary.average || 0).toFixed(2)) : null,
+      distribution
     });
   }
 );
@@ -348,6 +383,29 @@ analyticsRouter.get(
 );
 
 /* ═══════════════════════════════════════════════
+   TRAINING DATA EXPORT: Only human-reviewed, de-identified cases
+   ═══════════════════════════════════════════════ */
+
+analyticsRouter.get(
+  "/export/training.csv",
+  requireRoles("org_admin", "platform_admin"),
+  async (req, res) => {
+    const cases = await CaseRecord.find({
+      organizationId: req.auth!.organizationId,
+      "ai.reviewStatus": { $in: ["confirmed", "corrected"] }
+    })
+      .select("title description category createdAt ai.classification ai.confidence ai.reviewStatus ai.humanCorrectedLabel ai.reviewedAt")
+      .sort({ "ai.reviewedAt": -1 })
+      .lean();
+
+    const csv = buildReviewedTrainingCsv(cases as unknown as ReviewedCase[]);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="caseflow-reviewed-training-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send(csv);
+  }
+);
+
+/* ═══════════════════════════════════════════════
    PRIORITY DISTRIBUTION: Phân bổ theo mức ưu tiên
    ═══════════════════════════════════════════════ */
 
@@ -368,4 +426,3 @@ analyticsRouter.get(
     });
   }
 );
-

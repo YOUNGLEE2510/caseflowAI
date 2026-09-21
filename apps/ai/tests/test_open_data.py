@@ -25,3 +25,12 @@ def test_rejects_wrong_locale():
     invalid["locale"] = "en-US"
     with pytest.raises(ValueError, match="locale"):
         clean_splits({"train": [row("train")], "validation": [row("valid")], "test": [invalid]})
+
+
+def test_archive_validation_rejects_corrupt_file(tmp_path):
+    from apps.ai.open_data import _validate_archive
+    corrupt = tmp_path / "corrupt.tar.gz"
+    corrupt.write_bytes(b"not a real archive")
+    with pytest.raises(ValueError, match="SHA-256 mismatch"):
+        _validate_archive(corrupt, "0" * 64)
+

@@ -20,6 +20,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(24),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
   AI_SERVICE_URL: z.string().url().default("http://127.0.0.1:8001"),
+  SLA_CHECK_INTERVAL_MINUTES: z.coerce.number().int().min(1).max(1_440).default(15),
+  SLA_CHECK_ON_START: z
+    .string()
+    .default("true")
+    .transform((value) => value === "true"),
   AUTO_SEED: z
     .string()
     .default("false")

@@ -59,6 +59,8 @@ const caseSchema = new Schema(
     transferCount: { type: Number, default: 0 },
     reopenCount: { type: Number, default: 0 },
     satisfaction: { type: Number, default: null, min: 1, max: 5 },
+    satisfactionComment: { type: String, default: "", maxlength: 1000 },
+    satisfactionAt: { type: Date, default: null },
     customFields: { type: Map, of: String, default: {} },
     tags: [{ type: String }],
     ai: {

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import tarfile
 import unicodedata
 from urllib.request import urlopen
 
@@ -14,7 +15,9 @@ from sklearn.metrics import classification_report, confusion_matrix
 from .evaluate import model_factories
 
 SOURCE = "https://huggingface.co/datasets/AmazonScience/massive"
+ARCHIVE_URL = "https://amazon-massive-nlu-dataset.s3.amazonaws.com/amazon-massive-dataset-1.1.tar.gz"
 ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "open-data" / "massive-vi"
+ARCHIVE_SHA256 = "4cba5faa11c71437928e17cb1b9b3d8b8e727e7ea363a3a9a8045e19c0491577"
 
 
 def normalized(text: str) -> str:
@@ -55,9 +58,16 @@ def fetch(url: str) -> bytes:
         return response.read()
 
 
-def prepare(output: Path) -> dict:
-    import pyarrow.parquet as pq
+def _validate_archive(path: Path, expected_sha256: str) -> None:
+    """Validate a file's SHA-256 against an expected digest."""
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual != expected_sha256:
+        raise ValueError(
+            f"Archive SHA-256 mismatch: expected {expected_sha256}, got {actual}"
+        )
 
+
+def prepare(output: Path) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     if (output / "manifest.json").exists():
         raise ValueError("Dataset exists; use a new output directory to preserve provenance")
@@ -69,20 +79,30 @@ def prepare(output: Path) -> dict:
         raise ValueError("License changed; review source before importing")
     card = fetch(f"{SOURCE}/raw/{metadata['sha']}/README.md")
     (raw_dir / "README.md").write_bytes(card)
-    manifests, splits = [], {}
-    for split in ("train", "validation", "test"):
-        urls = json.loads(fetch(f"https://huggingface.co/api/datasets/AmazonScience/massive/parquet/vi-VN/{split}"))
-        splits[split] = []
-        for index, url in enumerate(urls):
-            if not url.startswith("https://huggingface.co/"):
-                raise ValueError("Unexpected data host")
-            content = fetch(url)
-            path = raw_dir / f"{split}-{index}.parquet"
-            path.write_bytes(content)
-            rows = pq.read_table(path).to_pylist()
-            splits[split].extend(rows)
-            manifests.append({"split": split, "url": url, "file": str(path.relative_to(output)),
-                              "sha256": hashlib.sha256(content).hexdigest(), "rows": len(rows)})
+    archive = ROOT.parent / "massive-1.1.tar.gz"
+    if not archive.exists():
+        tmp = archive.with_suffix(".tmp")
+        tmp.write_bytes(fetch(ARCHIVE_URL))
+        _validate_archive(tmp, ARCHIVE_SHA256)
+        tmp.rename(archive)
+    else:
+        _validate_archive(archive, ARCHIVE_SHA256)
+    with tarfile.open(archive, "r:gz") as bundle:
+        member = bundle.extractfile("1.1/data/vi-VN.jsonl")
+        if member is None:
+            raise ValueError("Vietnamese locale missing from official archive")
+        content = member.read()
+    source_file = raw_dir / "vi-VN.jsonl"
+    source_file.write_bytes(content)
+    rows = [json.loads(line) for line in content.splitlines()]
+    splits = {"train": [], "validation": [], "test": []}
+    for row in rows:
+        split = {"train": "train", "dev": "validation", "test": "test"}.get(row["partition"])
+        if split is None:
+            raise ValueError("Unexpected split in source archive")
+        splits[split].append(row)
+    manifests = [{"url": ARCHIVE_URL, "file": str(source_file.relative_to(output)),
+                  "sha256": hashlib.sha256(content).hexdigest(), "rows": len(rows)}]
     cleaned, removed = clean_splits(splits)
     for split, rows in cleaned.items():
         (output / f"{split}.json").write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
@@ -90,7 +110,8 @@ def prepare(output: Path) -> dict:
         "source": SOURCE, "publisher": "Amazon Science", "license": "CC-BY-4.0",
         "card_revision": metadata["sha"], "retrieved_at": datetime.now(timezone.utc).isoformat(),
         "purpose": "External intent benchmark only; NOT CaseFlow routing training data",
-        "provenance_note": "Parquet conversion endpoint is mutable; raw SHA256 identifies downloaded bytes.",
+        "provenance_note": "Official Amazon 1.1 archive; SHA256 identifies the extracted Vietnamese JSONL.",
+        "archive_sha256": ARCHIVE_SHA256,
         "files": manifests, "removed": removed,
         "counts": {split: len(rows) for split, rows in cleaned.items()},
         "limitations": ["Exact normalized deduplication only; near-duplicates require review",
@@ -106,10 +127,14 @@ def benchmark(output: Path) -> dict:
         if hashlib.sha256((output / item["file"]).read_bytes()).hexdigest() != item["sha256"]:
             raise ValueError("Raw dataset checksum mismatch")
     # Rebuild splits from verified raw bytes instead of trusting edited derived JSON.
-    import pyarrow.parquet as pq
     raw = {split: [] for split in ("train", "validation", "test")}
     for item in manifest["files"]:
-        raw[item["split"]].extend(pq.read_table(output / item["file"]).to_pylist())
+        for line in (output / item["file"]).read_bytes().splitlines():
+            row = json.loads(line)
+            split = {"train": "train", "dev": "validation", "test": "test"}.get(row["partition"])
+            if split is None:
+                raise ValueError("Unexpected split in source archive")
+            raw[split].append(row)
     rows, _ = clean_splits(raw)
     train_x = [row["text"] for row in rows["train"]]
     train_y = [row["label"] for row in rows["train"]]
@@ -123,10 +148,15 @@ def benchmark(output: Path) -> dict:
                                        labels=labels, output_dict=True, zero_division=0)
         results[name], fitted[name] = report, model
     winner = max(results, key=lambda name: results[name]["macro avg"]["f1-score"])
+    import joblib
+    model_path = output / "selected_model.joblib"
+    joblib.dump(fitted[winner], model_path)
     expected = [row["label"] for row in rows["test"]]
     predicted = fitted[winner].predict([row["text"] for row in rows["test"]])
     report = {
         "purpose": manifest["purpose"], "selection": "Validation macro-F1; test evaluated only for winner",
+        "model_artifact": model_path.name,
+        "model_sha256": hashlib.sha256(model_path.read_bytes()).hexdigest(),
         "validation": results, "selected_model": winner,
         "test": classification_report(expected, predicted, labels=labels, output_dict=True, zero_division=0),
         "labels": labels, "confusion_matrix": confusion_matrix(expected, predicted, labels=labels).tolist(),

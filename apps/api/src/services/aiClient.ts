@@ -207,16 +207,22 @@ export async function retrieveKnowledge(
     }>("/knowledge/retrieve", { query, articles, topK: 4 });
   } catch {
     const queryWords = new Set(query.toLocaleLowerCase("vi").split(/\W+/).filter((word) => word.length > 3));
+    const chunks = (content: string) => {
+      const normalized = content.replace(/\s+/g, " ").trim();
+      return normalized.match(/.{1,500}(?:\s|$)|.{1,500}/g)?.map((part) => part.trim()).filter(Boolean) || [];
+    };
     const citations = articles
       .map((article) => {
-        const content = `${article.title} ${article.content}`.toLocaleLowerCase("vi");
-        const score = [...queryWords].filter((word) => content.includes(word)).length / Math.max(queryWords.size, 1);
+        const allChunks = [article.title, `${article.title} ${article.category}`, ...chunks(article.content)];
+        const best = allChunks
+          .map((excerpt) => ({ excerpt, score: [...queryWords].filter((word) => excerpt.toLocaleLowerCase("vi").includes(word)).length / Math.max(queryWords.size, 1) }))
+          .sort((left, right) => right.score - left.score)[0];
         return {
           id: article.id,
           title: article.title,
           sourceLabel: article.sourceLabel,
-          excerpt: article.content.slice(0, 260),
-          score
+          excerpt: best?.excerpt || "",
+          score: best?.score || 0
         };
       })
       .filter((item) => item.score > 0)

@@ -67,6 +67,26 @@ def test_retrieval_returns_source_citation():
     assert result["citations"][0]["id"] == "facilities-1"
 
 
+def test_retrieval_cites_relevant_passage_beyond_document_opening():
+    filler = "Quy trình đăng ký hoạt động ngoại khóa và quản lý hội trường. " * 18
+    request = KnowledgeRequest(
+        query="Tài khoản bị khóa thì đặt lại mật khẩu bằng cách nào?",
+        articles=[KnowledgeArticle(id="account", title="Hướng dẫn hỗ trợ", content=filler + "\n\nTài khoản bị khóa: sinh viên mở cổng SIS và chọn Đặt lại mật khẩu.", category="it_access", sourceLabel="IT")],
+    )
+    result = retrieve_knowledge(request)
+    assert result["citations"][0]["id"] == "account"
+    assert "Đặt lại mật khẩu" in result["citations"][0]["excerpt"]
+
+
+def test_retrieval_reuses_index_for_same_articles():
+    from apps.ai.routers.knowledge import index_articles
+    request = KnowledgeRequest(query="khóa tài khoản", articles=[KnowledgeArticle(id="a", title="Tài khoản", content="Khóa tài khoản thì liên hệ bộ phận IT.", category="it_access", sourceLabel="IT")])
+    index_articles.cache_clear()
+    retrieve_knowledge(request)
+    retrieve_knowledge(request)
+    assert index_articles.cache_info().hits == 1
+
+
 def test_punctuation_only_retrieval_has_no_matches():
     from apps.ai.routers.similarity import similarity
     from apps.ai.schemas import SimilarItem, SimilarityRequest
@@ -74,3 +94,31 @@ def test_punctuation_only_retrieval_has_no_matches():
     assert result == {"matches": []}
     result = retrieve_knowledge(KnowledgeRequest(query="???", articles=[KnowledgeArticle(id="1", title="?", content="...", category="!", sourceLabel="Source")]))
     assert result["citations"] == []
+
+
+def test_retrieval_matches_query_in_title_only():
+    """Query matching an article's title but NOT its body should still return a citation."""
+    request = KnowledgeRequest(
+        query="điều chỉnh điểm học phần",
+        articles=[
+            KnowledgeArticle(
+                id="title-match",
+                title="Hướng dẫn điều chỉnh điểm học phần",
+                content="Sinh viên liên hệ phòng đào tạo để được hỗ trợ thủ tục liên quan.",
+                category="academic_records",
+                sourceLabel="Quy trình đào tạo",
+            ),
+            KnowledgeArticle(
+                id="unrelated",
+                title="Chính sách bảo mật thông tin",
+                content="Hệ thống lưu trữ dữ liệu được mã hóa và sao lưu định kỳ.",
+                category="it_access",
+                sourceLabel="Chính sách CNTT",
+            ),
+        ],
+        topK=2,
+    )
+    result = retrieve_knowledge(request)
+    assert result["citations"], "Expected at least one citation for title-matching query"
+    assert result["citations"][0]["id"] == "title-match"
+

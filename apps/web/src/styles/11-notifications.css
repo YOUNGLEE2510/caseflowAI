@@ -1,5 +1,41 @@
 /* Operational completion: notifications, review state, and attachments */
 
+.requester-resolution-panel > p {
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+}
+
+.button-row,
+.rating-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.satisfaction-form {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.satisfaction-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.rating-buttons .icon-button {
+  color: var(--text-tertiary);
+}
+
+.rating-buttons .icon-button:hover,
+.rating-buttons .icon-button.is-selected {
+  color: #b87412;
+  background: #fff6dd;
+}
+
 .notification-center {
   position: relative;
 }
@@ -428,4 +464,3 @@
     grid-column: 1 / -1;
   }
 }
-

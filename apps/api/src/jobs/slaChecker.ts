@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
-import { CaseRecord, User } from "../models.js";
+import { CaseRecord, Organization, ServiceDefinition, User } from "../models.js";
 import { predictSla } from "../services/aiClient.js";
 import { notify, notifyMany } from "../services/helpers.js";
+import { addBusinessHours, businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
 
 /**
  * SLA Checker Job — runs periodically to:
@@ -20,6 +21,15 @@ export async function runSlaCheck() {
     const openCases = await CaseRecord.find({
       status: { $nin: ["resolved", "closed"] }
     }).lean();
+    const organizations = await Organization.find({ _id: { $in: [...new Set(openCases.map((item: any) => String(item.organizationId)))] } })
+      .select("settings.holidayDates")
+      .lean();
+    const calendars = new Map(organizations.map((organization: any) => [String(organization._id), organizationCalendar(organization.settings)]));
+    const services = await ServiceDefinition.find({
+      organizationId: { $in: [...new Set(openCases.map((item: any) => item.organizationId))] },
+      active: true
+    }).select("organizationId key slaHours").lean();
+    const serviceHours = new Map(services.map((service: any) => [`${service.organizationId}:${service.key}`, service.slaHours]));
 
     let updated = 0;
     let breached = 0;
@@ -27,9 +37,17 @@ export async function runSlaCheck() {
 
     for (const record of openCases) {
       const caseDoc = record as any;
-      const elapsedHours = (now.getTime() - new Date(caseDoc.createdAt).getTime()) / 3_600_000;
-      const dueAt = new Date(caseDoc.dueAt);
-      const dueHours = (dueAt.getTime() - new Date(caseDoc.createdAt).getTime()) / 3_600_000;
+      const calendar = calendars.get(String(caseDoc.organizationId)) || organizationCalendar();
+      const configuredHours = serviceHours.get(`${caseDoc.organizationId}:${caseDoc.serviceKey}`);
+      let dueAt = new Date(caseDoc.dueAt);
+      const elapsedHours = businessHoursBetween(new Date(caseDoc.createdAt), now, calendar);
+      if (typeof configuredHours === "number") {
+        const recalculatedDueAt = addBusinessHours(new Date(caseDoc.createdAt), configuredHours, calendar);
+        if (recalculatedDueAt.getTime() !== dueAt.getTime()) {
+          dueAt = recalculatedDueAt;
+        }
+      }
+      const dueHours = businessHoursBetween(new Date(caseDoc.createdAt), dueAt, calendar);
 
       // Re-predict SLA risk
       const sla = await predictSla({
@@ -45,6 +63,7 @@ export async function runSlaCheck() {
         "ai.riskScore": sla.riskScore,
         "ai.riskFactors": sla.factors
       };
+      if (dueAt.getTime() !== new Date(caseDoc.dueAt).getTime()) changes.dueAt = dueAt;
 
       // Mark breached if past due
       if (now > dueAt && !caseDoc.slaBreached) {
@@ -54,7 +73,7 @@ export async function runSlaCheck() {
       }
 
       // Update if risk score changed significantly
-      if (Math.abs((caseDoc.ai?.riskScore || 0) - sla.riskScore) > 0.05) {
+      if (Math.abs((caseDoc.ai?.riskScore || 0) - sla.riskScore) > 0.05 || changes.slaBreached || changes.dueAt) {
         await CaseRecord.updateOne({ _id: caseDoc._id }, { $set: changes });
         updated++;
 

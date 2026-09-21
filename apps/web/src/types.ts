@@ -49,6 +49,11 @@ export interface CaseRecord {
   team: string;
   dueAt: string;
   resolvedAt?: string;
+  closedAt?: string;
+  reopenCount?: number;
+  satisfaction?: number | null;
+  satisfactionComment?: string;
+  satisfactionAt?: string;
   createdAt: string;
   updatedAt: string;
   customFields?: Record<string, string>;

@@ -289,6 +289,7 @@ export function AppShell() {
             </button>
             <div>
               <strong>{text(meta.title.vi, meta.title.en)}</strong>
+              <span>{text(meta.subtitle.vi, meta.subtitle.en)}</span>
             </div>
           </div>
 

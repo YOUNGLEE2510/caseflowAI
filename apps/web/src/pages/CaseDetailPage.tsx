@@ -10,6 +10,8 @@ import {
   Paperclip,
   Send,
   Sparkles,
+  Star,
+  RotateCcw,
   UserRound,
   UsersRound
 } from "lucide-react";
@@ -82,6 +84,7 @@ export function CaseDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [attachmentError, setAttachmentError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [satisfactionComment, setSatisfactionComment] = useState("");
   const canOperate = user?.role !== "requester";
 
   useEffect(() => {
@@ -138,6 +141,23 @@ export function CaseDetailPage() {
       setComment("");
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : text("Không thể gửi phản hồi.", "We could not send your reply."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function requesterAction(action: "close" | "reopen" | "satisfaction", payload?: Record<string, unknown>) {
+    if (saving) return;
+    setSaving(true);
+    setActionError("");
+    try {
+      const response = await api<{ case: CaseRecord }>(`/cases/${record._id}/${action}`, {
+        method: "POST",
+        ...(payload ? { body: JSON.stringify(payload) } : {})
+      });
+      setData(response);
+    } catch (requestError) {
+      setActionError(requestError instanceof Error ? requestError.message : text("Không thể cập nhật hồ sơ.", "We could not update this request."));
     } finally {
       setSaving(false);
     }
@@ -309,6 +329,47 @@ export function CaseDetailPage() {
             <p>{record.description}</p>
             {Object.keys(record.customFields || {}).length ? <dl className="case-custom-fields">{Object.entries(record.customFields || {}).map(([field, value]) => <div key={field}><dt>{field}</dt><dd>{value}</dd></div>)}</dl> : null}
           </section>
+
+          {!canOperate && ["resolved", "closed"].includes(record.status) ? (
+            <section className="panel requester-resolution-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="eyebrow">{text("Hoàn tất yêu cầu", "Request completion")}</span>
+                  <h2>{text("Kết quả xử lý", "Resolution outcome")}</h2>
+                </div>
+                <CheckCircle2 size={19} className="muted-icon" />
+              </div>
+              <p>{text("Xác nhận khi vấn đề đã được xử lý, hoặc mở lại để nhân viên tiếp tục hỗ trợ.", "Confirm when the issue is resolved, or reopen it for further support.")}</p>
+              {record.status === "resolved" ? (
+                <div className="button-row">
+                  <button type="button" className="button button-primary button-small" onClick={() => requesterAction("close")} disabled={saving}>
+                    <CheckCircle2 size={16} />{text("Xác nhận đóng", "Confirm close")}
+                  </button>
+                  <button type="button" className="button button-secondary button-small" onClick={() => requesterAction("reopen")} disabled={saving}>
+                    <RotateCcw size={16} />{text("Yêu cầu mở lại", "Reopen request")}
+                  </button>
+                </div>
+              ) : (
+                <div className="button-row">
+                  <button type="button" className="button button-secondary button-small" onClick={() => requesterAction("reopen")} disabled={saving}>
+                    <RotateCcw size={16} />{text("Mở lại yêu cầu", "Reopen request")}
+                  </button>
+                </div>
+              )}
+              <div className="satisfaction-form">
+                <strong>{text("Mức độ hài lòng", "Satisfaction")}</strong>
+                <div className="rating-buttons" aria-label={text("Đánh giá mức độ hài lòng", "Rate your satisfaction")}>
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button key={rating} type="button" className={`icon-button ${record.satisfaction === rating ? "is-selected" : ""}`} onClick={() => requesterAction("satisfaction", { rating, comment: satisfactionComment })} disabled={saving} title={`${rating}/5`} aria-label={`${rating}/5`}>
+                      <Star size={18} fill={record.satisfaction && record.satisfaction >= rating ? "currentColor" : "none"} />
+                    </button>
+                  ))}
+                </div>
+                <textarea value={satisfactionComment} onChange={(event) => setSatisfactionComment(event.target.value)} rows={2} maxLength={1000} placeholder={text("Nhận xét thêm (không bắt buộc)", "Optional feedback")} />
+                {record.satisfaction ? <small>{text(`Bạn đã đánh giá ${record.satisfaction}/5. Có thể chọn lại để cập nhật.`, `You rated this ${record.satisfaction}/5. Select another rating to update.`)}</small> : null}
+              </div>
+            </section>
+          ) : null}
 
           <section className="panel attachment-panel">
             <div className="panel-heading">

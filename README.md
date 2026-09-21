@@ -70,12 +70,20 @@ Tài liệu OpenAPI của dịch vụ AI: `http://127.0.0.1:8001/docs`.
 
 Đánh giá SLA trên CSV đã gán nhãn: `python -m apps.ai.evaluate_sla --dataset path/to/sla.csv`. Các cột bắt buộc: `elapsedHours,dueHours,transfers,workload,remainingSteps,priority,breached`. Công cụ không tự tạo dữ liệu để báo cáo kết quả thực tế.
 
+Chuẩn bị dữ liệu phân loại đã được phép sử dụng: `python -m apps.ai.prepare_caseflow_dataset --input path/to/reviewed.csv --output artifacts/caseflow-dataset`. CSV đầu vào cần `text,label`; có thể thêm `group_id,created_at`. Pipeline ẩn email, số điện thoại, mã sinh viên phổ biến, loại bản ghi trùng và chia tập không làm rò rỉ cùng nhóm hồ sơ.
+
+Đánh giá truy xuất RAG: `python -m apps.ai.evaluate_retrieval --articles path/to/knowledge.json --questions path/to/questions.csv --output artifacts/retrieval-evaluation.json`. Bộ câu hỏi dùng cột `query,expected_ids,answerable`; `expected_ids` là các mã tài liệu, phân cách bằng dấu `;`.
+
 
 `npm run seed` chỉ tạo dữ liệu khi tổ chức demo chưa tồn tại. `npm run seed:force` xóa và tạo lại dữ liệu demo; không dùng lệnh này với database sản xuất.
 
 Integration test và E2E dùng MongoDB tạm, không sử dụng Atlas trong `.env`. E2E dùng Chrome cài sẵn, cổng riêng 5188. `AUTO_SEED` mặc định false. Tài liệu cần được quản lý phê duyệt trong Kho tri thức trước khi xuất hiện với sinh viên hoặc được dùng trong truy xuất AI.
 
 Trang **Vận hành** dành cho quản lý/quản trị hiển thị kết nối MongoDB, AI, lưu tệp, hồ sơ quá hạn và nhật ký. Tệp hiện nằm trên ổ đĩa cục bộ; MongoDB chỉ giữ metadata.
+
+API chạy kiểm tra SLA khi khởi động và lặp lại theo `SLA_CHECK_INTERVAL_MINUTES` (mặc định 15 phút). SLA dùng giờ phục vụ Thứ 2–Thứ 6, 08:00–12:00 và 13:00–17:00 theo Việt Nam; ngày nghỉ có thể khai báo tại `Organization.settings.holidayDates` dưới dạng `YYYY-MM-DD`. Job tự hiệu chỉnh hạn của các hồ sơ còn mở sau khi nâng cấp lịch.
+
+Requester có thể xác nhận đóng, mở lại hồ sơ đã giải quyết và gửi đánh giá 1–5 sao kèm nhận xét. Quản lý xem chỉ số tại `/api/analytics/csat`; chỉ số gồm số hồ sơ đủ điều kiện, tỷ lệ phản hồi, điểm trung bình và phân bố sao. Quản trị tổ chức có thể tải `/api/analytics/export/training.csv` để nhận CSV chỉ gồm hồ sơ đã được nhân viên xác nhận/sửa nhãn; tệp đã loại các định danh phổ biến nhưng vẫn phải được kiểm tra thủ công trước khi dùng huấn luyện.
 
 
 ## Luồng demo đề xuất

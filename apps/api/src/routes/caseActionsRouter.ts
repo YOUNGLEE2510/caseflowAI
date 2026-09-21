@@ -1,13 +1,14 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { validateObjectId } from "../middleware/validateId.js";
-import { CaseRecord, ServiceDefinition, User } from "../models.js";
+import { CaseRecord, Organization, ServiceDefinition, User } from "../models.js";
 import { auditFromReq, logAudit, notify } from "../services/helpers.js";
 import { resolveAiReviewStatus } from "../services/routing.js";
 import { presentCase, validateStatusTransition } from "../services/casePolicy.js";
+import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 export const caseActionsRouter = Router();
 caseActionsRouter.use(authenticate);
 caseActionsRouter.get("/cases/:id/assignment-options", validateObjectId("id"), requireRoles("agent", "manager", "org_admin", "platform_admin"), async (req, res) => {
@@ -111,7 +112,12 @@ caseActionsRouter.patch(
       record.serviceKey = service.key;
       record.category = service.category;
       record.team = service.team;
-      record.dueAt = new Date(record.createdAt.getTime() + service.slaHours * 3_600_000);
+      const organization = await Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean();
+      record.dueAt = addBusinessHours(
+        record.createdAt,
+        service.slaHours,
+        organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings)
+      );
       markAiReviewed(service.category);
     } else if (input.confirmAi) {
       markAiReviewed(record.category);
@@ -201,6 +207,66 @@ caseActionsRouter.patch(
     res.json({ case: presentCase(record, req.auth!.role) });
   }
 );
+
+const satisfactionSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(1_000).default("")
+});
+
+async function requesterCase(req: Request) {
+  const record = await CaseRecord.findOne({
+    _id: req.params.id,
+    organizationId: req.auth!.organizationId,
+    requesterId: req.auth!.id
+  });
+  if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
+  return record;
+}
+
+caseActionsRouter.post("/cases/:id/satisfaction", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
+  const input = satisfactionSchema.parse(req.body);
+  const record = await requesterCase(req);
+  if (!(["resolved", "closed"] as string[]).includes(record.status)) {
+    throw new HttpError(422, "Chỉ có thể đánh giá sau khi hồ sơ đã được giải quyết.");
+  }
+  record.satisfaction = input.rating;
+  record.satisfactionComment = input.comment;
+  record.satisfactionAt = new Date();
+  record.events.push({ type: "satisfaction", label: `Người yêu cầu đánh giá ${input.rating}/5`, actorId: req.auth!.id as any, actorName: req.auth!.name, createdAt: new Date() } as any);
+  await record.save();
+  await logAudit({ ...auditFromReq(req), action: "case.satisfaction", resource: "CaseRecord", resourceId: String(record._id), changes: { rating: input.rating } }, req);
+  res.json({ case: presentCase(record, req.auth!.role) });
+});
+
+caseActionsRouter.post("/cases/:id/close", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
+  const record = await requesterCase(req);
+  if (record.status !== "resolved") throw new HttpError(422, "Chỉ có thể xác nhận đóng hồ sơ đã được giải quyết.");
+  record.status = "closed";
+  record.closedAt = new Date();
+  record.events.push({ type: "closed_by_requester", label: "Người yêu cầu đã xác nhận đóng hồ sơ", actorId: req.auth!.id as any, actorName: req.auth!.name, createdAt: new Date() } as any);
+  await record.save();
+  await logAudit({ ...auditFromReq(req), action: "case.close_by_requester", resource: "CaseRecord", resourceId: String(record._id), changes: {} }, req);
+  res.json({ case: presentCase(record, req.auth!.role) });
+});
+
+caseActionsRouter.post("/cases/:id/reopen", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
+  const record = await requesterCase(req);
+  if (!(["resolved", "closed"] as string[]).includes(record.status)) throw new HttpError(422, "Chỉ có thể mở lại hồ sơ đã được giải quyết hoặc đóng.");
+  record.status = "in_progress";
+  record.resolvedAt = null;
+  record.closedAt = null;
+  record.reopenCount += 1;
+  record.satisfaction = null;
+  record.satisfactionComment = "";
+  record.satisfactionAt = null;
+  record.events.push({ type: "reopened_by_requester", label: "Người yêu cầu đã mở lại hồ sơ", actorId: req.auth!.id as any, actorName: req.auth!.name, createdAt: new Date() } as any);
+  await record.save();
+  await logAudit({ ...auditFromReq(req), action: "case.reopen_by_requester", resource: "CaseRecord", resourceId: String(record._id), changes: {} }, req);
+  if (record.assigneeId) {
+    await notify({ organizationId: req.auth!.organizationId, userId: String(record.assigneeId), type: "case_updated", title: `Hồ sơ ${record.code} được mở lại`, message: `Người yêu cầu cần xử lý thêm cho "${record.title}".`, relatedCaseId: String(record._id), actionUrl: `/cases/${record._id}` });
+  }
+  res.json({ case: presentCase(record, req.auth!.role) });
+});
 
 /* ── Case Comments ── */
 

@@ -9,6 +9,7 @@ import {
   CASE_STATUSES,
   CaseRecord,
   Incident,
+  Organization,
   ServiceDefinition,
   User
 } from "../models.js";
@@ -20,6 +21,7 @@ import {
 import { auditFromReq, logAudit, notify, notifyMany } from "../services/helpers.js";
 import { canUseAiRouting, resolveAiReviewStatus } from "../services/routing.js";
 import { caseScope, pageNumber, presentCase, validateStatusTransition } from "../services/casePolicy.js";
+import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 
 interface LeanService {
   _id: mongoose.Types.ObjectId;
@@ -157,13 +159,14 @@ casesRouter.post("/ai/analyze-intake", async (req, res) => {
 
 casesRouter.post("/cases", async (req, res) => {
   const input = intakeSchema.parse(req.body);
-  const [classification, openCases] = await Promise.all([
+  const [classification, openCases, organization] = await Promise.all([
     classifyText(`${input.title || ""}. ${input.description}`),
     CaseRecord.find({ ...activeCaseFilter(req.auth!.organizationId), ...caseScope(req.auth!) })
       .select("_id title description")
       .sort({ createdAt: -1 })
       .limit(100)
-      .lean()
+      .lean(),
+    Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean()
   ]);
 
   const service = (
@@ -208,7 +211,11 @@ casesRouter.post("/cases", async (req, res) => {
     remainingSteps: 3,
     priority: input.priority
   });
-  const dueAt = new Date(Date.now() + service.slaHours * 60 * 60 * 1000);
+  const dueAt = addBusinessHours(
+    new Date(),
+    service.slaHours,
+    organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings)
+  );
   const title =
     input.title?.trim() ||
     classification.summary.split(/[.!?]/)[0]?.trim().slice(0, 120) ||

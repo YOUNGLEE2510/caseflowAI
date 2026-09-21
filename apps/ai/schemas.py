@@ -28,13 +28,13 @@ class SlaRequest(BaseModel):
 class KnowledgeArticle(BaseModel):
     id: str
     title: str
-    content: str
+    content: str = Field(max_length=50_000)
     category: str
     sourceLabel: str
 
 
 class KnowledgeRequest(BaseModel):
     query: str = Field(min_length=3, max_length=1_000)
-    articles: list[KnowledgeArticle]
+    articles: list[KnowledgeArticle] = Field(max_length=50)
     topK: int = Field(default=4, ge=1, le=10)
 
