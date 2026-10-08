@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { config } from "../config.js";
 import { Organization, User, type UserRole } from "../models.js";
+import type { PublicUserSource } from "../services/publicUser.js";
 
 export interface AuthUser {
   id: string;
@@ -32,20 +33,20 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   let claims: jwt.JwtPayload;
   try {
     const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ["HS256"] });
-    if (typeof decoded === "string" || !mongoose.isValidObjectId(decoded.id) || !mongoose.isValidObjectId(decoded.organizationId)) throw new Error("Invalid claims");
+    if (typeof decoded === "string" || !Number.isFinite(decoded.exp) || !mongoose.isValidObjectId(decoded.id) || !mongoose.isValidObjectId(decoded.organizationId)) throw new Error("Invalid claims");
     claims = decoded;
   } catch {
     res.status(401).json({ message: "Phiên đăng nhập không hợp lệ hoặc đã hết hạn." });
     return;
   }
   try {
-    const user = await User.findOne({ _id: claims.id, organizationId: claims.organizationId, active: true }).lean<any>();
+    const user = await User.findOne({ _id: claims.id, organizationId: claims.organizationId, active: true }).lean<PublicUserSource>();
     const organization = await Organization.exists({ _id: claims.organizationId, status: "active" });
     if (!user || !organization || (user.tokenVersion || 0) !== (claims.tokenVersion || 0)) {
       res.status(401).json({ message: "Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại." });
       return;
     }
-    req.auth = { id: String(user._id), organizationId: String(user.organizationId), name: user.name, email: user.email, role: user.role, team: user.team };
+    req.auth = { id: String(user._id), organizationId: String(user.organizationId), name: user.name, email: user.email, role: user.role, team: user.team || "" };
     next();
   } catch (error) {
     next(error);

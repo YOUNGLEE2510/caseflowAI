@@ -12,16 +12,19 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1146.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
+    "google-auth-library": "^10.9.1",
     "helmet": "^8.1.0",
+    "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.0",
     "morgan": "^1.10.0",
-    "nodemailer": "^10.0.1",
+    "nodemailer": "^10.0.9",
     "zod": "^3.25.0"
   },
   "devDependencies": {

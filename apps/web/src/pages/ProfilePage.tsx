@@ -6,6 +6,7 @@ import { useToast } from "../components/Toast";
 import { EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
+import { Modal } from "../components/Modal";
 
 interface ProfileData {
   id: string;
@@ -18,6 +19,7 @@ interface ProfileData {
   avatarColor: string;
   lastLoginAt: string | null;
   createdAt: string;
+  microsoftLinked: boolean;
 }
 
 const AVATAR_COLORS = [
@@ -51,11 +53,28 @@ export function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkPassword, setLinkPassword] = useState("");
+  const [linking, setLinking] = useState(false);
 
   if (loading) return <LoadingState label={text("Đang tải hồ sơ cá nhân", "Loading profile")} />;
   if (error || !data) return <ErrorState message={error || text("Không có dữ liệu.", "No data.")} onRetry={reload} />;
 
   const profile = data.profile;
+
+  async function linkMicrosoft(event: React.FormEvent) {
+    event.preventDefault();
+    setLinking(true);
+    try {
+      const result = await api<{ url: string }>("/auth/microsoft/link", { method: "POST", body: JSON.stringify({ currentPassword: linkPassword }) });
+      const url = new URL(result.url);
+      if (url.origin !== "https://login.microsoftonline.com") throw new Error("Invalid authorization URL");
+      window.location.assign(url.toString());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : text("Không thể liên kết Microsoft.", "Unable to link Microsoft."));
+      setLinking(false);
+    }
+  }
 
   function startEdit() {
     setEditName(profile.name);
@@ -222,6 +241,23 @@ export function ProfilePage() {
       </section>
 
       {/* ── Recent Activity ── */}
+      <section className="panel profile-panel">
+        <h2>{text("Tài khoản Microsoft", "Microsoft account")}</h2>
+        <div className="profile-actions">
+          <button type="button" className="button button-secondary" disabled={profile.microsoftLinked} onClick={() => { setLinkPassword(""); setLinkOpen(true); }}>
+            <img src="/microsoft-logo.svg" className="provider-mark" width="20" height="20" alt="" />
+            {profile.microsoftLinked ? text("Đã liên kết Microsoft", "Microsoft linked") : text("Liên kết Outlook / Microsoft", "Link Outlook / Microsoft")}
+          </button>
+        </div>
+      </section>
+      {linkOpen ? <Modal title={text("Liên kết tài khoản Microsoft", "Link Microsoft account")} onClose={() => { if (!linking) setLinkOpen(false); }}>
+        <form className="form-stack" onSubmit={linkMicrosoft}>
+          <label className="field"><span>{text("Mật khẩu CaseFlow hiện tại", "Current CaseFlow password")}</span>
+            <input type="password" autoComplete="current-password" value={linkPassword} onChange={(event) => setLinkPassword(event.target.value)} required />
+          </label>
+          <button className="button button-primary" disabled={linking}>{linking ? text("Đang kết nối…", "Connecting…") : text("Tiếp tục với Microsoft", "Continue with Microsoft")}</button>
+        </form>
+      </Modal> : null}
       <section className="panel profile-panel">
         <h2>{text("Hoạt động gần đây", "Recent activity")}</h2>
         {activity.error ? <ErrorState message={activity.error} onRetry={activity.reload} /> : null}

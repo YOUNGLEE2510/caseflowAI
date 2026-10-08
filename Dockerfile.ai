@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY apps/ai/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY apps/ai /app/apps/ai
+RUN useradd --create-home caseflow && mkdir -p /app/model-store && chown caseflow:caseflow /app/model-store
+ENV MODEL_DIR=/app/model-store
+USER caseflow
+EXPOSE 8001
+CMD ["python", "-m", "uvicorn", "apps.ai.app:app", "--host", "0.0.0.0", "--port", "8001"]

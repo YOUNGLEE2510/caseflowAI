@@ -1,24 +1,30 @@
 import { Router } from "express";
 import { z } from "zod";
-import { authenticate } from "../middleware/auth.js";
 import { KnowledgeArticle } from "../models.js";
 import { retrieveKnowledge } from "../services/aiClient.js";
 import { generationEnabled, groundedAnswer } from "../services/groundedAnswer.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
 
 export const knowledgeRouter = Router();
-knowledgeRouter.use(authenticate);
 knowledgeRouter.get("/knowledge/capabilities", (req, res) => {
   res.json({ generation: req.auth!.role !== "requester" && generationEnabled(req.auth!.organizationId) });
 });
 
 knowledgeRouter.get("/knowledge", async (req, res) => {
+  const published = {
+    status: "published",
+    effectiveAt: { $lte: new Date() },
+    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
+  };
+  const visibility = req.auth!.role === "requester"
+    ? published
+    : req.auth!.role === "agent"
+      ? { $or: [published, { authorId: req.auth!.id }] }
+      : {};
   const articles = await KnowledgeArticle.find({
     organizationId: req.auth!.organizationId,
     active: true,
-    ...(req.auth!.role === "requester"
-      ? { status: "published", effectiveAt: { $lte: new Date() }, $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] }
-      : {})
+    ...visibility
   })
     .sort({ updatedAt: -1 })
     .lean();

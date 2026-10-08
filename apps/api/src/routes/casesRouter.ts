@@ -1,8 +1,9 @@
 import { Router } from "express";
+import { publicUser, type PublicUserSource } from "../services/publicUser.js";
 import { randomUUID } from "node:crypto";
 import mongoose from "mongoose";
 import { z } from "zod";
-import { authenticate, requireRoles } from "../middleware/auth.js";
+import { requireRoles } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { validateObjectId } from "../middleware/validateId.js";
 import {
@@ -19,7 +20,7 @@ import {
   predictSla
 } from "../services/aiClient.js";
 import { auditFromReq, logAudit, notify, notifyMany } from "../services/helpers.js";
-import { canUseAiRouting, resolveAiReviewStatus } from "../services/routing.js";
+import { canUseAiRouting } from "../services/routing.js";
 import { caseScope, pageNumber, presentCase, validateStatusTransition } from "../services/casePolicy.js";
 import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 
@@ -30,12 +31,6 @@ interface LeanService {
   team: string;
   slaHours: number;
   requiredFields: string[];
-}
-
-interface LeanAssignee {
-  _id: mongoose.Types.ObjectId;
-  name: string;
-  team?: string;
 }
 
 function escapeRegex(input: string) {
@@ -49,6 +44,14 @@ function activeCaseFilter(organizationId: string) {
   };
 }
 
+function nextCaseCode() {
+  return `CF-${new Date().getFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`;
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: unknown }).code === 11000;
+}
+
 const intakeSchema = z.object({
   title: z.string().trim().max(160).optional(),
   description: z.string().trim().min(12).max(5_000),
@@ -59,7 +62,6 @@ const intakeSchema = z.object({
 });
 
 export const casesRouter = Router();
-casesRouter.use(authenticate);
 
 /* ── Dashboard ── */
 
@@ -82,7 +84,7 @@ casesRouter.get("/cases/counts", async (req, res) => {
 /* ── Case List ── */
 
 casesRouter.get("/cases", async (req, res) => {
-  const filter: any = { organizationId: req.auth!.organizationId };
+  const filter: any = caseScope(req.auth!);
   if (req.auth!.role === "requester" || req.query.mine === "true") {
     filter.requesterId = req.auth!.id;
   }
@@ -159,6 +161,9 @@ casesRouter.post("/ai/analyze-intake", async (req, res) => {
 
 casesRouter.post("/cases", async (req, res) => {
   const input = intakeSchema.parse(req.body);
+  if (req.auth!.role === "requester" && input.channel !== "portal") {
+    throw new HttpError(422, "Người gửi yêu cầu chỉ được sử dụng kênh cổng trực tuyến.");
+  }
   const [classification, openCases, organization] = await Promise.all([
     classifyText(`${input.title || ""}. ${input.description}`),
     CaseRecord.find({ ...activeCaseFilter(req.auth!.organizationId), ...caseScope(req.auth!) })
@@ -184,6 +189,10 @@ casesRouter.post("/cases", async (req, res) => {
     }).lean())) as LeanService | null;
 
   if (!service) throw new HttpError(422, "Tổ chức chưa cấu hình dịch vụ phù hợp.");
+  const allowedFields = new Set(service.requiredFields || []);
+  if (Object.keys(input.customFields).some((field) => !allowedFields.has(field))) {
+    throw new HttpError(422, "Thông tin bổ sung chứa trường không thuộc dịch vụ được chọn.");
+  }
   if (input.serviceKey && service.key !== input.serviceKey) throw new HttpError(422, "Dịch vụ được chọn không còn hoạt động.");
   for (const field of service.requiredFields || []) {
     if (!input.customFields[field]?.trim()) throw new HttpError(422, `Vui lòng bổ sung: ${field}.`);
@@ -221,9 +230,8 @@ casesRouter.post("/cases", async (req, res) => {
     classification.summary.split(/[.!?]/)[0]?.trim().slice(0, 120) ||
     "Yêu cầu hỗ trợ mới";
 
-  const record = await CaseRecord.create({
+  const casePayload = {
     organizationId: req.auth!.organizationId,
-    code: `CF-${new Date().getFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`,
     title,
     description: input.description,
     customFields: Object.fromEntries((service.requiredFields || []).map((field) => [field, input.customFields[field].trim()])),
@@ -242,6 +250,8 @@ casesRouter.post("/cases", async (req, res) => {
       classification: classification.label,
       confidence: classification.confidence,
       summary: classification.summary,
+      modelVersion: classification.modelVersion || `${classification.provider}-unversioned`,
+      extracted: classification.extracted,
       riskScore: sla.riskScore,
       riskFactors: sla.factors,
       similarCaseIds: similar.map((item) => item.id),
@@ -263,7 +273,17 @@ casesRouter.post("/cases", async (req, res) => {
         actorName: "CaseFlow AI"
       }
     ]
-  });
+  };
+
+  let record: any;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      record = (await CaseRecord.create({ ...casePayload, code: nextCaseCode() })) as any;
+      break;
+    } catch (error) {
+      if (!isDuplicateKeyError(error) || attempt === 2) throw error;
+    }
+  }
 
   await logAudit({
     ...auditFromReq(req),
@@ -301,10 +321,16 @@ casesRouter.post("/cases", async (req, res) => {
 /* ── Case Detail ── */
 
 casesRouter.get("/cases/:id", validateObjectId("id"), async (req, res) => {
-  const filter: any = { _id: req.params.id, organizationId: req.auth!.organizationId };
-  if (req.auth!.role === "requester") filter.requesterId = req.auth!.id;
-  const record = await CaseRecord.findOne(filter).lean();
+  const filter: any = { _id: req.params.id, ...caseScope(req.auth!) };
+  const record = await CaseRecord.findOne(filter).lean<any>();
   if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
+  await logAudit({
+    ...auditFromReq(req),
+    action: "case.view",
+    resource: "CaseRecord",
+    resourceId: String(record._id),
+    changes: { code: record.code }
+  }, req);
   res.json({ case: presentCase(record, req.auth!.role) });
 });
 
@@ -316,7 +342,10 @@ casesRouter.get(
   "/incidents",
   requireRoles("agent", "manager", "org_admin", "platform_admin"),
   async (req, res) => {
-    const incidents = await Incident.find({ organizationId: req.auth!.organizationId })
+    const incidents = await Incident.find({
+      organizationId: req.auth!.organizationId,
+      ...(req.auth!.role === "agent" ? { team: req.auth!.team } : {})
+    })
       .sort({ detectedAt: -1 })
       .populate("caseIds", "code title status priority")
       .lean();
@@ -346,8 +375,7 @@ casesRouter.get(
     const includeInactive = ["org_admin", "platform_admin"].includes(req.auth!.role) && req.query.includeInactive === "true";
     const users = await User.find({ organizationId: req.auth!.organizationId, ...(includeInactive ? {} : { active: true }) })
       .sort({ role: 1, name: 1 })
-      .lean();
-    const { publicUser } = await import("./authRoutes.js");
+      .lean<PublicUserSource[]>();
     res.json({ users: users.map((user) => publicUser(user)) });
   }
 );

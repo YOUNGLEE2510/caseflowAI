@@ -189,6 +189,50 @@
   margin-top: 16px;
 }
 
+.login-provider-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 12px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.login-provider-separator::before,
+.login-provider-separator::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--line-soft);
+}
+
+.login-google {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--ink-strong);
+  box-shadow: none;
+}
+
+.login-google:hover:not(:disabled) {
+  border-color: var(--ink-strong);
+  background: var(--canvas);
+}
+
+.google-mark {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #4285f4;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .login-security {
   margin-top: 40px;
   padding-top: 24px;

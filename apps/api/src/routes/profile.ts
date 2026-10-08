@@ -1,13 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { authenticate } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { User, AuditLog } from "../models.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
 
 export const profileRouter = Router();
-profileRouter.use(authenticate);
 
 profileRouter.get("/profile/activity", async (req, res) => {
   const activity = await AuditLog.find({ organizationId: req.auth!.organizationId, actorId: req.auth!.id })
@@ -33,7 +31,7 @@ profileRouter.get("/profile", async (req, res) => {
     _id: req.auth!.id,
     organizationId: req.auth!.organizationId,
     active: true
-  }).lean<any>();
+  }).select("+microsoftObjectId +microsoftTenantId").lean<any>();
   if (!user) throw new HttpError(404, "Không tìm thấy tài khoản.");
 
   res.json({
@@ -41,6 +39,7 @@ profileRouter.get("/profile", async (req, res) => {
       id: String(user._id),
       name: user.name,
       email: user.email,
+      microsoftLinked: Boolean(user.microsoftObjectId && user.microsoftTenantId),
       role: user.role,
       team: user.team,
       title: user.title,

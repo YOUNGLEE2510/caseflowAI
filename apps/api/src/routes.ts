@@ -33,13 +33,14 @@ apiRouter.use(authRouter);
 
 /* ── Authenticated sub-routers ── */
 
+apiRouter.use(authenticate);
 apiRouter.use(casesRouter);
 apiRouter.use(dashboardRouter);
 apiRouter.use(caseActionsRouter);
 apiRouter.use(knowledgeRouter);
 apiRouter.use(profileRouter);
 apiRouter.use(adminRouter);
-apiRouter.use("/notifications", authenticate, notificationRouter);
-apiRouter.use("/analytics", authenticate, analyticsRouter);
+apiRouter.use("/notifications", notificationRouter);
+apiRouter.use("/analytics", analyticsRouter);
 apiRouter.use(attachmentRouter);
-apiRouter.use("/system", authenticate, systemRouter);
+apiRouter.use("/system", systemRouter);

@@ -32,6 +32,7 @@ import { useApiData } from "../hooks/useApiData";
 import { AssignmentSuggestions } from "../components/AssignmentSuggestions";
 import { useLocale } from "../i18n";
 import type { Attachment, CaseRecord, CaseStatus, ServiceDefinition, User } from "../types";
+import { ReadMore } from "../components/ReadMore";
 
 const statusOptions: Array<{ value: CaseStatus; vi: string; en: string }> = [
   { value: "new", vi: "Mới", en: "New" },
@@ -326,7 +327,7 @@ export function CaseDetailPage() {
               </div>
               <span className="channel-label">{channelLabels[record.channel]?.[locale] || record.channel.replace("_", " ")}</span>
             </div>
-            <p>{record.description}</p>
+            <ReadMore text={record.description} limit={360} className="case-description-copy" />
             {Object.keys(record.customFields || {}).length ? <dl className="case-custom-fields">{Object.entries(record.customFields || {}).map(([field, value]) => <div key={field}><dt>{field}</dt><dd>{value}</dd></div>)}</dl> : null}
           </section>
 

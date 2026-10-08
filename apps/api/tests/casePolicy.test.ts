@@ -25,6 +25,10 @@ describe("case policy", () => {
     expect(String(scope.requesterId)).toBe("111111111111111111111111");
     expect(String(scope.organizationId)).toBe("222222222222222222222222");
   });
+  it("scopes agents to their assigned team", () => {
+    const scope = caseScope({ id: "111111111111111111111111", organizationId: "222222222222222222222222", role: "agent", team: "IT" } as Parameters<typeof caseScope>[0]);
+    expect(scope.team).toBe("IT");
+  });
   it("redacts internal content without mutating the record", () => {
     const record = { comments: [{ internal: true }, { internal: false }], events: [{ internal: true }], ai: { similarCaseIds: ["private"], suggestedResponse: "private" } };
     const visible = presentCase(record, "requester");

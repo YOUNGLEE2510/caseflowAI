@@ -16,10 +16,11 @@ export const STATUS_TRANSITIONS: Record<CaseStatus, CaseStatus[]> = {
 };
 
 export function caseScope(auth: AuthUser): Record<string, unknown> {
-  // Requester chỉ xem hồ sơ của mình, staff xem toàn bộ org
+  // Requester chỉ xem hồ sơ của mình; agent chỉ làm việc trong đơn vị được gán.
   return {
     organizationId: new mongoose.Types.ObjectId(auth.organizationId),
-    ...(auth.role === "requester" ? { requesterId: new mongoose.Types.ObjectId(auth.id) } : {})
+    ...(auth.role === "requester" ? { requesterId: new mongoose.Types.ObjectId(auth.id) } : {}),
+    ...(auth.role === "agent" ? { team: auth.team } : {})
   };
 }
 
@@ -31,7 +32,7 @@ export function presentCase(record: any, role: AuthUser["role"]) {
     // NOTE: lọc comment/event internal ở tầng present, không phải tầng query.
     // Nghĩa là DB vẫn trả hết, chỉ ẩn khi serialize cho requester.
     comments: (value.comments || []).filter((comment: any) => !comment.internal),
-    events: (value.events || []).filter((event: any) => !event.internal && event.label !== "Đã thêm ghi chú nội bộ"),
+    events: (value.events || []).filter((event: any) => !event.internal),
     ai: { ...value.ai, similarCaseIds: [], suggestedResponse: "" }
   };
 }

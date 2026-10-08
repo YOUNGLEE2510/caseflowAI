@@ -11,7 +11,11 @@ const attachmentSchema = new Schema(
     originalName: { type: String, required: true },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true },
-    storagePath: { type: String, required: true }
+    storagePath: { type: String },
+    storageProvider: { type: String, enum: ["local", "s3"], default: "local" },
+    objectKey: { type: String },
+    scanStatus: { type: String, enum: ["clean", "not_scanned"], default: "not_scanned" },
+    scannedAt: { type: Date, default: null }
   },
   { timestamps: true }
 );

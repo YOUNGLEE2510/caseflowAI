@@ -9,6 +9,15 @@ from ..schemas import KnowledgeRequest
 
 router = APIRouter()
 
+# These high-frequency Vietnamese function words otherwise create weak matches
+# for out-of-domain queries (for example, a question only sharing "trường").
+VIETNAMESE_STOP_WORDS = frozenset({
+    "ai", "bằng", "cho", "có", "của", "các", "cần", "đã", "để", "đó", "được",
+    "em", "gì", "khi", "không", "là", "một", "nào", "này", "như", "ở", "quy",
+    "sau", "sẽ", "sinh", "tác", "thì", "theo", "tôi", "trong", "trường", "và", "về", "với",
+    "xin", "yêu", "định", "đến",
+})
+
 
 def passages(content: str, limit: int = 650) -> list[str]:
     paragraphs = [" ".join(part.split()) for part in re.split(r"\n\s*\n", content) if part.strip()]
@@ -41,7 +50,12 @@ def index_articles(articles: tuple[tuple[str, str, str, str, str], ...]):
         entries.extend((article_id, title, category, source_label, part, False) for part in passages(content))
     if not entries:
         return None
-    vectorizer = TfidfVectorizer(lowercase=True, ngram_range=(1, 2), sublinear_tf=True)
+    vectorizer = TfidfVectorizer(
+        lowercase=True,
+        ngram_range=(1, 2),
+        stop_words=list(VIETNAMESE_STOP_WORDS),
+        sublinear_tf=True,
+    )
     corpus = [f"{title}. {category}. {part}" if is_title else part
               for _, title, category, _, part, is_title in entries]
     if not any(vectorizer.build_analyzer()(value) for value in corpus):

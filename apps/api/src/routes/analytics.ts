@@ -1,12 +1,21 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { requireRoles } from "../middleware/auth.js";
+import { HttpError } from "../middleware/error.js";
 import { AuditLog, CaseRecord, Incident, Organization, ServiceDefinition, SLASnapshot } from "../models.js";
 import { pageNumber } from "../services/casePolicy.js";
 import { buildReviewedTrainingCsv, type ReviewedCase } from "../services/trainingDataset.js";
 import { addBusinessHours, businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
+import { auditFromReq, logAudit } from "../services/helpers.js";
 
 export const analyticsRouter = Router();
+
+function csvCell(value: unknown) {
+  let cell = value === null || value === undefined ? "" : String(value);
+  // Prevent spreadsheet applications from evaluating user-controlled values as formulas.
+  if (/^[\t\r ]*[=+\-@]/.test(cell)) cell = `'${cell}`;
+  return `"${cell.replace(/"/g, '""')}"`;
+}
 
 /* ═══════════════════════════════════════════════
    TREND: Hồ sơ mới theo ngày (30 ngày gần nhất)
@@ -66,19 +75,20 @@ analyticsRouter.get(
       Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean(),
       ServiceDefinition.find({ organizationId, active: true }).select("key slaHours").lean(),
       CaseRecord.find({ organizationId, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: since } })
-        .select("team serviceKey createdAt dueAt resolvedAt")
+        .select("team serviceKey createdAt slaStartedAt dueAt resolvedAt")
         .lean()
     ]);
     const calendar = organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings);
     const slaHoursByService = new Map((services as unknown as Array<{ key: string; slaHours: number }>).map((service) => [service.key, service.slaHours]));
     const grouped = new Map<string, { total: number; breached: number; onTime: number; durationHours: number }>();
-    for (const row of resolvedRows as unknown as Array<{ team: string; serviceKey: string; createdAt: Date; dueAt: Date; resolvedAt: Date | null }>) {
+    for (const row of resolvedRows as unknown as Array<{ team: string; serviceKey: string; createdAt: Date; slaStartedAt?: Date; dueAt: Date; resolvedAt: Date | null }>) {
       if (!row.resolvedAt) continue;
       const configuredHours = slaHoursByService.get(row.serviceKey);
-      const dueAt = configuredHours === undefined ? new Date(row.dueAt) : addBusinessHours(new Date(row.createdAt), configuredHours, calendar);
+      const slaStart = new Date(row.slaStartedAt || row.createdAt);
+      const dueAt = configuredHours === undefined ? new Date(row.dueAt) : addBusinessHours(slaStart, configuredHours, calendar);
       const item = grouped.get(row.team) || { total: 0, breached: 0, onTime: 0, durationHours: 0 };
       item.total += 1;
-      item.durationHours += businessHoursBetween(new Date(row.createdAt), new Date(row.resolvedAt), calendar);
+      item.durationHours += businessHoursBetween(slaStart, new Date(row.resolvedAt), calendar);
       if (new Date(row.resolvedAt) > dueAt) item.breached += 1;
       else item.onTime += 1;
       grouped.set(row.team, item);
@@ -325,14 +335,22 @@ analyticsRouter.get(
     const filter: Record<string, unknown> = { organizationId: req.auth!.organizationId };
     if (typeof req.query.action === "string") filter.action = req.query.action;
     if (typeof req.query.resource === "string") filter.resource = req.query.resource;
-    if (typeof req.query.actorId === "string") filter.actorId = req.query.actorId;
+    if (typeof req.query.actorId === "string") {
+      if (!mongoose.isValidObjectId(req.query.actorId)) throw new HttpError(400, "Mã người dùng không hợp lệ.");
+      filter.actorId = new mongoose.Types.ObjectId(req.query.actorId);
+    }
 
     const page = pageNumber(req.query.page, 1, 100000);
     const limit = pageNumber(req.query.limit, 25, 100);
     const skip = (page - 1) * limit;
 
     const [logs, total] = await Promise.all([
-      AuditLog.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      AuditLog.find(filter)
+        .select("actorName actorRole action resource resourceId changes createdAt")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       AuditLog.countDocuments(filter)
     ]);
 
@@ -359,7 +377,7 @@ analyticsRouter.get(
     ];
     const rows = cases.map((c: any) => [
       c.code,
-      `"${(c.title || "").replace(/"/g, '""')}"`,
+      c.title,
       c.status,
       c.priority,
       c.serviceKey,
@@ -374,8 +392,9 @@ analyticsRouter.get(
       c.resolvedAt?.toISOString?.() || ""
     ]);
 
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const csv = [headers.map(csvCell).join(","), ...rows.map((row) => row.map(csvCell).join(","))].join("\n");
     const bom = "\uFEFF";
+    await logAudit({ ...auditFromReq(req), action: "case.export", resource: "CaseRecord", changes: { rows: cases.length, format: "csv" } }, req);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="caseflow-export-${new Date().toISOString().slice(0, 10)}.csv"`);
     res.send(bom + csv);
@@ -399,6 +418,7 @@ analyticsRouter.get(
       .lean();
 
     const csv = buildReviewedTrainingCsv(cases as unknown as ReviewedCase[]);
+    await logAudit({ ...auditFromReq(req), action: "ai.training_export", resource: "CaseRecord", changes: { rows: cases.length, format: "csv", humanReviewedOnly: true } }, req);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="caseflow-reviewed-training-${new Date().toISOString().slice(0, 10)}.csv"`);
     res.send(csv);

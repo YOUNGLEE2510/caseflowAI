@@ -420,7 +420,7 @@
   gap: 9px;
 }
 
-.user-summary > span {
+.user-summary > span:not(.avatar) {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1942,7 +1942,7 @@
   gap: 9px;
 }
 
-.member-cell > span {
+.member-cell > span:not(.avatar) {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -2048,7 +2048,7 @@
   }
 
   .topbar-title span,
-  .user-summary > span {
+  .user-summary > span:not(.avatar) {
     display: none;
   }
 

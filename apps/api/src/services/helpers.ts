@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import { config } from "../config.js";
 import { AuditLog, Notification } from "../models.js";
 import type { UserRole } from "../models.js";
 
@@ -19,7 +20,8 @@ export async function logAudit(entry: AuditEntry, req?: Request) {
   try {
     await AuditLog.create({
       ...entry,
-      ip: req?.ip || req?.headers["x-forwarded-for"] || "",
+      expiresAt: config.AUDIT_RETENTION_DAYS > 0 ? new Date(Date.now() + config.AUDIT_RETENTION_DAYS * 86400_000) : null,
+      ip: req?.ip || "",
       userAgent: req?.headers["user-agent"] || ""
     });
   } catch (error) {

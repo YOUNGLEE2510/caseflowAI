@@ -8,12 +8,12 @@ import { useLocale } from "../i18n";
 import type { ServiceDefinition } from "../types";
 
 const classificationHints: Record<string, { vi: string; en: string }> = {
-  access_account: { vi: "đăng nhập, mật khẩu, email xác thực, tài khoản, cổng sinh viên", en: "sign in, password, verification email, account, student portal" },
-  academic_support: { vi: "học phần, lịch học, đăng ký môn, cố vấn học tập, thực tập", en: "course, class schedule, enrollment, academic advising, internship" },
-  student_finance: { vi: "học phí, công nợ, giao dịch, hóa đơn, miễn giảm", en: "tuition, balance, transaction, invoice, fee waiver" },
+  it_access: { vi: "đăng nhập, mật khẩu, email xác thực, tài khoản, Wi-Fi, cổng sinh viên", en: "sign in, password, verification email, account, Wi-Fi, student portal" },
+  academic_records: { vi: "học phần, lịch học, đăng ký môn, bảng điểm, điều kiện tốt nghiệp", en: "course, class schedule, enrollment, transcript, graduation requirements" },
   student_services: { vi: "thẻ sinh viên, giấy xác nhận, hỗ trợ đời sống, thủ tục", en: "student card, confirmation letter, wellbeing support, procedure" },
   facilities: { vi: "phòng học, thiết bị, cơ sở vật chất, điện, mạng", en: "classroom, equipment, facilities, electricity, network" },
-  examination: { vi: "lịch thi, phòng thi, điểm thi, phúc khảo, khảo thí", en: "exam schedule, exam room, grade, review, assessment" }
+  finance: { vi: "học phí, công nợ, giao dịch, hóa đơn, miễn giảm", en: "tuition, balance, transaction, invoice, fee waiver" },
+  general_support: { vi: "hỗ trợ chung, phản ánh, tư vấn, chưa xác định đơn vị phụ trách", en: "general support, feedback, guidance, unassigned service request" }
 };
 
 export function ServicesPage() {

@@ -71,7 +71,7 @@ Mỗi lần tạo, phân loại, giao người xử lý, đổi trạng thái ho
 ## Quyết định phạm vi
 
 - Bản demo seed một tổ chức, nhưng đăng nhập và mọi truy vấn nghiệp vụ đã được giới hạn theo mã tổ chức và `organizationId`.
-- Chưa có email gateway, SSO và background queue. Tệp đang lưu trên ổ đĩa cục bộ cho POC; kênh email/điện thoại hiện được nhân viên ghi nhận trên cùng form.
+- Có Google OAuth cho tài khoản đã provision sẵn; SSO cấp trường theo SAML/OIDC và email gateway vẫn là phạm vi triển khai tiếp theo. Tệp đang lưu trên ổ đĩa cục bộ cho POC; kênh email/điện thoại hiện được nhân viên ghi nhận trên cùng form.
 - AI chỉ đề xuất dịch vụ và đội xử lý. Hồ sơ ở trạng thái `new` cho đến khi nhân viên xác nhận hoặc sửa phân loại; quyết định cuối được lưu để audit và tạo dữ liệu huấn luyện lại.
 - Incident hiện có dữ liệu mẫu và tín hiệu cụm; job phát hiện tự động theo cửa sổ thời gian là bước nghiên cứu tiếp theo.
 - Timeline đang nằm trong hồ sơ để demo dễ hiểu. Khi tải lớn, nên tách thành collection append-only và thêm audit log bất biến.

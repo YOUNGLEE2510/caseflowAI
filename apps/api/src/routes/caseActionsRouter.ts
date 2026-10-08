@@ -1,18 +1,35 @@
 import { Router, type Request } from "express";
 import mongoose from "mongoose";
 import { z } from "zod";
-import { authenticate, requireRoles } from "../middleware/auth.js";
+import { requireRoles } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { validateObjectId } from "../middleware/validateId.js";
 import { CaseRecord, Organization, ServiceDefinition, User } from "../models.js";
 import { auditFromReq, logAudit, notify } from "../services/helpers.js";
 import { resolveAiReviewStatus } from "../services/routing.js";
-import { presentCase, validateStatusTransition } from "../services/casePolicy.js";
+import { caseScope, presentCase, validateStatusTransition } from "../services/casePolicy.js";
 import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 export const caseActionsRouter = Router();
-caseActionsRouter.use(authenticate);
+
+async function restartSla(record: any) {
+  const [service, organization] = await Promise.all([
+    ServiceDefinition.findOne({ organizationId: record.organizationId, key: record.serviceKey }).lean<LeanService>(),
+    Organization.findById(record.organizationId).select("settings.holidayDates").lean()
+  ]);
+  if (!service) throw new HttpError(422, "Dịch vụ của hồ sơ không còn tồn tại.");
+  const now = new Date();
+  record.slaStartedAt = now;
+  record.dueAt = addBusinessHours(now, service.slaHours, organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings));
+  record.slaBreached = false;
+  record.slaBreachedAt = null;
+  record.ai.riskScore = 0;
+  record.ai.riskFactors = [];
+  record.satisfaction = null;
+  record.satisfactionComment = "";
+  record.satisfactionAt = null;
+}
 caseActionsRouter.get("/cases/:id/assignment-options", validateObjectId("id"), requireRoles("agent", "manager", "org_admin", "platform_admin"), async (req, res) => {
-  const record = await CaseRecord.findOne({ _id: req.params.id, organizationId: req.auth!.organizationId }).lean<{ team: string; serviceKey: string; category: string }>();
+  const record = await CaseRecord.findOne({ _id: req.params.id, ...caseScope(req.auth!) }).lean<{ team: string; serviceKey: string; category: string }>();
   if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
   const [agents, workloads] = await Promise.all([
     User.find({ organizationId: req.auth!.organizationId, role: "agent", active: true, team: record.team })
@@ -67,10 +84,7 @@ caseActionsRouter.patch(
   requireRoles("agent", "manager", "org_admin", "platform_admin"),
   async (req, res) => {
     const input = updateCaseSchema.parse(req.body);
-    const record = await CaseRecord.findOne({
-      _id: req.params.id,
-      organizationId: req.auth!.organizationId
-    });
+    const record = await CaseRecord.findOne({ _id: req.params.id, ...caseScope(req.auth!) });
     if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
 
     if (["resolved", "closed"].includes(record.status) && (input.serviceKey || input.assigneeId !== undefined || input.team)) throw new HttpError(422, "Hãy mở lại hồ sơ trước khi đổi phân công hoặc dịch vụ.");
@@ -102,6 +116,9 @@ caseActionsRouter.patch(
         active: true
       }).lean<LeanService>();
       if (!service) throw new HttpError(422, "Dịch vụ được chọn không hợp lệ.");
+      if (req.auth!.role === "agent" && service.team !== req.auth!.team) {
+        throw new HttpError(403, "Nhân viên chỉ có thể phân luồng hồ sơ trong đơn vị phụ trách.");
+      }
 
       if (record.status !== "new" && record.team !== service.team) record.transferCount += 1;
       if (record.team !== service.team) {
@@ -114,7 +131,7 @@ caseActionsRouter.patch(
       record.team = service.team;
       const organization = await Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean();
       record.dueAt = addBusinessHours(
-        record.createdAt,
+        record.slaStartedAt || record.createdAt,
         service.slaHours,
         organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings)
       );
@@ -156,6 +173,7 @@ caseActionsRouter.patch(
       validateStatusTransition(record.status, input.status, record.ai.reviewStatus !== "pending", Boolean(record.assigneeId));
       events.push({ type: "status_changed", label: `Chuyển trạng thái từ ${record.status} sang ${input.status}`, actorId: req.auth!.id, actorName: req.auth!.name });
       if (["resolved", "closed"].includes(record.status) && input.status === "in_progress") {
+        await restartSla(record);
         record.resolvedAt = null;
         record.closedAt = null;
         record.reopenCount += 1;
@@ -252,6 +270,7 @@ caseActionsRouter.post("/cases/:id/close", validateObjectId("id"), requireRoles(
 caseActionsRouter.post("/cases/:id/reopen", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
   const record = await requesterCase(req);
   if (!(["resolved", "closed"] as string[]).includes(record.status)) throw new HttpError(422, "Chỉ có thể mở lại hồ sơ đã được giải quyết hoặc đóng.");
+  await restartSla(record);
   record.status = "in_progress";
   record.resolvedAt = null;
   record.closedAt = null;
@@ -275,8 +294,7 @@ caseActionsRouter.post("/cases/:id/comments", validateObjectId("id"), async (req
   if (input.internal && req.auth!.role === "requester") {
     throw new HttpError(403, "Người yêu cầu không thể tạo ghi chú nội bộ.");
   }
-  const filter: any = { _id: req.params.id, organizationId: req.auth!.organizationId };
-  if (req.auth!.role === "requester") filter.requesterId = req.auth!.id;
+  const filter: any = { _id: req.params.id, ...caseScope(req.auth!) };
   const record = await CaseRecord.findOne(filter);
   if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
 

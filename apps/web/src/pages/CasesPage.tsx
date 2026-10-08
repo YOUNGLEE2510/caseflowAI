@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Filter, Plus, Search } from "lucide-react";
+import { Columns3, Filter, List, Plus, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 import {
@@ -15,6 +15,7 @@ import {
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { CaseRecord, CaseStatus } from "../types";
+import { CaseKanbanBoard } from "../components/CaseKanbanBoard";
 
 const statusTabs: Array<{ value: string; vi: string; en: string }> = [
   { value: "all", vi: "Tất cả", en: "All" },
@@ -26,15 +27,24 @@ const statusTabs: Array<{ value: string; vi: string; en: string }> = [
   { value: "closed", vi: "Đã đóng", en: "Closed" }
 ];
 
+const queueLabels: Record<string, { vi: string; en: string }> = {
+  unassigned: { vi: "Chưa phân công", en: "Unassigned" },
+  assigned: { vi: "Giao cho tôi", en: "Assigned to me" },
+  overdue: { vi: "Quá hạn", en: "Overdue" },
+  due_soon: { vi: "Đến hạn trong 24 giờ", en: "Due within 24 hours" }
+};
+
 export function CasesPage() {
   const { user } = useAuth();
-  const { text } = useLocale();
+  const { locale, text } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get("status") || "all";
   const priority = searchParams.get("priority") || "all";
   const search = searchParams.get("search") || "";
   const page = searchParams.get("page") || "1";
   const queue = user?.role === "requester" ? "all" : searchParams.get("queue") || "all";
+  const canUseBoard = user?.role !== "requester";
+  const [viewMode, setViewMode] = useState<"table" | "board">("table");
   const [searchInput, setSearchInput] = useState(search);
   useEffect(() => setSearchInput(search), [search]);
   const path = useMemo(() => {
@@ -43,10 +53,18 @@ export function CasesPage() {
     params.set("priority", priority);
     params.set("page", page);
     params.set("queue", queue);
+    params.set("limit", viewMode === "board" ? "50" : "8");
     if (search) params.set("search", search);
     if (user?.role === "requester") params.set("mine", "true");
     return `/cases?${params.toString()}`;
-  }, [status, priority, search, page, queue, user?.role]);
+  }, [status, priority, search, page, queue, user?.role, viewMode]);
+
+  function setCaseView(nextMode: "table" | "board") {
+    setViewMode(nextMode);
+    const next = new URLSearchParams(searchParams);
+    next.delete("page");
+    setSearchParams(next);
+  }
   const { data, loading, error, reload } = useApiData<{ cases: CaseRecord[]; page: number; total: number; limit: number; totalPages: number }>(path);
 
   function updateFilter(key: string, value: string) {
@@ -57,6 +75,20 @@ export function CasesPage() {
     setSearchParams(next);
   }
 
+  function clearFilters() {
+    const next = new URLSearchParams(searchParams);
+    ["status", "priority", "search", "queue", "page"].forEach((key) => next.delete(key));
+    setSearchInput("");
+    setSearchParams(next);
+  }
+
+  const activeFilters = [
+    status !== "all" ? { key: "status", label: statusTabs.find((item) => item.value === status)?.[locale === "vi" ? "vi" : "en"] || status } : null,
+    priority !== "all" ? { key: "priority", label: text(`Ưu tiên: ${priority}`, `Priority: ${priority}`) } : null,
+    search ? { key: "search", label: text(`Tìm: ${search}`, `Search: ${search}`) } : null,
+    queue !== "all" && queueLabels[queue] ? { key: "queue", label: text(queueLabels[queue].vi, queueLabels[queue].en) } : null
+  ].filter((filter): filter is { key: string; label: string } => Boolean(filter));
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -66,12 +98,30 @@ export function CasesPage() {
             ? text("Theo dõi tiến độ và phản hồi từ đơn vị xử lý.", "Follow progress and responses from the service team.")
             : text("Tiếp nhận, ưu tiên và điều phối công việc theo SLA.", "Review, prioritize and route work against SLA commitments.")
         }
-        actions={
+        actions={<div className="page-actions case-page-actions">
+          {canUseBoard ? <div className="view-switcher" role="group" aria-label={text("Chế độ xem hồ sơ", "Case view mode")}>
+            <button
+              className={`icon-button ${viewMode === "table" ? "active" : ""}`}
+              type="button"
+              onClick={() => setCaseView("table")}
+              title={text("Dạng bảng", "Table view")}
+              aria-label={text("Dạng bảng", "Table view")}
+              aria-pressed={viewMode === "table"}
+            ><List size={17} /></button>
+            <button
+              className={`icon-button ${viewMode === "board" ? "active" : ""}`}
+              type="button"
+              onClick={() => setCaseView("board")}
+              title={text("Dạng Kanban", "Kanban view")}
+              aria-label={text("Dạng Kanban", "Kanban view")}
+              aria-pressed={viewMode === "board"}
+            ><Columns3 size={17} /></button>
+          </div> : null}
           <Link to="/cases/new" className="button button-primary">
             <Plus size={17} />
             {text("Tạo yêu cầu", "New request")}
           </Link>
-        }
+        </div>}
       />
 
       <section className="filter-panel">
@@ -124,11 +174,24 @@ export function CasesPage() {
             </button>
           ))}
         </div>
+        {activeFilters.length ? <div className="active-filter-row" aria-label={text("Bộ lọc đang áp dụng", "Applied filters")}>
+          {activeFilters.map((filter) => (
+            <button key={filter.key} type="button" className="active-filter-chip" onClick={() => updateFilter(filter.key, "")}>
+              <span>{filter.label}</span><X size={13} />
+            </button>
+          ))}
+          <button type="button" className="clear-filter-button" onClick={clearFilters}>{text("Xóa bộ lọc", "Clear filters")}</button>
+        </div> : null}
       </section>
 
       {loading ? <LoadingState label={text("Đang tải hàng đợi hồ sơ", "Loading case queue")} /> : null}
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
-      {!loading && !error && data ? (
+      {!loading && !error && data && viewMode === "board" ? (
+        data.cases.length ? <CaseKanbanBoard cases={data.cases} /> : (
+          <EmptyState title={text("Không có hồ sơ phù hợp", "No matching cases")} detail={text("Thay đổi bộ lọc để xem hàng đợi khác.", "Adjust the filters to view another queue.")} />
+        )
+      ) : null}
+      {!loading && !error && data && viewMode === "table" ? (
         <section className="panel table-panel">
           <div className="table-summary">
             <strong>{text(`${data.total} hồ sơ`, `${data.total} cases`)}</strong>

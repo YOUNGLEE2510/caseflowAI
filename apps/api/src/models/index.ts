@@ -12,3 +12,6 @@ export { AIModel } from "./ai-model.js";
 export { SLASnapshot } from "./sla-snapshot.js";
 export { CircuitBreakerState } from "./circuit-breaker.js";
 export { PasswordResetToken } from "./password-reset-token.js";
+export { OAuthLoginTicket } from "./oauth-login-ticket.js";
+export { JobLease } from "./job-lease.js";
+export { RefreshSession } from "./refresh-session.js";

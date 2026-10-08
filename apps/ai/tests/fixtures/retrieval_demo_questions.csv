@@ -1,0 +1,16 @@
+id,query,expected_ids,answerable
+rq-01,Quên mật khẩu SIS thì làm như thế nào?,kb-it-password,true
+rq-02,Không nhận được email đặt lại mật khẩu tài khoản,kb-it-password,true
+rq-03,Sau khi đổi mật khẩu tôi không vào được eduroam,kb-it-wifi,true
+rq-04,WiFi ở tòa nhà A không kết nối được,kb-it-wifi,true
+rq-05,Tôi muốn xin bảng điểm điện tử,kb-academic-transcript,true
+rq-06,Cách đăng ký giấy xác nhận đang là sinh viên,kb-academic-transcript,true
+rq-07,Điểm học phần của tôi bị sai và muốn phúc khảo,kb-academic-exam,true
+rq-08,Xem lịch thi cuối kỳ ở đâu?,kb-academic-exam,true
+rq-09,Đã chuyển học phí nhưng hệ thống vẫn báo chưa thanh toán,kb-finance-tuition,true
+rq-10,Cần nộp mã giao dịch để tài chính kiểm tra học phí,kb-finance-tuition,true
+rq-11,Thẻ sinh viên bị mất cần cấp lại,kb-student-card,true
+rq-12,Quạt phòng học bị hỏng thì gửi cho ai?,kb-facilities-room,true
+rq-13,Nhạc cụ xylophone có bao nhiêu phím?,,false
+rq-14,Sao Hỏa có bao nhiêu vệ tinh?,,false
+rq-15,Tác phẩm của Monet thuộc trường phái nào?,,false

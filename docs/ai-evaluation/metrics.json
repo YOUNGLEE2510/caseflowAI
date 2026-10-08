@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-18T10:00:16.706636+00:00",
+    "generatedAt": "2026-09-22T09:04:42.550130+00:00",
     "dataset": "E:\\Do_An_Tot_Nghiep\\apps\\ai\\tests\\fixtures\\evaluation_demo.csv",
     "datasetKind": "demo_holdout",
     "trainingSamples": 60,

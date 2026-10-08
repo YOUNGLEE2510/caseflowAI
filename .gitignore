@@ -15,7 +15,7 @@ playwright-report/
 uploads/
 models/*.joblib
 
-# Artifacts, exports, temp — không cần trên repo
+# Local artifacts, exports and temporary files
 artifacts/
 exports/
 tmp/
@@ -27,3 +27,6 @@ scripts/
 
 # Generated docs
 *.pdf
+*.tsbuildinfo
+apps/web/vite.config.js
+apps/web/vite.config.d.ts

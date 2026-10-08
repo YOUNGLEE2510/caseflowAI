@@ -8,6 +8,11 @@ import { auditFromReq, logAudit, notify } from "../services/helpers.js";
 
 export const adminRouter = Router();
 
+const passwordSchema = z.string()
+  .min(10)
+  .max(128)
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Mật khẩu không được vượt quá 72 byte.");
+
 /* ═══════════════════════════════════════════════
    SERVICE DEFINITION CRUD
    ═══════════════════════════════════════════════ */
@@ -110,7 +115,7 @@ adminRouter.delete(
 const createUserSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().email(),
-  password: z.string().min(10).max(128),
+  password: passwordSchema,
   role: z.enum(["requester", "agent", "manager", "org_admin"]),
   team: z.string().trim().max(60).default(""),
   title: z.string().trim().max(100).default(""),
@@ -192,7 +197,7 @@ adminRouter.patch(
     }
     const user = await User.findOneAndUpdate(
       { _id: req.params.id, organizationId: req.auth!.organizationId },
-      { $set: input, $inc: { tokenVersion: 1 } },
+      { $set: input, ...((nextRole !== current.role || nextTeam !== current.team || (input.active !== undefined && input.active !== current.active)) ? { $inc: { tokenVersion: 1 } } : {}) },
       { new: true, runValidators: true }
     );
     if (!user) throw new HttpError(404, "Không tìm thấy người dùng.");
@@ -224,7 +229,7 @@ adminRouter.patch(
   "/users/:id/password",
   requireRoles("org_admin", "platform_admin"),
   async (req, res) => {
-    const input = z.object({ password: z.string().min(10).max(128) }).parse(req.body);
+    const input = z.object({ password: passwordSchema }).parse(req.body);
     const current = await User.findOne({ _id: req.params.id, organizationId: req.auth!.organizationId }).lean<any>();
     if (!current) throw new HttpError(404, "Không tìm thấy người dùng.");
     if (current.role === "platform_admin" || (current.role === "org_admin" && req.auth!.role !== "platform_admin" && req.auth!.id !== String(current._id))) throw new HttpError(403, "Không được đặt lại mật khẩu của quản trị viên khác.");
@@ -290,11 +295,20 @@ adminRouter.patch(
     const input = updateArticleSchema.parse(req.body);
     const current = await KnowledgeArticle.findOne({ _id: req.params.id, organizationId: req.auth!.organizationId }).lean<any>();
     if (!current) throw new HttpError(404, "Không tìm thấy tài liệu.");
-    if (req.auth!.role === "agent" && (String(current.authorId) !== req.auth!.id || input.status === "published")) throw new HttpError(403, "Chỉ được sửa bản nháp của mình; quản lý thực hiện phê duyệt.");
-    const status = input.status || "draft";
+    if (req.auth!.role === "agent" && (String(current.authorId) !== req.auth!.id || current.status !== "draft" || input.status === "published")) throw new HttpError(403, "Chỉ được sửa bản nháp của mình; quản lý thực hiện phê duyệt.");
+    const status = input.status ?? current.status;
+    const isPublishing = input.status === "published" && current.status !== "published";
+    const isUnpublishing = input.status === "draft" && current.status !== "draft";
     const article = await KnowledgeArticle.findOneAndUpdate(
       { _id: req.params.id, organizationId: req.auth!.organizationId },
-      { $set: { ...input, status, reviewedByName: status === "published" ? req.auth!.name : "", reviewedAt: status === "published" ? new Date() : null } },
+      {
+        $set: {
+          ...input,
+          status,
+          reviewedByName: isPublishing ? req.auth!.name : isUnpublishing ? "" : current.reviewedByName,
+          reviewedAt: isPublishing ? new Date() : isUnpublishing ? null : current.reviewedAt
+        }
+      },
       { new: true, runValidators: true }
     );
     if (!article) throw new HttpError(404, "Không tìm thấy tài liệu.");

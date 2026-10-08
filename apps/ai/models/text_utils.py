@@ -19,8 +19,8 @@ def extract_entities(text: str) -> dict[str, str]:
     """
     extracted: dict[str, str] = {}
 
-    # Mã sinh viên: SV/CT/IT + 6-10 chữ số, hoặc chỉ 6-10 chữ số
-    student_id = re.search(r"\b(?:SV|CT|IT)?\d{6,10}\b", text, re.IGNORECASE)
+    # Chỉ nhận mã có tiền tố rõ ràng để không nhầm số điện thoại, mã hồ sơ hay số giao dịch.
+    student_id = re.search(r"\b(?:MSSV|MSV|SV|CT|IT)\s*[:#-]?\s*\d{6,10}\b", text, re.IGNORECASE)
 
     # Phòng học: ví dụ A1-302, B2.105, Đ3-01
     room = re.search(r"\b[A-ZĐ]\d{1,2}[-.]?\d{2,4}\b", text, re.IGNORECASE)

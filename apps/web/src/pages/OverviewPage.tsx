@@ -24,6 +24,8 @@ import {
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { CaseRecord, DashboardData } from "../types";
+import { OperationsProgress } from "../components/OperationsProgress";
+import { SystemAlert } from "../components/SystemAlert";
 
 const DashboardCharts = lazy(async () => ({ default: (await import("../components/DashboardCharts")).DashboardCharts }));
 
@@ -149,6 +151,8 @@ export function OverviewPage() {
     }
   ];
   const priorityCases = uniqueCases(data.highRiskCases, data.recentCases);
+  const canSeeAnalytics = Boolean(user && ["manager", "org_admin", "platform_admin"].includes(user.role));
+  const atRiskPercentage = data.metrics.open ? (data.metrics.atRisk / data.metrics.open) * 100 : 0;
 
   return (
     <div className="page-stack operations-overview">
@@ -183,6 +187,32 @@ export function OverviewPage() {
           );
         })}
       </section>
+
+      {data.metrics.atRisk || data.metrics.activeIncidents ? (
+        <section className="system-alert-grid" aria-label={text("Cảnh báo vận hành", "Operational alerts")}>
+          {data.metrics.atRisk ? (
+            <Link to="/cases?queue=overdue" className="system-alert-link">
+              <SystemAlert
+                type="warning"
+                title={text(`${data.metrics.atRisk} hồ sơ có nguy cơ trễ SLA`, `${data.metrics.atRisk} cases at SLA risk`)}
+                detail={text("Mở hàng đợi quá hạn để ưu tiên xử lý.", "Open the overdue queue to prioritize work.")}
+                progress={atRiskPercentage}
+              />
+            </Link>
+          ) : null}
+          {data.metrics.activeIncidents ? (
+            <Link to="/incidents" className="system-alert-link">
+              <SystemAlert
+                type="breach"
+                title={text(`${data.metrics.activeIncidents} sự cố đang mở`, `${data.metrics.activeIncidents} active incidents`)}
+                detail={text("Kiểm tra mức độ ảnh hưởng và tiến độ khắc phục.", "Review impact and mitigation progress.")}
+              />
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
+
+      {canSeeAnalytics ? <OperationsProgress /> : null}
 
       <nav className="work-queue-shortcuts" aria-label={text("Hàng đợi nhanh", "Quick queues")}>
         <Link to="/cases?status=new"><Inbox size={18} /><span>{text("Chờ tiếp nhận", "Awaiting triage")}</span><ArrowRight size={16} /></Link>

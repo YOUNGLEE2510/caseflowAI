@@ -34,6 +34,8 @@ interface AuditLogItem {
   actorRole: string;
   action: string;
   resource: string;
+  resourceId?: string;
+  changes?: { code?: string; filename?: string; caseId?: string } | null;
   createdAt: string;
 }
 
@@ -62,14 +64,17 @@ const AUDIT_RESOURCES = [
   "Incident"
 ];
 
+const SECURITY_ACTIONS = ["auth.login", "auth.logout", "case.view", "attachment.download"];
+
 export function SystemPage() {
   const { text } = useLocale();
   const [page, setPage] = useState(1);
   const [resource, setResource] = useState("");
+  const [action, setAction] = useState("");
 
   const status = useApiData<SystemStatus>("/system/status");
   const audit = useApiData<AuditPage>(
-    `/analytics/audit-log?page=${page}${resource ? `&resource=${resource}` : ""}`
+    `/analytics/audit-log?page=${page}${resource ? `&resource=${resource}` : ""}${action ? `&action=${action}` : ""}`
   );
   const reviews = useApiData<ReviewMetrics>("/analytics/ai-accuracy");
 
@@ -195,7 +200,7 @@ export function SystemPage() {
 
       <section className="table-panel">
         <div className="panel-heading">
-          <h2>{text("Nhật ký thay đổi", "Audit log")}</h2>
+          <h2>{text("Nhật ký bảo mật và thay đổi", "Security and audit log")}</h2>
           <select
             className="sort-dropdown"
             aria-label={text("Loại dữ liệu", "Resource type")}
@@ -207,6 +212,22 @@ export function SystemPage() {
           >
             <option value="">{text("Tất cả", "All resources")}</option>
             {AUDIT_RESOURCES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+          <select
+            className="sort-dropdown"
+            aria-label={text("Loại hoạt động", "Activity type")}
+            value={action}
+            onChange={(event) => {
+              setAction(event.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">{text("Mọi hoạt động", "All activities")}</option>
+            {SECURITY_ACTIONS.map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>
@@ -227,6 +248,7 @@ export function SystemPage() {
                     <th>{text("Người thực hiện", "Actor")}</th>
                     <th>{text("Thao tác", "Action")}</th>
                     <th>{text("Đối tượng", "Resource")}</th>
+                    <th>{text("Chi tiết", "Details")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -236,6 +258,7 @@ export function SystemPage() {
                       <td>{log.actorName}</td>
                       <td>{log.action}</td>
                       <td>{log.resource}</td>
+                      <td>{log.changes?.code || log.changes?.filename || log.changes?.caseId || log.resourceId || "-"}</td>
                     </tr>
                   ))}
                 </tbody>

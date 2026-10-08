@@ -15,6 +15,35 @@ async function overflow(page: Page) {
   expect(layout.content, `${page.url()} ${JSON.stringify(layout)}`).toBeLessThanOrEqual(layout.width + 1);
 }
 
+test("login provider logos and password borders render on desktop and mobile", async ({ page }) => {
+  await mkdir("artifacts/login-ui", { recursive: true });
+  for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/login");
+    await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toBeVisible();
+    expect(await page.getByRole("button", { name: "Tiếp tục với Google", exact: true }).evaluate((node) => getComputedStyle(node).borderTopWidth)).toBe("1px");
+    await expect(page.getByRole("button", { name: "Tiếp tục với Outlook / Microsoft", exact: true })).toBeVisible();
+    const images = await page.locator(".login-panel .provider-mark").evaluateAll((nodes) => nodes.map((node) => ({ complete: (node as HTMLImageElement).complete, width: (node as HTMLImageElement).naturalWidth })));
+    expect(images).toHaveLength(2);
+    expect(images.every((item) => item.complete && item.width > 0)).toBe(true);
+    const dimensions = await page.locator(".password-field").evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const input = node.querySelector("input")!.getBoundingClientRect();
+      const button = node.querySelector("button")!.getBoundingClientRect();
+      return { box: { top: box.top, bottom: box.bottom, right: box.right }, input: { top: input.top, bottom: input.bottom }, button: { top: button.top, bottom: button.bottom, right: button.right }, border: getComputedStyle(node).borderTopWidth };
+    });
+    expect(dimensions.border).toBe("1px");
+    expect(dimensions.input.top).toBeGreaterThanOrEqual(dimensions.box.top);
+    expect(dimensions.input.bottom).toBeLessThanOrEqual(dimensions.box.bottom);
+    expect(dimensions.button.right).toBeLessThanOrEqual(dimensions.box.right);
+    await page.getByRole("button", { name: "Hiện mật khẩu", exact: true }).click();
+    await expect(page.getByLabel("Mật khẩu", { exact: true })).toHaveAttribute("type", "text");
+    await page.getByRole("button", { name: "Ẩn mật khẩu", exact: true }).click();
+    await overflow(page);
+    await page.screenshot({ path: `artifacts/login-ui/login-${viewport.width}.png`, fullPage: true });
+  }
+});
+
 test("password reset request is available without disclosing account existence", async ({ page }) => {
   await page.goto("/login");
   await page.getByRole("button", { name: "Quên mật khẩu?", exact: true }).click();

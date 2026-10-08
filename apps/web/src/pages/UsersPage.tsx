@@ -22,9 +22,9 @@ const permissionsByRole: Record<Role, Array<{ vi: string; en: string; enabled: b
     { vi: "Xem hồ sơ toàn tổ chức", en: "View organization-wide requests", enabled: false }
   ],
   agent: [
-    { vi: "Xem hồ sơ trong tổ chức", en: "View organization requests", enabled: true },
-    { vi: "Cập nhật trạng thái hồ sơ", en: "Update request status", enabled: true },
-    { vi: "Phân công người xử lý", en: "Assign requests", enabled: true }
+    { vi: "Xem hồ sơ thuộc đơn vị phụ trách", en: "View cases in the assigned team", enabled: true },
+    { vi: "Cập nhật hồ sơ thuộc đơn vị phụ trách", en: "Update cases in the assigned team", enabled: true },
+    { vi: "Phân công trong đơn vị phụ trách", en: "Assign work within the assigned team", enabled: true }
   ],
   manager: [
     { vi: "Xem và tìm kiếm mọi hồ sơ", en: "View and search all requests", enabled: true },
@@ -151,7 +151,11 @@ export function UsersPage() {
                 </div>
                 <div>
                   <dt>{text("Phạm vi dữ liệu", "Data scope")}</dt>
-                  <dd>{selected.role === "requester" ? text("Hồ sơ cá nhân", "Own requests") : text("Trong tổ chức", "Organization-wide")}</dd>
+                  <dd>{selected.role === "requester"
+                    ? text("Hồ sơ cá nhân", "Own requests")
+                    : selected.role === "agent"
+                      ? text("Đơn vị phụ trách", "Assigned team")
+                      : text("Trong tổ chức", "Organization-wide")}</dd>
                 </div>
                 <div>
                   <dt>{text("Chức danh", "Job title")}</dt>

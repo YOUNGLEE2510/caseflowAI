@@ -1,0 +1,204 @@
+{
+  "metadata": {
+    "schema_version": 1,
+    "article_count": 7,
+    "question_count": 15,
+    "articles_sha256": "fce57f16f9942292c3a092db8d95960951b3296615d5248b5298fce426f49ba9",
+    "questions_sha256": "cd17dbc8aa4c6198c0df39d6a5ce37a707142d8843c1b4fd2c7b52b19b8d9ed7",
+    "scope": "Retrieval-only evaluation. It does not measure answer quality or production readiness."
+  },
+  "metrics": {
+    "answerable_questions": 12,
+    "unanswerable_questions": 3,
+    "hit_at_1": 1.0,
+    "hit_at_3": 1.0,
+    "recall_at_5": 1.0,
+    "mrr": 1.0,
+    "refusal_rate": 1.0
+  },
+  "predictions": [
+    {
+      "id": "rq-01",
+      "query": "Quên mật khẩu SIS thì làm như thế nào?",
+      "answerable": true,
+      "expected_ids": [
+        "kb-it-password"
+      ],
+      "retrieved_ids": [
+        "kb-it-password",
+        "kb-it-wifi"
+      ]
+    },
+    {
+      "id": "rq-02",
+      "query": "Không nhận được email đặt lại mật khẩu tài khoản",
+      "answerable": true,
+      "expected_ids": [
+        "kb-it-password"
+      ],
+      "retrieved_ids": [
+        "kb-it-password",
+        "kb-it-wifi",
+        "kb-student-card",
+        "kb-academic-transcript",
+        "kb-finance-tuition"
+      ]
+    },
+    {
+      "id": "rq-03",
+      "query": "Sau khi đổi mật khẩu tôi không vào được eduroam",
+      "answerable": true,
+      "expected_ids": [
+        "kb-it-wifi"
+      ],
+      "retrieved_ids": [
+        "kb-it-wifi",
+        "kb-it-password",
+        "kb-academic-transcript"
+      ]
+    },
+    {
+      "id": "rq-04",
+      "query": "WiFi ở tòa nhà A không kết nối được",
+      "answerable": true,
+      "expected_ids": [
+        "kb-it-wifi"
+      ],
+      "retrieved_ids": [
+        "kb-it-wifi",
+        "kb-facilities-room"
+      ]
+    },
+    {
+      "id": "rq-05",
+      "query": "Tôi muốn xin bảng điểm điện tử",
+      "answerable": true,
+      "expected_ids": [
+        "kb-academic-transcript"
+      ],
+      "retrieved_ids": [
+        "kb-academic-transcript",
+        "kb-academic-exam"
+      ]
+    },
+    {
+      "id": "rq-06",
+      "query": "Cách đăng ký giấy xác nhận đang là sinh viên",
+      "answerable": true,
+      "expected_ids": [
+        "kb-academic-transcript"
+      ],
+      "retrieved_ids": [
+        "kb-academic-transcript",
+        "kb-it-password",
+        "kb-student-card",
+        "kb-it-wifi"
+      ]
+    },
+    {
+      "id": "rq-07",
+      "query": "Điểm học phần của tôi bị sai và muốn phúc khảo",
+      "answerable": true,
+      "expected_ids": [
+        "kb-academic-exam"
+      ],
+      "retrieved_ids": [
+        "kb-academic-exam",
+        "kb-student-card",
+        "kb-facilities-room",
+        "kb-finance-tuition",
+        "kb-academic-transcript"
+      ]
+    },
+    {
+      "id": "rq-08",
+      "query": "Xem lịch thi cuối kỳ ở đâu?",
+      "answerable": true,
+      "expected_ids": [
+        "kb-academic-exam"
+      ],
+      "retrieved_ids": [
+        "kb-academic-exam",
+        "kb-academic-transcript"
+      ]
+    },
+    {
+      "id": "rq-09",
+      "query": "Đã chuyển học phí nhưng hệ thống vẫn báo chưa thanh toán",
+      "answerable": true,
+      "expected_ids": [
+        "kb-finance-tuition"
+      ],
+      "retrieved_ids": [
+        "kb-finance-tuition",
+        "kb-student-card",
+        "kb-facilities-room",
+        "kb-academic-exam",
+        "kb-it-wifi"
+      ]
+    },
+    {
+      "id": "rq-10",
+      "query": "Cần nộp mã giao dịch để tài chính kiểm tra học phí",
+      "answerable": true,
+      "expected_ids": [
+        "kb-finance-tuition"
+      ],
+      "retrieved_ids": [
+        "kb-finance-tuition",
+        "kb-academic-transcript",
+        "kb-academic-exam",
+        "kb-it-password"
+      ]
+    },
+    {
+      "id": "rq-11",
+      "query": "Thẻ sinh viên bị mất cần cấp lại",
+      "answerable": true,
+      "expected_ids": [
+        "kb-student-card"
+      ],
+      "retrieved_ids": [
+        "kb-student-card",
+        "kb-academic-transcript",
+        "kb-facilities-room"
+      ]
+    },
+    {
+      "id": "rq-12",
+      "query": "Quạt phòng học bị hỏng thì gửi cho ai?",
+      "answerable": true,
+      "expected_ids": [
+        "kb-facilities-room"
+      ],
+      "retrieved_ids": [
+        "kb-facilities-room",
+        "kb-student-card",
+        "kb-academic-exam",
+        "kb-it-wifi",
+        "kb-finance-tuition"
+      ]
+    },
+    {
+      "id": "rq-13",
+      "query": "Nhạc cụ xylophone có bao nhiêu phím?",
+      "answerable": false,
+      "expected_ids": [],
+      "retrieved_ids": []
+    },
+    {
+      "id": "rq-14",
+      "query": "Sao Hỏa có bao nhiêu vệ tinh?",
+      "answerable": false,
+      "expected_ids": [],
+      "retrieved_ids": []
+    },
+    {
+      "id": "rq-15",
+      "query": "Tác phẩm của Monet thuộc trường phái nào?",
+      "answerable": false,
+      "expected_ids": [],
+      "retrieved_ids": []
+    }
+  ]
+}

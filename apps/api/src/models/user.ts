@@ -7,6 +7,9 @@ const userSchema = new Schema(
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
+    googleSubject: { type: String, select: false },
+    microsoftObjectId: { type: String, select: false },
+    microsoftTenantId: { type: String, select: false },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: USER_ROLES, required: true },
     team: { type: String, default: "" },
@@ -22,6 +25,14 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 userSchema.index({ organizationId: 1, email: 1 }, { unique: true });
+userSchema.index(
+  { organizationId: 1, googleSubject: 1 },
+  { unique: true, partialFilterExpression: { googleSubject: { $type: "string" } } }
+);
 userSchema.index({ organizationId: 1, role: 1, team: 1, active: 1 });
+userSchema.index({ organizationId: 1, microsoftTenantId: 1, microsoftObjectId: 1 }, {
+  unique: true,
+  partialFilterExpression: { microsoftTenantId: { $type: "string" }, microsoftObjectId: { $type: "string" } }
+});
 
 export const User = models.User || model("User", userSchema);

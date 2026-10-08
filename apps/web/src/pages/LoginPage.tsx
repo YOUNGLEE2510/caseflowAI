@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, Eye, EyeOff, Network, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
-import { api } from "../api";
+import { api, apiUrl } from "../api";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { Modal } from "../components/Modal";
 import { useLocale } from "../i18n";
@@ -15,9 +15,10 @@ const demoAccounts = [
 const demoOrganizationSlug = "minh-khai-university";
 
 export function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const { text } = useLocale();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [organizationSlug, setOrganizationSlug] = useState(demoOrganizationSlug);
   const [email, setEmail] = useState(demoAccounts[0].email);
   const [password, setPassword] = useState("Demo123!");
@@ -28,10 +29,52 @@ export function LoginPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState("");
+  const googleCode = searchParams.get("googleCode");
+  const oauthError = searchParams.get("oauthError");
+  const microsoftCode = searchParams.get("microsoftCode");
+  const oauthProvider = searchParams.get("oauthProvider") === "microsoft" ? "Microsoft" : "Google";
 
   useEffect(() => {
     if (user) navigate("/overview", { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!googleCode) return;
+    let current = true;
+    setLoading(true);
+    setError("");
+    void loginWithGoogle(googleCode)
+      .then(() => { if (current) navigate("/overview", { replace: true }); })
+      .catch(() => {
+        if (current) {
+          setError(text("Không thể hoàn tất đăng nhập Google. Tài khoản Google phải khớp với email đã được cấp trong tổ chức.", "Unable to complete Google sign-in. Your Google account must match an active organization account."));
+          navigate("/login", { replace: true });
+        }
+      })
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
+  }, [googleCode, loginWithGoogle, navigate, text]);
+
+  useEffect(() => {
+    if (!oauthError) return;
+    const message = oauthError === "not_configured"
+      ? text(`Đăng nhập ${oauthProvider} chưa được cấu hình cho môi trường này.`, `${oauthProvider} sign-in has not been configured for this environment.`)
+      : oauthError === "not_linked"
+        ? text("Tài khoản Microsoft chưa được liên kết. Đăng nhập bằng mật khẩu rồi liên kết trong Hồ sơ cá nhân.", "Your Microsoft account is not linked. Sign in with your password and link it in your profile.")
+        : text(`Không thể đăng nhập bằng ${oauthProvider}. Vui lòng thử lại hoặc dùng mật khẩu.`, `${oauthProvider} sign-in could not be completed. Please try again or use your password.`);
+    setError(message);
+  }, [oauthError, oauthProvider, text]);
+
+  useEffect(() => {
+    if (!microsoftCode) return;
+    let current = true;
+    setLoading(true);
+    void loginWithMicrosoft(microsoftCode)
+      .then(() => { if (current) navigate("/overview", { replace: true }); })
+      .catch(() => { if (current) { setError(text("Không thể hoàn tất đăng nhập Microsoft.", "Unable to complete Microsoft sign-in.")); navigate("/login", { replace: true }); } })
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
+  }, [microsoftCode, loginWithMicrosoft, navigate, text]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -62,6 +105,11 @@ export function LoginPage() {
     } finally {
       setResetLoading(false);
     }
+  }
+
+  function startGoogleLogin() {
+    const query = new URLSearchParams({ organization: organizationSlug, remember: String(remember) });
+    window.location.assign(apiUrl(`/auth/google?${query.toString()}`));
   }
 
   return (
@@ -170,8 +218,18 @@ export function LoginPage() {
             </button>
           </form>
 
-          <button className="button button-secondary login-sso" type="button" disabled>
-            {text("Đăng nhập bằng SSO của trường", "Continue with university SSO")}
+          <div className="login-provider-separator" aria-hidden="true"><span>{text("hoặc", "or")}</span></div>
+          <button className="button login-google" type="button" onClick={startGoogleLogin} disabled={loading || !organizationSlug.trim()}>
+            <img className="provider-mark" src="/google-logo.png" width="20" height="20" alt="" />
+            <span>{text("Tiếp tục với Google", "Continue with Google")}</span>
+          </button>
+
+          <button className="button login-google login-microsoft" type="button" disabled={loading || !organizationSlug.trim()} onClick={() => {
+            const query = new URLSearchParams({ organization: organizationSlug, remember: String(remember) });
+            window.location.assign(apiUrl(`/auth/microsoft?${query}`));
+          }}>
+            <img className="provider-mark" src="/microsoft-logo.svg" width="20" height="20" alt="" />
+            {text("Tiếp tục với Outlook / Microsoft", "Continue with Outlook / Microsoft")}
           </button>
 
           <div className="login-security">

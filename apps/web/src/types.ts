@@ -146,12 +146,16 @@ export interface DashboardData {
   metrics: {
     open: number;
     openTrend: number | null;
+    openTrendLabel: string;
     atRisk: number;
     atRiskTrend: number | null;
+    atRiskTrendLabel: string;
     resolved: number;
     resolvedTrend: number | null;
+    resolvedTrendLabel: string;
     activeIncidents: number;
     activeIncidentsTrend: number | null;
+    activeIncidentsTrendLabel: string;
     averageResolutionHours: number;
   };
   statusDistribution: Array<{ name: CaseStatus; value: number }>;
@@ -159,4 +163,6 @@ export interface DashboardData {
   recentCases: CaseRecord[];
   highRiskCases: CaseRecord[];
   incidents: Incident[];
+  priorityCases: CaseRecord[];
+  totalCases: number;
 }

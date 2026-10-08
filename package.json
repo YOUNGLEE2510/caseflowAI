@@ -8,15 +8,20 @@
     "apps/api"
   ],
   "scripts": {
+    "docker:up": "node docker/compose.mjs up",
+    "docker:stop": "node docker/compose.mjs stop",
+    "docker:logs": "node docker/compose.mjs logs",
+    "docker:status": "node docker/compose.mjs status",
     "dev": "concurrently -k -n API,WEB,AI -c cyan,green,yellow \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:ai\"",
     "dev:web": "npm run dev --workspace=@caseflow/web",
     "dev:api": "npm run dev --workspace=@caseflow/api",
     "dev:ai": "python -m uvicorn apps.ai.app:app --host 127.0.0.1 --port 8001",
     "dev:ai:watch": "python -m uvicorn apps.ai.app:app --reload --host 127.0.0.1 --port 8001",
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspace=@caseflow/api && python -m pytest apps/ai/tests -q",
+    "test": "npm run test --workspace=@caseflow/api && npm run test --workspace=@caseflow/web && python -m pytest apps/ai/tests -q",
     "test:e2e": "playwright test",
     "evaluate:ai": "python apps/ai/evaluate.py",
+    "evaluate:retrieval": "python -m apps.ai.evaluate_retrieval --articles apps/ai/tests/fixtures/retrieval_demo_articles.json --questions apps/ai/tests/fixtures/retrieval_demo_questions.csv --output docs/ai-evaluation/retrieval_demo_report.json",
     "seed": "npm run seed --workspace=@caseflow/api",
     "seed:force": "npm run seed:force --workspace=@caseflow/api",
     "start": "npm run start --workspace=@caseflow/api"
@@ -27,6 +32,10 @@
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "concurrently": "^9.1.2",
+    "jsdom": "^24.1.3",
     "mongodb-memory-server": "^10.2.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.62.2"
   }
 }

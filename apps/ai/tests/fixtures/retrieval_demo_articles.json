@@ -1,0 +1,51 @@
+[
+  {
+    "id": "kb-it-password",
+    "title": "Khôi phục mật khẩu tài khoản cổng sinh viên",
+    "content": "Sinh viên truy cập cổng SIS, chọn Quên mật khẩu và xác nhận bằng email trường. Mật khẩu mới phải có tối thiểu 10 ký tự. Nếu không nhận được email sau 15 phút, tạo yêu cầu hỗ trợ tài khoản.",
+    "category": "it_access",
+    "sourceLabel": "Trung tâm CNTT"
+  },
+  {
+    "id": "kb-it-wifi",
+    "title": "Kết nối mạng WiFi eduroam trong khuôn viên",
+    "content": "Dùng tài khoản email trường để đăng nhập eduroam. Sau khi đổi mật khẩu, chờ tối đa 15 phút để đồng bộ. Gửi ảnh lỗi và vị trí tòa nhà nếu thiết bị vẫn không kết nối được.",
+    "category": "it_access",
+    "sourceLabel": "Trung tâm CNTT"
+  },
+  {
+    "id": "kb-academic-transcript",
+    "title": "Đăng ký cấp bảng điểm và giấy xác nhận sinh viên",
+    "content": "Vào cổng dịch vụ sinh viên, chọn biểu mẫu bảng điểm hoặc giấy xác nhận. Kiểm tra thông tin học kỳ, chọn bản điện tử hoặc bản giấy, sau đó theo dõi trạng thái xử lý trong hồ sơ đã tạo.",
+    "category": "academic_records",
+    "sourceLabel": "Phòng Đào tạo"
+  },
+  {
+    "id": "kb-academic-exam",
+    "title": "Tra cứu lịch thi và phản ánh sai sót điểm",
+    "content": "Lịch thi được công bố trên cổng đào tạo. Nếu có sai sót điểm, sinh viên gửi yêu cầu phúc khảo trong thời hạn thông báo, kèm học phần và bằng chứng liên quan.",
+    "category": "academic_records",
+    "sourceLabel": "Phòng Đào tạo"
+  },
+  {
+    "id": "kb-finance-tuition",
+    "title": "Đối soát học phí và biên lai thanh toán",
+    "content": "Khi học phí đã thanh toán nhưng chưa cập nhật, cung cấp mã giao dịch, thời điểm chuyển khoản và ảnh biên lai. Bộ phận tài chính đối soát với ngân hàng trước khi cập nhật trạng thái.",
+    "category": "finance",
+    "sourceLabel": "Phòng Tài chính"
+  },
+  {
+    "id": "kb-student-card",
+    "title": "Cấp lại thẻ sinh viên bị mất hoặc hỏng",
+    "content": "Sinh viên tạo yêu cầu cấp lại thẻ, nêu lý do mất hoặc hỏng và chọn địa điểm nhận. Lệ phí, nếu có, được thông báo trong hồ sơ sau khi bộ phận công tác sinh viên tiếp nhận.",
+    "category": "student_services",
+    "sourceLabel": "Phòng Công tác sinh viên"
+  },
+  {
+    "id": "kb-facilities-room",
+    "title": "Báo hỏng thiết bị và cơ sở vật chất",
+    "content": "Mô tả rõ tòa nhà, phòng, thiết bị bị hỏng và mức độ ảnh hưởng. Đính kèm ảnh khi có thể để đội cơ sở vật chất ưu tiên xử lý sự cố liên quan đến an toàn hoặc giảng dạy.",
+    "category": "facilities",
+    "sourceLabel": "Ban Quản trị cơ sở"
+  }
+]

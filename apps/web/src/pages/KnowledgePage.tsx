@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState, PageHeader } from "../components/
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { KnowledgeArticle } from "../types";
+import { ReadMore } from "../components/ReadMore";
 
 interface SearchResult {
   generation?: { mode: string; reason?: string };
@@ -67,14 +68,14 @@ export function KnowledgePage() {
         )}
       />
 
-      <section className="knowledge-search">
+      <section className="knowledge-search knowledge-search-premium">
         <div className="knowledge-search-heading">
           <span className="ai-label">
             <Sparkles size={14} /> {text("AI có nguồn dẫn", "Grounded AI")}
           </span>
           <h2>{text("Tra cứu nghiệp vụ", "Ask the knowledge base")}</h2>
         </div>
-        <form onSubmit={search}>
+        <form onSubmit={search} className="knowledge-query-bar">
           <Search size={19} />
           <input
             aria-label={text("Câu hỏi tra cứu", "Knowledge query")}
@@ -138,7 +139,7 @@ export function KnowledgePage() {
                   <div>
                     <span className="article-category">{article.category.replace("_", " ")}</span>
                     <h3>{article.title}</h3>
-                    <p>{article.content}</p>
+                    <ReadMore text={article.content} limit={180} className="article-preview" />
                     <footer>
                       <span>{article.sourceLabel}</span>
                       <span>{text("Phiên bản", "Version")} {article.version}</span>

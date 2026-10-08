@@ -7,16 +7,22 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import sys
 import tarfile
 import unicodedata
 from urllib.request import urlopen
 
 from sklearn.metrics import classification_report, confusion_matrix
-from .evaluate import model_factories
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from apps.ai.evaluate import model_factories
 
 SOURCE = "https://huggingface.co/datasets/AmazonScience/massive"
 ARCHIVE_URL = "https://amazon-massive-nlu-dataset.s3.amazonaws.com/amazon-massive-dataset-1.1.tar.gz"
-ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "open-data" / "massive-vi"
+ROOT = PROJECT_ROOT / "artifacts" / "open-data" / "massive-vi"
 ARCHIVE_SHA256 = "4cba5faa11c71437928e17cb1b9b3d8b8e727e7ea363a3a9a8045e19c0491577"
 
 

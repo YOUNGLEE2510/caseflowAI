@@ -1,0 +1,348 @@
+/* Shared text hierarchy for operational screens, independent of viewport zoom. */
+.service-workspace {
+  --text-caption: 13px;
+  --text-body: 15px;
+  --text-section: 17px;
+  --text-title: 24px;
+  font-size: var(--text-body);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.service-workspace :is(strong, b) { font-weight: 600; }
+.service-workspace :is(h1, h2, h3, h4) { font-weight: 600; }
+.service-workspace .content :is(p, small, dt, dd, input, select, textarea) { font-weight: 400; }
+.service-workspace :is(.button, .nav-item, .badge, .status-tabs button, .text-link) { font-weight: 500; }
+.service-workspace :is(.incident-status, .active-label, .role-label, .article-category, .keyword-row span) { font-weight: 500; }
+
+.service-workspace .page-header h1,
+.service-workspace .detail-header h1,
+.service-workspace .overview-intro h1,
+.service-workspace .requester-welcome h1 {
+  font-size: var(--text-title);
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.service-workspace .panel-heading h2,
+.service-workspace .priority-queue-panel h2,
+.service-workspace .knowledge-search-heading h2 {
+  font-size: var(--text-section);
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.service-workspace .page-header p,
+.service-workspace .detail-header p,
+.service-workspace .overview-intro p,
+.service-workspace .button,
+.service-workspace .nav-item,
+.service-workspace .global-search input,
+.service-workspace .field input,
+.service-workspace .field textarea,
+.service-workspace .field select,
+.service-workspace .search-box input,
+.service-workspace .compact-select select,
+.service-workspace .data-table td,
+.service-workspace .read-more {
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+
+.service-workspace .field > span:first-child,
+.service-workspace .field > label:first-child,
+.service-workspace .status-tabs button,
+.service-workspace .user-summary strong,
+.service-workspace .member-cell strong {
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+
+.service-workspace .data-table th,
+.service-workspace .badge,
+.service-workspace .eyebrow,
+.service-workspace .nav-section-label,
+.service-workspace .topbar-title span,
+.service-workspace .user-summary small,
+.service-workspace .member-cell small,
+.service-workspace .table-footer,
+.service-workspace .pagination-info {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.service-workspace .topbar-title strong {
+  font-size: var(--text-section);
+  line-height: 1.4;
+}
+
+.service-workspace .panel-heading {
+  min-height: 64px;
+  padding: 16px 20px;
+}
+
+.service-workspace .operations-overview .metric-card {
+  min-height: 150px;
+  padding: 18px;
+  gap: 8px;
+}
+
+.service-workspace .metric-card-heading {
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+
+.service-workspace .operations-overview .metric-card > strong {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-workspace .metric-card-footer small {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.service-workspace .system-alert strong,
+.service-workspace .progress-widget header,
+.service-workspace .progress-widget header strong,
+.service-workspace .work-queue-shortcuts a {
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+
+.service-workspace .system-alert > div > span,
+.service-workspace .progress-widget small {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+.service-workspace .system-alert,
+.service-workspace .progress-widget {
+  padding: 16px;
+}
+
+.service-workspace .progress-widget { min-height: 118px; }
+.service-workspace .work-queue-shortcuts a { min-height: 60px; }
+.service-workspace .data-table td { height: auto; padding-block: 16px; }
+.service-workspace .data-table th { height: auto; padding-block: 12px; }
+
+/* Case handling, knowledge, incidents, and organization administration. */
+.service-workspace :is(
+  .incident-card > p, .service-card > p, .case-description > p,
+  .knowledge-answer > p, .citation-list article p, .article-list p,
+  .comment p, .comment-form textarea, .config-section p,
+  .analysis-item strong, .analysis-item span, .confidence-block strong,
+  .similar-list strong, .ai-placeholder strong, .ai-placeholder span,
+  .service-list-name strong, .config-list dd, .permission-meta dd,
+  .permission-section > div, .permission-note, .admin-search input,
+  .requester-ai-card strong, .requester-case-list strong,
+  .requester-welcome p, .requester-summary-grid span,
+  .timeline strong, .comment strong, .case-title-cell strong,
+  .case-link, .table-title, .text-link, .action-bar select,
+  .notification-item strong, .attachment-list strong,
+  .case-board-card > strong, .faq-accordion button
+) {
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+
+.service-workspace :is(
+  .incident-status, .incident-metrics span, .keyword-row span,
+  .incident-card > footer > span, .service-card footer span,
+  .service-card dt, .service-card dd, .active-label, .role-label,
+  .article-category, .article-list footer, .article-preview,
+  .citation-list header span, .citation-list footer,
+  .config-key, .config-list dt, .permission-meta dt,
+  .config-chips span, .config-ai-note small, .config-ai-note strong,
+  .service-list-name small, .service-list-heading, .user-list-heading,
+  .confidence-block span, .model-note, .similar-list span,
+  .timeline time, .timeline li > div > span,
+  .comment time, .comment > div > span, .checkbox-field,
+  .channel-label, .saving-label, .back-link, .case-code,
+  .case-title-cell span, .requester-ai-card small,
+  .requester-case-list .case-code, .case-board-card footer,
+  .notification-item p, .attachment-list small,
+  .organization-switcher small, .brand-copy small,
+  .risk-score-block span, .factor-list, .confidence-row
+) {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.service-workspace .citation-list header strong {
+  font-size: var(--text-body);
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.service-workspace :is(.incident-card h2, .service-card h2, .article-list h3) {
+  font-size: var(--text-section);
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.service-workspace .incident-metrics strong { font-size: 20px; line-height: 1.4; }
+.service-workspace .requester-summary-grid strong { font-size: 24px; line-height: 1.3; }
+.service-workspace .incident-metrics > div { min-width: 0; padding: 16px; }
+.service-workspace .incident-card > footer { flex-wrap: wrap; }
+.service-workspace .badge,
+.service-workspace .incident-status,
+.service-workspace .active-label,
+.service-workspace .role-label { height: auto; min-height: 28px; padding-block: 4px; }
+.service-workspace .keyword-row span { padding: 5px 9px; }
+.service-workspace .service-list > button,
+.service-workspace .user-list > button { padding-block: 16px; }
+.service-workspace .service-list-name strong,
+.service-workspace .requester-case-list strong { white-space: normal; overflow-wrap: anywhere; }
+.service-workspace .requester-case-list > a { gap: 4px 12px; padding: 14px; }
+.service-workspace .config-list > div,
+.service-workspace .permission-meta > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.service-workspace .config-list dd,
+.service-workspace .permission-meta dd { overflow-wrap: anywhere; }
+.service-workspace .comment > div { flex-wrap: wrap; }
+.service-workspace .timeline li { grid-template-columns: minmax(0, 1fr); }
+.service-workspace .timeline time { margin-top: 2px; }
+.service-workspace .button { min-height: 44px; }
+.service-workspace .field input,
+.service-workspace .field select { min-height: 46px; }
+.service-workspace .status-tabs button { min-width: max-content; padding-inline: 16px; }
+
+.service-workspace .metric-card > div > span,
+.service-workspace .metric-card > small,
+.service-workspace .chart-legend,
+.service-workspace .chart-legend > div > span,
+.service-workspace .chart-legend strong,
+.service-workspace .risk-row-main strong,
+.service-workspace .risk-row-main small {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.service-workspace .metric-card > strong { font-size: 24px; line-height: 1.3; font-weight: 600; }
+.service-workspace .metric-card-heading > span:not(.metric-icon) {
+  font-size: var(--text-body);
+  line-height: 1.5;
+  font-weight: 500;
+}
+.service-workspace .content :is(p, dd, dt) { overflow-wrap: anywhere; }
+
+.service-workspace select:not([multiple]):not([size]),
+.login-screen select:not([multiple]):not([size]) {
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2350635d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 18px 18px;
+}
+
+@media (max-width: 640px) {
+  .service-workspace .incident-metrics { grid-template-columns: 1fr; }
+  .service-workspace .incident-metrics > div { border-right: 0; border-bottom: 1px solid var(--border); }
+  .service-workspace .incident-metrics > div:last-child { border-bottom: 0; }
+  .service-workspace .citation-list { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .service-workspace .operations-overview .metric-card {
+    min-height: 142px;
+    padding: 14px;
+  }
+  .service-workspace .panel-heading { padding: 14px 16px; }
+}
+
+/* Complete the hierarchy for secondary workflows without changing role permissions. */
+.service-workspace :is(
+  .profile-name, .profile-section-header h2, .system-services h2,
+  .case-board-column h2, .case-board-column h3, .editor-heading h2
+) { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
+
+.service-workspace :is(
+  .profile-grid, .profile-activity-list li, .system-definition,
+  .assignment-options p, .assignment-options strong,
+  .sort-dropdown, .case-board-card, .notification-item p,
+  .editor-dialog input, .editor-dialog select, .editor-dialog textarea
+) { font-size: var(--text-body); line-height: 1.5; }
+
+.service-workspace :is(
+  .profile-label, .profile-role, .system-counters dt, .system-definition dt,
+  .case-board-column > header > span, .case-board-code, .case-board-empty, .nav-badge,
+  .inactive-label, .inline-empty, .help-text
+) { font-size: var(--text-caption); line-height: 1.5; font-weight: 400; }
+
+.service-workspace :is(
+  .table-title, .case-title-cell strong, .member-cell strong,
+  .service-list-name strong, .user-summary strong, .timeline strong,
+  .comment strong, .case-board-card > strong, .system-alert strong,
+  .progress-widget header, .progress-widget header strong
+) { font-weight: 500; }
+
+.service-workspace :is(.profile-label, .metric-card-footer small, .user-summary small,
+  .topbar-title span, .service-list-name small, .member-cell small) { color: var(--muted); }
+
+.service-workspace :is(.page-header, .overview-intro, .detail-header) {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.service-workspace :is(.page-header, .overview-intro, .detail-header) > div { min-width: 0; }
+.service-workspace .panel-heading { gap: 12px; flex-wrap: wrap; }
+.service-workspace .field { min-width: 0; }
+.service-workspace .field > :is(input, select, textarea) { width: 100%; }
+.service-workspace :is(.button, .icon-button) { flex-shrink: 0; }
+.service-workspace .button { gap: 8px; line-height: 1.4; padding-block: 10px; }
+.service-workspace .button-small { min-height: 36px; font-size: var(--text-caption); padding-block: 6px; }
+.service-workspace :is(.button, .icon-button, .nav-item) > svg { flex-shrink: 0; }
+.service-workspace .avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: 13px;
+  font-weight: 600;
+}
+.service-workspace .brand-copy small { font-size: 11px; line-height: 1.5; }
+.service-workspace .topbar { background: var(--surface); backdrop-filter: none; }
+.service-workspace .status-tabs { overflow-x: auto; }
+.service-workspace .status-tabs button { height: auto; min-height: 44px; }
+.service-workspace .data-table :is(th, td) { vertical-align: middle; }
+.service-workspace .data-table th { font-weight: 500; }
+.service-workspace .case-board-column h2 { font-size: var(--text-body); text-transform: none; }
+.service-workspace .case-board-column > header > span { min-width: 28px; height: 28px; }
+.service-workspace .system-counters dd { font-size: 24px; line-height: 1.3; font-weight: 600; font-variant-numeric: tabular-nums; }
+.service-workspace .case-custom-fields dt { font-size: var(--text-caption); }
+.service-workspace .case-custom-fields dd { font-size: var(--text-body); line-height: 1.5; }
+.service-workspace .field-error { font-size: var(--text-caption); line-height: 1.5; }
+.service-workspace .page-stack > section > h2 { font-size: var(--text-section); }
+.service-workspace .content :is(h1, h2, h3, h4) { overflow-wrap: break-word; }
+.service-workspace .profile-grid { grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+
+@media (max-width: 680px) {
+  .service-workspace .topbar { gap: 12px; padding-inline: 16px; }
+  .service-workspace .user-summary { min-width: 0; padding: 0; }
+  .service-workspace .topbar-actions { flex: 0 0 auto; gap: 8px; }
+  .service-workspace .mobile-brand { flex: 1 1 0; min-width: 0; gap: 10px; }
+  .service-workspace .mobile-brand > span:last-child { min-width: 0; }
+  .service-workspace .mobile-brand :is(strong, small) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .service-workspace .mobile-brand strong { font-size: 15px; font-weight: 600; }
+  .service-workspace .mobile-brand small { font-size: 11px; }
+  .service-workspace .topbar-title { flex: 1 1 0; min-width: 0; }
+  .service-workspace .topbar-title > div { min-width: 0; }
+  .service-workspace .topbar-title strong { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-workspace *, .login-screen * { animation: none !important; transition: none !important; }
+}

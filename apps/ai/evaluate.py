@@ -61,10 +61,15 @@ def training_rows() -> tuple[list[str], list[str]]:
 
 
 def model_factories() -> dict[str, Callable[[], Pipeline]]:
+    import sys
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from apps.ai.models.classifier import classifier_pipeline
     classifier = lambda: LogisticRegression(  # noqa: E731
         max_iter=1_000, class_weight="balanced", C=20.0, random_state=42
     )
     return {
+        "hybrid_tfidf_logreg": lambda: classifier_pipeline("hybrid"),
         "word_tfidf_svm": lambda: Pipeline([
             ("tfidf", TfidfVectorizer(lowercase=True, ngram_range=(1, 2), sublinear_tf=True)),
             ("classifier", LinearSVC(class_weight="balanced", random_state=42)),

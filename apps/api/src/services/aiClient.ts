@@ -2,6 +2,7 @@ import { config } from "../config.js";
 import { CircuitBreakerState } from "../models.js";
 
 export interface ClassificationResult {
+  modelVersion?: string;
   label: string;
   confidence: number;
   summary: string;
@@ -16,9 +17,8 @@ export interface SimilarCaseInput {
   text: string;
 }
 
-// TODO: nên chuyển keyword list sang config hoặc DB để admin cập nhật được
-// mà không cần deploy lại backend. Hiện hardcode vì chỉ dùng khi AI service down.
-const keywordGroups: Record<string, string[]> = {
+// Explicit conservative defaults; deployments may supply validated JSON overrides.
+const keywordGroups: Record<string, string[]> = config.AI_FALLBACK_KEYWORDS || {
   it_access: ["đăng nhập", "mật khẩu", "tài khoản", "wifi", "website", "phần mềm", "email"],
   academic_records: ["bảng điểm", "điểm", "học phần", "đăng ký môn", "tiên quyết", "đồ án"],
   student_services: ["xác nhận sinh viên", "giấy chứng nhận", "học bổng", "rèn luyện", "thẻ sinh viên"],
@@ -79,11 +79,9 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   const attempt = async (): Promise<T> => {
     const response = await fetch(`${config.AI_SERVICE_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(config.AI_INTERNAL_TOKEN ? { "X-Internal-Token": config.AI_INTERNAL_TOKEN } : {}) },
       body: JSON.stringify(body),
-      // 5s timeout — đủ cho TF-IDF inference, nhưng nếu chuyển sang
-      // transformer model cần tăng lên 10-15s
-      signal: AbortSignal.timeout(5_000)
+      signal: AbortSignal.timeout(config.AI_REQUEST_TIMEOUT_MS)
     });
     if (!response.ok) {
       throw new Error(`AI service returned ${response.status}`);

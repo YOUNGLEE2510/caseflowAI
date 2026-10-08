@@ -20,7 +20,7 @@ Nhân viên hoặc quản lý xem yêu cầu, kiểm tra loại dịch vụ và 
 
 Quản lý theo dõi thời hạn SLA và khối lượng công việc. Khi vấn đề được giải quyết, hồ sơ lưu lại nội dung xử lý để làm nguồn tham khảo về sau. Nếu nhiều yêu cầu cùng phản ánh một sự cố, nhân viên có thể quản lý chúng theo cụm sự cố.
 
-![Luồng xử lý yêu cầu](../tmp/project_summary_assets/flow.png)
+*Sơ đồ kiến trúc và luồng xử lý chi tiết được mô tả đầy đủ trong [DIAGRAMS.md](DIAGRAMS.md).*
 
 ## 3 Các vai trò trong hệ thống
 
@@ -102,7 +102,7 @@ Quản lý thành viên hỗ trợ thêm, sửa và vô hiệu hóa tài khoản
 
 Trang vận hành cung cấp góc nhìn về kết nối MongoDB, dịch vụ AI, lưu tệp, hồ sơ quá hạn và nhật ký. Ảnh được chụp trong môi trường demo cô lập có chủ ý không kết nối AI ngoài; trạng thái dịch vụ trong ảnh phản ánh môi trường chụp, không chứng minh mọi dịch vụ production đang hoạt động.
 
-Hệ thống có đăng nhập, trang hồ sơ cá nhân, đổi ngôn ngữ Việt/Anh, thông báo và luồng yêu cầu đặt lại mật khẩu. Gửi email thực tế cần cấu hình SMTP. API key và URI cơ sở dữ liệu được cấu hình phía máy chủ qua biến môi trường, không đưa vào tài liệu gửi giảng viên.
+Hệ thống có đăng nhập bằng mật khẩu hoặc Google OAuth cho tài khoản đã được cấp sẵn trong tổ chức, trang hồ sơ cá nhân, đổi ngôn ngữ Việt/Anh, thông báo và luồng yêu cầu đặt lại mật khẩu. Google OAuth xác minh email, liên kết định danh Google với đúng tài khoản nội bộ và không tự tạo hay tự nâng quyền người dùng. Gửi email thực tế cần cấu hình SMTP. API key và URI cơ sở dữ liệu được cấu hình phía máy chủ qua biến môi trường, không đưa vào tài liệu gửi giảng viên.
 
 ![Trang vận hành](project-images/system.png)
 

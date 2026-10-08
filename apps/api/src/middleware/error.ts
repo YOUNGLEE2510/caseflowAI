@@ -55,6 +55,14 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     return;
   }
 
-  console.error(JSON.stringify({ level: "error", requestId: _req.requestId, errorType: error instanceof Error ? error.name : "UnknownError" }));
+  console.error(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: "error",
+    requestId: _req.requestId,
+    method: _req.method,
+    path: _req.originalUrl.split("?")[0],
+    errorType: error instanceof Error ? error.name : "UnknownError",
+    stack: process.env.NODE_ENV === "development" && error instanceof Error ? error.stack : undefined
+  }));
   res.status(500).json({ message: "Hệ thống chưa thể xử lý yêu cầu. Vui lòng thử lại.", requestId: _req.requestId });
 }

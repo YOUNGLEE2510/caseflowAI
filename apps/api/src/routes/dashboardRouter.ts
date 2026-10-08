@@ -1,15 +1,12 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { authenticate } from "../middleware/auth.js";
 import { CASE_STATUSES, CaseRecord, Incident } from "../models.js";
-import { presentCase } from "../services/casePolicy.js";
+import { caseScope, presentCase } from "../services/casePolicy.js";
 export const dashboardRouter = Router();
-dashboardRouter.use(authenticate);
 dashboardRouter.get("/dashboard", async (req, res) => {
   const organizationId = new mongoose.Types.ObjectId(req.auth!.organizationId);
   const canViewOperations = req.auth!.role !== "requester";
-  const scope: any = { organizationId };
-  if (req.auth!.role === "requester") scope.requesterId = req.auth!.id;
+  const scope: any = caseScope(req.auth!);
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3_600_000);
@@ -17,10 +14,11 @@ dashboardRouter.get("/dashboard", async (req, res) => {
 
   const openScope = { ...scope, status: { $nin: ["resolved", "closed"] } };
   const riskScope = { ...openScope, $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] };
-  const aggregateScope: Record<string, unknown> = { organizationId };
-  if (req.auth!.role === "requester") {
-    aggregateScope.requesterId = new mongoose.Types.ObjectId(req.auth!.id);
-  }
+  const aggregateScope: Record<string, unknown> = scope;
+  const incidentScope = {
+    organizationId,
+    ...(req.auth!.role === "agent" ? { team: req.auth!.team } : {})
+  };
 
   const [
     openCount, atRiskCount, resolvedCount, incidentCount,
@@ -32,7 +30,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
     CaseRecord.countDocuments(riskScope),
     CaseRecord.countDocuments({ ...scope, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: thirtyDaysAgo } }),
     canViewOperations
-      ? Incident.countDocuments({ organizationId, status: { $nin: ["resolved"] } })
+      ? Incident.countDocuments({ ...incidentScope, status: { $nin: ["resolved"] } })
       : Promise.resolve(0),
     CaseRecord.countDocuments({ ...scope, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } }),
     CaseRecord.countDocuments(scope),
@@ -42,7 +40,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
     ]),
     canViewOperations
       ? CaseRecord.aggregate([
-          { $match: { organizationId, status: { $nin: ["resolved", "closed"] } } },
+          { $match: { ...aggregateScope, status: { $nin: ["resolved", "closed"] } } },
           {
             $group: {
               _id: "$team",
@@ -61,7 +59,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
       .limit(8)
       .lean(),
     canViewOperations
-      ? Incident.find({ organizationId, status: { $ne: "resolved" } })
+      ? Incident.find({ ...incidentScope, status: { $ne: "resolved" } })
           .sort({ severity: -1, createdAt: -1 })
           .limit(6)
           .lean()
@@ -118,4 +116,3 @@ dashboardRouter.get("/dashboard", async (req, res) => {
     totalCases
   });
 });
-

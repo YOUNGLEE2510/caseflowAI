@@ -2,13 +2,15 @@
 
 ## Mục tiêu AI
 
+Pipeline có artifact/manifest, checksum và tái sử dụng model khi khởi động. Dữ liệu hiện tại là tập mẫu chuẩn hóa phục vụ kiểm thử và tái lập pipeline; việc đánh giá chất lượng thực tế cần bộ dữ liệu độc lập có chuyên viên gán nhãn.
+
 AI không thay thế quy trình nghiệp vụ. Nó giảm thời gian đọc và điều phối hồ sơ, còn trạng thái, phân quyền, SLA, lịch sử và trách nhiệm vẫn do hệ thống lõi quản lý.
 
 ## Các mô hình đã triển khai
 
 | Bài toán | Baseline hiện tại | Đầu ra |
 |---|---|---|
-| Phân loại yêu cầu | TF-IDF word n-gram + Logistic Regression | Nhãn, độ tin cậy, top 3 nhãn |
+| Phân loại yêu cầu | Word TF-IDF + Logistic Regression mặc định; character/hybrid là ứng viên thử nghiệm | Nhãn, độ tin cậy, top 3 nhãn, modelVersion |
 | Trích xuất dữ liệu | Pattern tiếng Việt có kiểm soát | Mã sinh viên, phòng, thời hạn |
 | Hồ sơ tương tự | TF-IDF + cosine similarity | Top hồ sơ và điểm tương đồng |
 | Tra cứu tri thức | Retrieval TF-IDF + cosine similarity trên đoạn tài liệu; tái sử dụng chỉ mục cho tập tài liệu không đổi | Danh sách trích dẫn và đoạn liên quan |
@@ -62,7 +64,9 @@ Baseline hiện tại truy xuất đoạn tài liệu và trả nguồn. Có nh�
 4. Bắt buộc câu trả lời gắn citation; thiếu căn cứ thì từ chối trả lời.
 5. Thêm bộ câu hỏi chuẩn để đo retrieval và hallucination sau mỗi lần cập nhật.
 
-Framework đo retrieval đã có tại `python -m apps.ai.evaluate_retrieval`. Bộ benchmark phải dùng tài liệu đã phê duyệt và câu hỏi có `expected_ids` do chuyên viên xác nhận; báo cáo Hit@1, Hit@3, Recall@5, MRR và refusal rate. Framework không biến dữ liệu demo thành bằng chứng chất lượng thực tế.
+Framework đo retrieval đã có tại `python -m apps.ai.evaluate_retrieval`. Bộ benchmark phải dùng tài liệu đã phê duyệt và câu hỏi có `expected_ids` do chuyên viên xác nhận; báo cáo Hit@1, Hit@3, Recall@5, MRR và refusal rate. Evaluator từ chối câu hỏi tham chiếu tài liệu không tồn tại, nhãn `answerable` không hợp lệ, hoặc câu hỏi không thể trả lời nhưng vẫn có nhãn nguồn, nhờ đó tránh báo cáo sai do ground truth bị lỗi.
+
+Repository có fixture `apps/ai/tests/fixtures/retrieval_demo_*` và lệnh `npm run evaluate:retrieval` để kiểm thử pipeline có thể tái lập. Báo cáo được ghi tại `docs/ai-evaluation/retrieval_demo_report.json`; fixture chỉ chứa nội dung mô phỏng, không được dùng làm kết quả RAG của luận văn. Khi pilot, thay hai file đầu vào bằng tài liệu đã phê duyệt và 50-100 câu hỏi được chuyên viên khóa trước khi đánh giá.
 
 ## MLOps tối thiểu
 

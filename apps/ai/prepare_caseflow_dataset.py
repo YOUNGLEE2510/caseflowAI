@@ -6,11 +6,16 @@ import csv
 import hashlib
 import json
 import re
+import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import TRAINING_EXAMPLES
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from apps.ai.config import TRAINING_EXAMPLES
 
 EMAIL = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
 PHONE = re.compile(r"(?:\+?\d[\d .()-]{7,}\d)")

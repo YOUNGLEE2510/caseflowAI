@@ -1,6 +1,7 @@
 from apps.ai.schemas import KnowledgeArticle, KnowledgeRequest
 from apps.ai.config import TRAINING_EXAMPLES
 from apps.ai.models.classifier import classify_text
+from apps.ai.models.text_utils import extract_entities
 from apps.ai.routers.knowledge import retrieve_knowledge
 
 
@@ -20,6 +21,11 @@ def test_classifies_login_request():
     result = classify_text("Em không đăng nhập được tài khoản SIS và đã thử đặt lại mật khẩu")
     assert result["label"] == "it_access"
     assert result["confidence"] > 0.2
+
+
+def test_entity_extraction_requires_a_student_id_prefix():
+    assert "studentId" not in extract_entities("Số điện thoại của em là 0912345678")
+    assert extract_entities("MSSV: 2020123456 cần được cập nhật") ["studentId"] == "MSSV: 2020123456"
 
 
 def test_classifies_facilities_request():
@@ -121,4 +127,3 @@ def test_retrieval_matches_query_in_title_only():
     result = retrieve_knowledge(request)
     assert result["citations"], "Expected at least one citation for title-matching query"
     assert result["citations"][0]["id"] == "title-match"
-

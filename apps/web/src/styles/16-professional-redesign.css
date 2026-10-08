@@ -145,7 +145,7 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
   gap: 10px;
 }
 .service-workspace .user-summary .avatar { width: 36px; height: 36px; flex-basis: 36px; }
-.service-workspace .user-summary > span { justify-content: center; gap: 2px; }
+.service-workspace .user-summary > span:not(.avatar) { justify-content: center; gap: 2px; }
 .user-summary strong { font-size: 12px; font-weight: 700; }
 
 .content { max-width: 1600px; padding: 34px 38px 56px; }

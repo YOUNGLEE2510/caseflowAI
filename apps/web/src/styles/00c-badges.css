@@ -106,6 +106,7 @@
 .avatar {
   display: inline-grid;
   place-items: center;
+  line-height: 1;
   flex: 0 0 auto;
   color: #fff;
   border-radius: 50%;

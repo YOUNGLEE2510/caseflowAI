@@ -8,6 +8,8 @@ const WORKING_WINDOWS = [
   [8 * 60, 12 * 60],
   [13 * 60, 17 * 60]
 ] as const;
+const DEFAULT_CALENDAR: WorkingHoursCalendar = {};
+const holidaySets = new WeakMap<WorkingHoursCalendar, ReadonlySet<string>>();
 
 function localDate(value: Date) {
   return new Date(value.getTime() + VIETNAM_OFFSET_MS);
@@ -21,9 +23,17 @@ function dateKey(local: Date) {
   return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`;
 }
 
+function holidaySet(calendar: WorkingHoursCalendar) {
+  const cached = holidaySets.get(calendar);
+  if (cached) return cached;
+  const holidays = new Set(calendar.holidays || []);
+  holidaySets.set(calendar, holidays);
+  return holidays;
+}
+
 function isWorkingDay(local: Date, calendar: WorkingHoursCalendar) {
   const day = local.getUTCDay();
-  return day !== 0 && day !== 6 && !new Set(calendar.holidays || []).has(dateKey(local));
+  return day !== 0 && day !== 6 && !holidaySet(calendar).has(dateKey(local));
 }
 
 function nextWorkingMoment(value: Date, calendar: WorkingHoursCalendar) {
@@ -42,7 +52,7 @@ function nextWorkingMoment(value: Date, calendar: WorkingHoursCalendar) {
   }
 }
 
-export function addBusinessHours(start: Date, hours: number, calendar: WorkingHoursCalendar = {}) {
+export function addBusinessHours(start: Date, hours: number, calendar: WorkingHoursCalendar = DEFAULT_CALENDAR) {
   let remainingMs = Math.max(0, hours * 3_600_000);
   let cursor = nextWorkingMoment(start, calendar);
   while (remainingMs > 0) {
@@ -63,7 +73,7 @@ export function addBusinessHours(start: Date, hours: number, calendar: WorkingHo
   return cursor;
 }
 
-export function businessHoursBetween(start: Date, end: Date, calendar: WorkingHoursCalendar = {}) {
+export function businessHoursBetween(start: Date, end: Date, calendar: WorkingHoursCalendar = DEFAULT_CALENDAR) {
   if (end <= start) return 0;
   let cursor = nextWorkingMoment(start, calendar);
   let milliseconds = 0;

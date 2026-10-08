@@ -1,0 +1,53 @@
+.field .password-field {
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  min-width: 0;
+}
+
+.field .password-field input,
+.field .password-field input:focus {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 7px 0 0 7px;
+  box-shadow: none;
+  background: transparent;
+}
+
+.field .password-field .icon-button {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  margin: 0 1px 0 0;
+  background: transparent;
+}
+
+.provider-mark {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.login-microsoft {
+  margin-top: 10px;
+}
+
+.login-panel .login-google {
+  min-height: 44px;
+  white-space: normal;
+  border: 1px solid #747775;
+  background: #fff;
+  color: #1f1f1f;
+}
+
+.login-screen { font-size: 15px; line-height: 1.5; font-weight: 400; }
+.login-heading h1 { font-size: 26px; line-height: 1.35; font-weight: 600; }
+.login-heading p, .login-panel .field > span:first-child,
+.login-panel :is(input, select, .button) { font-size: 15px; line-height: 1.5; }
+.login-panel :is(.button, .field > span:first-child) { font-weight: 500; }
+.login-panel :is(.demo-switcher button, .login-help, .field-error) { font-size: 13px; line-height: 1.5; }

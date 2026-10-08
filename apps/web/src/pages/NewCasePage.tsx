@@ -75,7 +75,7 @@ export function NewCasePage() {
       });
       if (controller.signal.aborted) return;
       setAnalysis(result);
-      setServiceKey(result.service?.key && !result.needsReview ? result.service.key : "");
+      if (!result.needsReview && result.service?.key) setServiceKey(result.service.key);
     } catch (requestError) {
       if (controller.signal.aborted) return;
       setError(requestError instanceof Error ? requestError.message : text("Không thể phân tích yêu cầu.", "We could not analyze this request."));

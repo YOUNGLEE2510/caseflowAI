@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import type { Transporter } from "nodemailer";
 
 /**
  * Email service abstraction.
@@ -22,9 +23,13 @@ function escapeHtml(value: string) {
 }
 
 function safeUrl(value: string) {
+  return escapeHtml(plainSafeUrl(value));
+}
+
+function plainSafeUrl(value: string) {
   try {
     const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) ? escapeHtml(url.toString()) : "#";
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "#";
   } catch {
     return "#";
   }
@@ -33,9 +38,11 @@ function safeUrl(value: string) {
 const smtpConfigured =
   Boolean(config.SMTP_HOST) &&
   Boolean(config.SMTP_PORT) &&
+  Boolean(config.SMTP_USER) &&
+  Boolean(config.SMTP_PASS) &&
   Boolean(config.SMTP_FROM);
 
-let transporter: any = null;
+let transporter: Transporter | null = null;
 
 async function getTransporter() {
   if (transporter) return transporter;
@@ -47,6 +54,9 @@ async function getTransporter() {
       host: config.SMTP_HOST,
       port: Number(config.SMTP_PORT),
       secure: Number(config.SMTP_PORT) === 465,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
       auth: config.SMTP_USER ? { user: config.SMTP_USER, pass: config.SMTP_PASS } : undefined
     });
     return transporter;
@@ -136,11 +146,13 @@ export function emailSlaWarning(caseCode: string, title: string, assigneeName: s
 }
 
 export function emailPasswordReset(recipientName: string, url: string) {
+  const plainName = recipientName;
+  const textUrl = plainSafeUrl(url);
   recipientName = escapeHtml(recipientName);
   url = safeUrl(url);
   return {
     subject: "[CaseFlow] Đặt lại mật khẩu",
-    text: `Xin chào ${recipientName},\n\nMở liên kết sau để đặt lại mật khẩu trong 30 phút: ${url}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.`,
+    text: `Xin chào ${plainName},\n\nMở liên kết sau để đặt lại mật khẩu trong 30 phút: ${textUrl}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.`,
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
         <h2 style="color: #155c4d;">Đặt lại mật khẩu</h2>

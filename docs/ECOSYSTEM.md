@@ -1,31 +1,17 @@
-# CaseFlow AI như một hệ sinh thái dịch vụ
+# Định hướng mở rộng nghiệp vụ
 
-CaseFlow AI học từ tư duy hệ sinh thái của các nền tảng quản lý giáo dục: một nguồn dữ liệu trung tâm, nhiều không gian theo vai trò, quy trình xuyên suốt và báo cáo được sinh ra từ dữ liệu tác nghiệp. Dự án không cố sao chép quy mô hoặc toàn bộ chức năng của vnEdu.
+CaseFlow AI được thiết kế theo mô hình lõi dùng chung (core domain) và có thể cấu hình linh hoạt theo từng lĩnh vực nghiệp vụ. Trong phạm vi đồ án tốt nghiệp, hệ thống tập trung hoàn thiện nghiệp vụ dịch vụ sinh viên và IT helpdesk trong trường đại học.
 
-## Khác với web quản lý hành chính truyền thống
+## So sánh với hệ thống quản lý thủ công
 
-| Web quản lý thông thường | CaseFlow AI |
+| Hệ thống quản lý truyền thống | CaseFlow AI |
 |---|---|
-| Người dùng tự chọn đúng biểu mẫu và phòng ban | Có thể mô tả tự nhiên, AI đề xuất dịch vụ và đơn vị |
-| Mỗi phòng ban giữ một danh sách riêng | Một hồ sơ xuyên suốt, có timeline và trách nhiệm |
-| Chỉ tìm theo mã hoặc từ khóa | Tìm hồ sơ tương tự và gom tín hiệu sự cố |
-| Nhắc hạn theo quy tắc tĩnh | Ước lượng nguy cơ trễ từ thời gian, tải và quy trình |
-| FAQ tĩnh | Truy xuất kho tri thức kèm nguồn để chuyên viên kiểm tra |
-| Báo cáo sau kỳ | Dashboard vận hành và hàng đợi ưu tiên gần thời gian thực |
+| Người dùng tự chọn đúng biểu mẫu và phòng ban | Nhập ngôn ngữ tự nhiên, AI phân loại đề xuất dịch vụ và đơn vị |
+| Mỗi đơn vị quản lý một danh sách riêng | Một hồ sơ xuyên suốt toàn bộ vòng đời, có timeline và phân công rõ ràng |
+| Tra cứu thủ công hoặc theo từ khóa chính xác | Gợi ý tài liệu liên quan kèm nguồn trích dẫn và phát hiện hồ sơ tương tự |
+| Nhắc hạn theo mốc cố định | Ước tính rủi ro quá hạn SLA dựa trên tiến độ và khối lượng công việc |
+| Báo cáo tổng hợp định kỳ thủ công | Dashboard vận hành và danh sách ưu tiên theo thời gian thực |
 
-## Lõi dùng chung và gói ngành
+## Khả năng cấu hình đa lĩnh vực
 
-Lõi dùng chung gồm người dùng, tổ chức, hồ sơ, workflow, SLA, timeline, bình luận, sự cố, tri thức và AI gateway. Gói ngành chỉ thay taxonomy, form động, workflow, SLA, tài liệu và dữ liệu huấn luyện.
-
-Ví dụ:
-
-- Giáo dục: học vụ, tài khoản, học phí, giấy xác nhận, cơ sở vật chất.
-- Doanh nghiệp: IT helpdesk, nhân sự, mua sắm, pháp chế, vận hành.
-- Y tế: yêu cầu hành chính, thiết bị, điều phối nội bộ; không tự chẩn đoán.
-- Dịch vụ công: tiếp nhận phản ánh, phân luồng đơn vị, theo dõi thời hạn và công khai tiến độ.
-
-## Phạm vi bảo vệ tốt nghiệp
-
-Nên trình bày một vertical hoàn chỉnh là dịch vụ sinh viên và IT helpdesk. Khả năng đa ngành được chứng minh bằng cấu hình dịch vụ và kiến trúc, không cần triển khai đồng thời nhiều sản phẩm nửa vời.
-
-Điểm nghiên cứu có thể đo được gồm độ chính xác phân loại, chất lượng tìm tương tự, độ đúng của citation, khả năng dự báo SLA và tác động đến thời gian điều phối. Điểm kỹ thuật hệ thống gồm phân quyền, multi-tenant foundation, fallback AI, audit trail, responsive UI và MongoDB.
+Lõi hệ thống bao gồm: quản lý tổ chức, người dùng, hồ sơ, quy trình trạng thái (FSM), SLA, phân quyền vai trò (RBAC), lịch sử xử lý (timeline & audit), kho tri thức và cổng AI. Khi chuyển đổi hoặc mở rộng sang lĩnh vực khác, hệ thống chỉ cần cập nhật danh mục dịch vụ (taxonomy), quy tắc SLA và dữ liệu kho tri thức mà không cần thay đổi kiến trúc lõi.
