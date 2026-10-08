@@ -76,10 +76,24 @@ const envSchema = z.object({
   }
 });
 
-const parsed = envSchema.safeParse(process.env);
+const isTestEnv = process.env.NODE_ENV === "test";
+
+const envSource = isTestEnv
+  ? {
+      MONGODB_URI: "mongodb://127.0.0.1:27017/caseflow_test",
+      JWT_SECRET: "test-secret-with-at-least-24-characters",
+      STORAGE_PROVIDER: "local",
+      ...process.env
+    }
+  : process.env;
+
+const parsed = envSchema.safeParse(envSource);
 
 if (!parsed.success) {
   console.error("Invalid environment configuration", parsed.error.flatten().fieldErrors);
+  if (isTestEnv) {
+    throw new Error(`Invalid environment configuration in test mode: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+  }
   process.exit(1);
 }
 
