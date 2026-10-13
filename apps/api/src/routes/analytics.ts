@@ -2,7 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { requireRoles } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
-import { AuditLog, CaseRecord, Incident, Organization, ServiceDefinition, SLASnapshot } from "../models.js";
+import { AuditLog, CaseRecord, Incident, Organization, ServiceDefinition, SLASnapshot, User, KnowledgeArticle, Attachment } from "../models.js";
 import { pageNumber } from "../services/casePolicy.js";
 import { buildReviewedTrainingCsv, type ReviewedCase } from "../services/trainingDataset.js";
 import { addBusinessHours, businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
@@ -17,9 +17,6 @@ function csvCell(value: unknown) {
   return `"${cell.replace(/"/g, '""')}"`;
 }
 
-/* ═══════════════════════════════════════════════
-   TREND: Hồ sơ mới theo ngày (30 ngày gần nhất)
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/trends",
@@ -59,9 +56,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   SLA COMPLIANCE: Tỷ lệ đúng hạn theo team/service
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/sla-compliance",
@@ -123,9 +117,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   TEAM PERFORMANCE: Hiệu suất nhân viên
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/team-performance",
@@ -189,9 +180,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   CSAT: Điểm hài lòng do requester gửi sau xử lý
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/csat",
@@ -227,9 +215,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   AI ACCURACY: Độ chính xác phân loại AI
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/ai-accuracy",
@@ -288,9 +273,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   CATEGORY DISTRIBUTION: Phân bổ theo danh mục
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/categories",
@@ -324,9 +306,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   AUDIT LOG: Nhật ký hệ thống
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/audit-log",
@@ -354,13 +333,25 @@ analyticsRouter.get(
       AuditLog.countDocuments(filter)
     ]);
 
-    res.json({ logs, total, page, limit, totalPages: Math.ceil(total / limit) });
+    const ids = (resource: string) => logs.filter(log => log.resource === resource && mongoose.isValidObjectId(log.resourceId)).map(log => log.resourceId);
+    const scoped = (resource: string) => ({ organizationId: req.auth!.organizationId, _id: { $in: ids(resource) } });
+    const [cases, users, services, articles, attachments, incidents] = await Promise.all([
+      CaseRecord.find(scoped("CaseRecord")).select("code").lean(),
+      User.find(scoped("User")).select("name").lean(),
+      ServiceDefinition.find(scoped("ServiceDefinition")).select("name").lean(),
+      KnowledgeArticle.find(scoped("KnowledgeArticle")).select("title").lean(),
+      Attachment.find(scoped("Attachment")).select("originalName").lean(),
+      Incident.find(scoped("Incident")).select("code").lean()
+    ]);
+    const labels = new Map<string, string>();
+    for (const item of [...cases, ...incidents]) labels.set(String(item._id), item.code);
+    for (const item of [...users, ...services]) labels.set(String(item._id), item.name);
+    for (const item of articles) labels.set(String(item._id), item.title);
+    for (const item of attachments) labels.set(String(item._id), item.originalName);
+    res.json({ logs: logs.map(log => ({ ...log, resourceLabel: labels.get(String(log.resourceId)) })), total, page, limit, totalPages: Math.ceil(total / limit) });
   }
 );
 
-/* ═══════════════════════════════════════════════
-   CSV EXPORT: Xuất dữ liệu hồ sơ
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/export/csv",
@@ -401,9 +392,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   TRAINING DATA EXPORT: Only human-reviewed, de-identified cases
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/export/training.csv",
@@ -425,9 +413,6 @@ analyticsRouter.get(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   PRIORITY DISTRIBUTION: Phân bổ theo mức ưu tiên
-   ═══════════════════════════════════════════════ */
 
 analyticsRouter.get(
   "/priorities",

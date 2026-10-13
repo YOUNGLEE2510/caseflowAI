@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useLocale } from "../i18n";
+import { Modal } from "./Modal";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -41,15 +42,8 @@ export function ConfirmDialog({
   }
 
   return (
-    <div className="confirm-overlay" onClick={onCancel}>
-      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
-        <div className="confirm-header">
-          {danger ? <AlertTriangle size={22} className="confirm-icon-danger" /> : null}
-          <h3>{title}</h3>
-          <button className="icon-button" onClick={onCancel} aria-label={text("Đóng", "Close")}>
-            <X size={18} />
-          </button>
-        </div>
+    <Modal title={title} onClose={() => { if (!loading) onCancel(); }}>
+        {danger ? <AlertTriangle size={22} className="confirm-icon-danger" aria-hidden="true" /> : null}
         <div className="confirm-body">
           {typeof message === "string" ? <p>{message}</p> : message}
         </div>
@@ -70,7 +64,6 @@ export function ConfirmDialog({
             {confirmLabel || text("Xác nhận", "Confirm")}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

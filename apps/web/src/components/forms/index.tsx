@@ -5,7 +5,7 @@ import { useLocale } from "../../i18n";
 export function FileUploadArea({
   files,
   onFilesChange,
-  accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg",
+  accept = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg",
   maxSizeMB = 10,
   label = "Đính kèm tài liệu liên quan",
   helperText = `PDF, DOCX, XLSX, PNG hoặc JPG · tối đa ${maxSizeMB} MB mỗi tệp`,
@@ -73,6 +73,7 @@ export function FileUploadArea({
             inputRef.current?.click();
           }}
         >
+          <Upload size={16} aria-hidden="true" />
           {selectLabel}
         </button>
         <input

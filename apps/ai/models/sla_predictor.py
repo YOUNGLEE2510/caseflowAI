@@ -1,14 +1,4 @@
-"""
-Dự báo nguy cơ trễ SLA cho hồ sơ đang xử lý.
-
-Model hiện tại train trên dữ liệu synthetic (tổng hợp), chưa phải
-dữ liệu vận hành thật. Hệ số trong logit function được chọn thủ công
-để mô phỏng pattern hợp lý: thời gian đã dùng, số lần chuyển bộ phận,
-workload team, v.v. đều tương quan dương với xác suất trễ.
-
-Khi có dữ liệu thật từ pilot, cần train lại và so sánh với baseline
-rule-based (elapsed >= 80% → high risk).
-"""
+"""Experimental SLA baseline trained on synthetic labels, not operational outcomes."""
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline

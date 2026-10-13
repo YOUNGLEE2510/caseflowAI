@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BookMarked, ExternalLink, Search, Send, Sparkles, Plus, Pencil } from "lucide-react";
 import { useAuth } from "../auth";
 import { ArticleEditor } from "../components/AdminEditors";
@@ -9,6 +9,8 @@ import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { KnowledgeArticle } from "../types";
 import { ReadMore } from "../components/ReadMore";
+import { matchesSearch } from "../utils/search";
+import { categoryLabels } from "../utils/labels";
 
 interface SearchResult {
   generation?: { mode: string; reason?: string };
@@ -23,7 +25,7 @@ interface SearchResult {
 }
 
 export function KnowledgePage() {
-  const { text } = useLocale();
+  const { locale, text } = useLocale();
   const { user } = useAuth();
   const canWrite = user?.role !== "requester";
   const canPublish = Boolean(user && ["manager", "org_admin", "platform_admin"].includes(user.role));
@@ -35,7 +37,14 @@ export function KnowledgePage() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [generate, setGenerate] = useState(false);
+  const filteredArticles = useMemo(() => data?.articles.filter(article => matchesSearch([article.title, article.content, article.sourceLabel, categoryLabels[article.category]?.[locale] || article.category].join(" "), query)) || [], [data, query, locale]);
   const { data: capabilities } = useApiData<{ generation: boolean }>("/knowledge/capabilities");
+
+  function openSource(id: string) {
+    const article = data?.articles.find(item => item._id === id);
+    if (article) setOpened(article);
+    else setSearchError(text("Nguồn không còn trong danh mục khả dụng. Hãy tải lại trang và tra cứu lại.", "This source is no longer available. Reload and search again."));
+  }
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
@@ -68,20 +77,15 @@ export function KnowledgePage() {
         )}
       />
 
-      <section className="knowledge-search knowledge-search-premium">
-        <div className="knowledge-search-heading">
-          <span className="ai-label">
-            <Sparkles size={14} /> {text("AI có nguồn dẫn", "Grounded AI")}
-          </span>
-          <h2>{text("Tra cứu nghiệp vụ", "Ask the knowledge base")}</h2>
-        </div>
+      <section className="knowledge-search knowledge-search-premium" aria-label={text("Tra cứu tài liệu", "Search documents")}>
         <form onSubmit={search} className="knowledge-query-bar">
           <Search size={19} />
           <input
             aria-label={text("Câu hỏi tra cứu", "Knowledge query")}
             disabled={searching}
+            maxLength={1000}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => { setQuery(event.target.value); setResult(null); setSearchError(""); }}
             placeholder={text("Ví dụ: Sinh viên quên mật khẩu cần làm gì?", "Example: What should a student do after forgetting a password?")}
           />
           <button className="button button-primary" disabled={searching || query.trim().length < 3}>
@@ -104,10 +108,10 @@ export function KnowledgePage() {
                   <header>
                     <BookMarked size={17} />
                     <strong>[S{index + 1}] {citation.title}</strong>
-                    <span>{Math.round(citation.score * 100)}%</span>
+                    <span>{text("Liên quan", "Relevance")} {Math.round(citation.score * 100)}%</span>
                   </header>
                   <p>{citation.excerpt}</p>
-                  <footer>{citation.sourceLabel}</footer>
+                  <footer>{citation.sourceLabel}<button type="button" className="text-link" onClick={() => openSource(citation.id)}>{text("Mở nguồn", "Open source")}</button></footer>
                 </article>
               ))}
               {!result.citations.length ? (
@@ -124,20 +128,20 @@ export function KnowledgePage() {
             <span className="eyebrow">{text("Tài liệu tổ chức", "Organization documents")}</span>
             <h2>{text("Danh mục tài liệu", "Document library")}</h2>
           </div>
-          <span className="panel-kpi">{data?.articles.length || 0} {text("tài liệu", "documents")}</span>
+          <span className="panel-kpi">{filteredArticles.length} / {data?.articles.length || 0} {text("tài liệu", "documents")}</span>
         </div>
         {loading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} onRetry={reload} /> : null}
         {!loading && !error && data ? (
-          data.articles.length ? (
+          filteredArticles.length ? (
             <div className="article-list">
-              {data.articles.map((article) => (
+              {filteredArticles.map((article) => (
                 <article key={article._id}>
                   <span className="article-icon">
                     <BookMarked size={18} />
                   </span>
                   <div>
-                    <span className="article-category">{article.category.replace("_", " ")}</span>
+                    <span className="article-category">{categoryLabels[article.category]?.[locale] || article.category}</span>
                     <h3>{article.title}</h3>
                     <ReadMore text={article.content} limit={180} className="article-preview" />
                     <footer>
@@ -154,8 +158,8 @@ export function KnowledgePage() {
             </div>
           ) : (
             <EmptyState
-              title={text("Kho tri thức đang trống", "The knowledge base is empty")}
-              detail={text("Quản trị viên chưa thêm tài liệu.", "No documents have been added yet.")}
+              title={query.trim() ? text("Không có tài liệu khớp từ khóa", "No matching documents") : text("Kho tri thức đang trống", "The knowledge base is empty")}
+              detail={query.trim() ? text("Thử từ khóa khác hoặc gửi câu hỏi tra cứu.", "Try another keyword or submit a search question.") : text("Chưa có tài liệu đã được duyệt và công bố cho bạn. Bạn vẫn có thể gửi yêu cầu hỗ trợ.", "No approved documents are published for you yet. You can still submit a support request.")}
             />
           )
         ) : null}

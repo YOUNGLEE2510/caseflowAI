@@ -66,7 +66,7 @@ Baseline hiện tại truy xuất đoạn tài liệu và trả nguồn. Có nh�
 
 Framework đo retrieval đã có tại `python -m apps.ai.evaluate_retrieval`. Bộ benchmark phải dùng tài liệu đã phê duyệt và câu hỏi có `expected_ids` do chuyên viên xác nhận; báo cáo Hit@1, Hit@3, Recall@5, MRR và refusal rate. Evaluator từ chối câu hỏi tham chiếu tài liệu không tồn tại, nhãn `answerable` không hợp lệ, hoặc câu hỏi không thể trả lời nhưng vẫn có nhãn nguồn, nhờ đó tránh báo cáo sai do ground truth bị lỗi.
 
-Repository có fixture `apps/ai/tests/fixtures/retrieval_demo_*` và lệnh `npm run evaluate:retrieval` để kiểm thử pipeline có thể tái lập. Báo cáo được ghi tại `docs/ai-evaluation/retrieval_demo_report.json`; fixture chỉ chứa nội dung mô phỏng, không được dùng làm kết quả RAG của luận văn. Khi pilot, thay hai file đầu vào bằng tài liệu đã phê duyệt và 50-100 câu hỏi được chuyên viên khóa trước khi đánh giá.
+Fixture `apps/ai/tests/fixtures/retrieval_demo_*` và lệnh `npm run evaluate:retrieval` kiểm tra pipeline tái lập. Kết quả được ghi tại `artifacts/ai-evaluation/retrieval_demo_report.json`. Khi pilot, thay đầu vào bằng tài liệu đã phê duyệt và bộ câu hỏi độc lập được chuyên viên xác nhận trước khi đánh giá.
 
 ## MLOps tối thiểu
 

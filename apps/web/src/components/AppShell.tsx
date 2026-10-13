@@ -9,6 +9,8 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Network,
   Search,
   Siren,
@@ -23,6 +25,7 @@ import { useLocale } from "../i18n";
 import type { NotificationRecord, Role } from "../types";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Avatar, formatRelative } from "./ui";
+import { useConfirmation } from "./ConfirmationProvider";
 
 interface NavItem {
   to: string;
@@ -90,8 +93,42 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia("(max-width: 900px)").matches);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 900px)");
+    const update = () => { setMobileViewport(query.matches); if (!query.matches) setMobileOpen(false); };
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (!mobileOpen || !mobileViewport) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const controls = () => [...(sidebarRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') || [])].filter(item => item.getClientRects().length && getComputedStyle(item).display !== "none");
+    controls()[0]?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setMobileOpen(false); }
+      if (event.key !== "Tab") return;
+      const items = controls();
+      const first = items[0], last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", handleKey); menuButtonRef.current?.focus(); };
+  }, [mobileOpen, mobileViewport]);
+  useEffect(() => setMobileOpen(false), [location.pathname]);
+  const confirm = useConfirmation();
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem("caseflow.sidebar.collapsed") === "true"; }
+    catch { return false; }
+  });
   const [globalSearch, setGlobalSearch] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -101,13 +138,12 @@ export function AppShell() {
   const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role));
   const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role));
   const organizationName = user?.organizationName || text("Tổ chức của bạn", "Your organization");
-  const organizationMark = organizationName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+  function toggleSidebar() {
+    setCollapsed(current => {
+      try { localStorage.setItem("caseflow.sidebar.collapsed", String(!current)); } catch { /* The toggle still works when browser storage is unavailable. */ }
+      return !current;
+    });
+  }
 
   const loadNotifications = useCallback(async () => {
     setNotificationLoading(true);
@@ -136,6 +172,7 @@ export function AppShell() {
 
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) setAccountOpen(false);
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setNotificationOpen(false);
       }
@@ -144,7 +181,7 @@ export function AppShell() {
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, []);
 
-  useEffect(() => setNotificationOpen(false), [location.pathname]);
+  useEffect(() => { setNotificationOpen(false); setAccountOpen(false); }, [location.pathname]);
 
   function submitGlobalSearch(event: FormEvent) {
     event.preventDefault();
@@ -189,8 +226,8 @@ export function AppShell() {
   }
 
   return (
-    <div className={`app-frame service-workspace ${user?.role === "requester" ? "student-workspace" : "staff-workspace"}`}>
-      <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
+    <div className={`app-frame service-workspace ${collapsed ? "sidebar-collapsed" : ""} ${user?.role === "requester" ? "student-workspace" : "staff-workspace"}`}>
+      <aside ref={sidebarRef} className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`} id="workspace-sidebar" inert={mobileViewport && !mobileOpen} role={mobileViewport && mobileOpen ? "dialog" : undefined} aria-modal={mobileViewport && mobileOpen ? true : undefined} aria-label={text("Menu chính", "Main menu")}>
         <div className="brand">
           <Link to="/overview" className="brand-link" onClick={() => setMobileOpen(false)}>
             <span className="brand-mark">
@@ -198,9 +235,13 @@ export function AppShell() {
             </span>
             <span className="brand-copy">
               <strong>CaseFlow</strong>
-              <small>Service Intelligence</small>
+              <small>{text("Quản lý dịch vụ", "Service management")}</small>
             </span>
           </Link>
+          <button className="sidebar-collapse icon-button" type="button" onClick={toggleSidebar} aria-expanded={!collapsed} aria-label={collapsed ? text("Mở rộng sidebar", "Expand sidebar") : text("Thu gọn sidebar", "Collapse sidebar")} title={collapsed ? text("Mở rộng sidebar", "Expand sidebar") : text("Thu gọn sidebar", "Collapse sidebar")}>
+            <span className="collapsed-brand-mark" aria-hidden="true"><Network size={19} /></span>
+            {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
           <button
             className="icon-button sidebar-close"
             onClick={() => setMobileOpen(false)}
@@ -219,6 +260,8 @@ export function AppShell() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                title={text(item.label.vi, item.label.en)}
+                aria-label={text(item.label.vi, item.label.en)}
                 end={item.to === "/overview" || item.to === "/cases"}
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
@@ -237,6 +280,8 @@ export function AppShell() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                title={text(item.label.vi, item.label.en)}
+                aria-label={text(item.label.vi, item.label.en)}
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
               >
@@ -248,14 +293,9 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="organization-switcher organization-summary">
-            <span className="organization-logo">{organizationMark}</span>
-            <span>
-              <strong>{organizationName}</strong>
-              <small>{text("Không gian tổ chức", "Organization workspace")}</small>
-            </span>
-          </div>
-          <button className="nav-item logout-button" onClick={logout}>
+          <button className="nav-item logout-button" title={text("Đăng xuất", "Sign out")} aria-label={text("Đăng xuất", "Sign out")} onClick={async () => {
+            if (await confirm({ title: text("Đăng xuất?", "Sign out?"), message: text("Bạn sẽ kết thúc phiên làm việc hiện tại.", "Your current session will end.") })) await logout();
+          }}>
             <LogOut size={18} />
             <span>{text("Đăng xuất", "Sign out")}</span>
           </button>
@@ -266,11 +306,11 @@ export function AppShell() {
         <button className="sidebar-scrim" onClick={() => setMobileOpen(false)} aria-label={text("Đóng menu", "Close menu")} />
       ) : null}
 
-      <div className="app-main">
+      <div className="app-main" inert={mobileViewport && mobileOpen}>
         <header className="topbar">
-          <button className="mobile-brand" onClick={() => setMobileOpen(true)} aria-label={text("Mở menu", "Open menu")}>
+          <button ref={menuButtonRef} className="mobile-brand" onClick={() => setMobileOpen(true)} aria-expanded={mobileOpen} aria-controls="workspace-sidebar" aria-label={text("Mở menu", "Open menu")}>
             <span className="brand-mark">
-              <Network size={18} />
+              <Menu size={20} />
             </span>
             <span>
               <strong>CaseFlow</strong>
@@ -288,8 +328,7 @@ export function AppShell() {
               <Menu size={20} />
             </button>
             <div>
-              <strong>{text(meta.title.vi, meta.title.en)}</strong>
-              <span>{text(meta.subtitle.vi, meta.subtitle.en)}</span>
+              <strong title={text(meta.title.vi, meta.title.en)}>{organizationName}</strong>
             </div>
           </div>
 
@@ -366,13 +405,22 @@ export function AppShell() {
                 </section>
               ) : null}
             </div>
-            <Link to="/profile" className="user-summary" aria-label={text("Hồ sơ cá nhân", "My profile")}>
+            <div className="account-menu" ref={accountRef}>
+            <button type="button" className="user-summary" aria-label={text("Menu tài khoản", "Account menu")} aria-expanded={accountOpen} onClick={() => setAccountOpen(current => !current)} onKeyDown={event => { if (event.key === "Escape") setAccountOpen(false); }}>
               <Avatar name={user?.name || ""} color={user?.avatarColor} size="small" />
               <span>
                 <strong>{user?.name}</strong>
                 <small>{user?.title || user?.role}</small>
               </span>
-            </Link>
+            </button>
+            {accountOpen ? <div className="account-popover" onKeyDown={event => { if (event.key === "Escape") setAccountOpen(false); }}>
+              <Link className="button button-secondary" to="/profile">{text("Hồ sơ cá nhân", "My profile")}</Link>
+              <button className="button button-secondary" type="button" onClick={async () => {
+                setAccountOpen(false);
+                if (await confirm({ title: text("Đăng xuất?", "Sign out?"), message: text("Bạn sẽ kết thúc phiên làm việc hiện tại.", "Your current session will end.") })) await logout();
+              }}><LogOut size={16} />{text("Đăng xuất", "Sign out")}</button>
+            </div> : null}
+            </div>
           </div>
         </header>
 

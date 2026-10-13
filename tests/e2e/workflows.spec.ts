@@ -1,6 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
+async function confirmAction(page: Page, title: string) {
+  const dialog = page.getByRole("dialog", { name: title, exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Xác nhận", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+}
+
 async function login(page: Page, email: string) {
   await page.goto("/login");
   await page.getByLabel("Mã tổ chức").fill("minh-khai-university");
@@ -52,6 +59,7 @@ test("password reset request is available without disclosing account existence",
   await dialog.getByLabel("Mã tổ chức").fill("minh-khai-university");
   await dialog.getByLabel("Email tổ chức").fill("student@caseflow.local");
   await dialog.getByRole("button", { name: "Gửi hướng dẫn", exact: true }).click();
+  await confirmAction(page, "Gửi hướng dẫn đổi mật khẩu?");
   await expect(dialog.getByText("Nếu tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.", { exact: true })).toBeVisible();
   await page.goto("/reset-password");
   await expect(page.getByText("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.", { exact: true })).toBeVisible();
@@ -111,11 +119,13 @@ test("admin creates, edits and disables catalog/member records and publishes kno
   await dialog.getByLabel("Tên dịch vụ").fill("Dịch vụ kiểm thử");
   await dialog.getByLabel("Đơn vị phụ trách").fill("Trung tâm CNTT");
   await dialog.getByRole("button", { name: "Lưu dịch vụ" }).click();
+  await confirmAction(page, "Lưu dịch vụ?");
   await expect(dialog).not.toBeVisible();
   await page.getByRole("button").filter({ hasText: "Dịch vụ kiểm thử" }).click();
   await page.getByRole("button", { name: "Sửa cấu hình" }).click();
   await dialog.getByLabel("Đang hoạt động").uncheck();
   await dialog.getByRole("button", { name: "Lưu dịch vụ" }).click();
+  await confirmAction(page, "Lưu dịch vụ?");
   await expect(page.getByRole("button").filter({ hasText: "Dịch vụ kiểm thử" })).toContainText("Tạm dừng");
   await page.goto("/users");
   await page.getByRole("button", { name: "Thêm thành viên", exact: true }).click();
@@ -123,12 +133,20 @@ test("admin creates, edits and disables catalog/member records and publishes kno
   await dialog.getByLabel("Email", { exact: true }).fill("e2e-member@caseflow.local");
   await dialog.getByLabel("Mật khẩu ban đầu").fill("StrongTest123!");
   await dialog.getByRole("button", { name: "Lưu thành viên" }).click();
+  await confirmAction(page, "Lưu thành viên?");
   await expect(dialog).not.toBeVisible();
   await page.getByRole("button").filter({ hasText: "e2e-member@caseflow.local" }).click();
   await page.getByRole("button", { name: "Sửa thành viên" }).click();
   await dialog.getByLabel("Đang hoạt động").uncheck();
   await dialog.getByRole("button", { name: "Lưu thành viên" }).click();
+  await confirmAction(page, "Lưu thành viên?");
   await expect(page.getByRole("button").filter({ hasText: "e2e-member@caseflow.local" })).toContainText("Đã khóa");
+  await page.getByRole("button", { name: "Mở khóa", exact: true }).click();
+  await confirmAction(page, "Mở khóa tài khoản?");
+  await expect(page.getByRole("button").filter({ hasText: "e2e-member@caseflow.local" })).toContainText("Hoạt động");
+  await page.getByRole("button", { name: "Gửi link đổi mật khẩu", exact: true }).click();
+  await confirmAction(page, "Gửi hướng dẫn đổi mật khẩu?");
+  await expect(page.getByText("Nếu tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.", { exact: true })).toBeVisible();
   await page.goto("/knowledge");
   await page.getByRole("button", { name: "Thêm tài liệu" }).click();
   await dialog.getByLabel("Tên tài liệu").fill("Quy trình kiểm thử tài khoản");
@@ -136,10 +154,11 @@ test("admin creates, edits and disables catalog/member records and publishes kno
   await dialog.getByLabel("Nguồn ban hành").fill("Tài liệu kiểm thử");
   await dialog.getByLabel("Phê duyệt và công bố").check();
   await dialog.getByRole("button", { name: "Lưu tài liệu" }).click();
+  await confirmAction(page, "Công bố tài liệu?");
   await expect(page.getByRole("heading", { name: "Quy trình kiểm thử tài khoản" })).toBeVisible();
   await page.goto("/system");
   await expect(page.getByText("Đã kết nối", { exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "knowledge.create", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Thêm tài liệu", exact: true })).toBeVisible();
   await overflow(page);
   await mkdir("artifacts/ui-review", { recursive: true });
   await page.screenshot({ path: "artifacts/ui-review/upgraded-system-desktop.png", fullPage: true });
@@ -158,6 +177,7 @@ test("request intake, real file round-trip, staff review and private notes", asy
   const file = Buffer.from("%PDF-1.4\nTest file round-trip\n%%EOF");
   await page.locator('input[type="file"]').setInputFiles({ name: "request.pdf", mimeType: "application/pdf", buffer: file });
   await page.getByRole("button", { name: "Tạo hồ sơ" }).click();
+  await confirmAction(page, "Gửi yêu cầu?");
   await expect(page).toHaveURL(/\/cases\/(?!new$)[^/]+$/);
   await expect(page.getByText("SV2026001", { exact: true })).toBeVisible();
   const caseUrl = page.url();
@@ -175,14 +195,18 @@ test("request intake, real file round-trip, staff review and private notes", asy
     await login(staff, "manager@caseflow.local");
     await staff.goto(caseUrl);
     await staff.getByRole("button", { name: "Xác nhận phân luồng" }).click();
+    await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByRole("button", { name: "Xác nhận phân luồng" })).not.toBeVisible();
     await staff.getByLabel("Người xử lý", { exact: true }).selectOption({ label: "Lê Hoàng Nam · Trung tâm CNTT" });
+    await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByLabel("Trạng thái", { exact: true }).locator('option[value="in_progress"]')).toHaveCount(1);
     await staff.getByLabel("Trạng thái", { exact: true }).selectOption("in_progress");
+    await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByLabel("Trạng thái", { exact: true })).toHaveValue("in_progress");
     await staff.locator(".comment-form textarea").fill("PRIVATE STAFF NOTE");
     await staff.getByLabel("Ghi chú nội bộ").check();
     await staff.locator(".comment-form").getByRole("button", { name: /Gửi/ }).click();
+    await confirmAction(staff, "Gửi ghi chú nội bộ?");
     await expect(staff.getByText("PRIVATE STAFF NOTE", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByText("PRIVATE STAFF NOTE", { exact: true })).toHaveCount(0);

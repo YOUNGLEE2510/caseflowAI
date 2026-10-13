@@ -134,7 +134,7 @@ attachmentRouter.post("/cases/:caseId/attachments", raw({ type: "application/oct
 
   await logAudit({
     ...auditFromReq(req),
-    action: "case.update",
+    action: "attachment.upload",
     resource: "Attachment",
     resourceId: String(attachment._id),
     changes: { filename: originalName, size: buffer.length }

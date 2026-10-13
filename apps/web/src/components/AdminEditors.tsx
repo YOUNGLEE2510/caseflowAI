@@ -5,17 +5,22 @@ import { useLocale } from "../i18n";
 import type { KnowledgeArticle, ServiceDefinition, User } from "../types";
 import { ErrorState } from "./ui";
 import { Modal } from "./Modal";
+import { useConfirmation } from "./ConfirmationProvider";
+import { categoryLabels } from "../utils/labels";
 
 export const categories = ["it_access", "academic_records", "student_services", "facilities", "finance", "general_support"];
 type EditorActions = { onClose: () => void; onSaved: () => void };
 
 export function ServiceEditor({ service, onClose, onSaved }: EditorActions & { service?: ServiceDefinition }) {
-  const { text } = useLocale();
+  const { locale, text } = useLocale();
+  const confirm = useConfirmation();
   const [form, setForm] = useState({ key: service?.key || "", name: service?.name || "", description: service?.description || "", category: service?.category || "general_support", team: service?.team || "", slaHours: service?.slaHours || 24, fields: service?.requiredFields.join("\n") || "", active: service?.active !== false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault();
+    if (busy || !await confirm({ title: text("Lưu dịch vụ?", "Save service?"), message: `${form.name} · ${form.team} · ${form.slaHours} ${text("giờ", "hours")}` })) return;
+    setBusy(true); setError("");
     try {
       const { fields, ...values } = form;
       await api(service ? `/services/${service._id}` : "/services", { method: service ? "PATCH" : "POST", body: JSON.stringify({ ...values, autoAssign: false, requiredFields: fields.split("\n").map((field) => field.trim()).filter(Boolean) }) });
@@ -28,7 +33,7 @@ export function ServiceEditor({ service, onClose, onSaved }: EditorActions & { s
       <label className="field"><span>{text("Mã dịch vụ", "Service key")}</span><input required minLength={2} maxLength={50} pattern="[a-z][a-z0-9_]*" disabled={Boolean(service)} value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} /></label>
       <label className="field"><span>{text("Tên dịch vụ", "Service name")}</span><input required minLength={2} maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
       <label className="field"><span>{text("Mô tả", "Description")}</span><textarea maxLength={500} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-      <div className="form-grid"><label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
+      <div className="form-grid"><label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{categories.map((category) => <option key={category} value={category}>{categoryLabels[category][locale]}</option>)}</select></label>
       <label className="field"><span>{text("Đơn vị phụ trách", "Owning team")}</span><input required minLength={2} maxLength={60} value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })} /></label></div>
       <label className="field"><span>{text("SLA xử lý (giờ)", "Resolution SLA (hours)")}</span><input type="number" required min={1} max={720} value={form.slaHours} onChange={(e) => setForm({ ...form, slaHours: Number(e.target.value) })} /></label>
       <label className="field"><span>{text("Trường bắt buộc (mỗi dòng một tên)", "Required fields (one name per line)")}</span><textarea rows={3} disabled={form.key === "general_support"} value={form.fields} onChange={(e) => setForm({ ...form, fields: e.target.value })} /></label>
@@ -41,11 +46,14 @@ export function ServiceEditor({ service, onClose, onSaved }: EditorActions & { s
 
 export function UserEditor({ member, onClose, onSaved }: EditorActions & { member?: User }) {
   const { text } = useLocale();
+  const confirm = useConfirmation();
   const [form, setForm] = useState({ name: member?.name || "", email: member?.email || "", password: "", role: member?.role || "requester", team: member?.team || "", title: member?.title || "", active: member?.active !== false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault();
+    if (busy || !await confirm({ title: text("Lưu thành viên?", "Save member?"), message: `${form.name} · ${form.email}`, danger: !form.active })) return;
+    setBusy(true); setError("");
     try {
       const { password, ...values } = form;
       await api(member ? `/users/${member.id}` : "/users", { method: member ? "PATCH" : "POST", body: JSON.stringify(member ? values : { ...values, password }) });
@@ -70,12 +78,15 @@ export function UserEditor({ member, onClose, onSaved }: EditorActions & { membe
 }
 
 export function ArticleEditor({ article, canPublish, onClose, onSaved }: EditorActions & { article?: KnowledgeArticle; canPublish: boolean }) {
-  const { text } = useLocale();
+  const { locale, text } = useLocale();
+  const confirm = useConfirmation();
   const [form, setForm] = useState({ title: article?.title || "", content: article?.content || "", category: article?.category || "general_support", sourceLabel: article?.sourceLabel || "", sourceUrl: article?.sourceUrl || "", version: article?.version || "1.0", status: canPublish ? article?.status || "draft" : "draft" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault();
+    if (busy || !await confirm({ title: form.status === "published" ? text("Công bố tài liệu?", "Publish document?") : text("Lưu bản nháp?", "Save draft?"), message: form.title })) return;
+    setBusy(true); setError("");
     try {
       await api(article ? `/knowledge/${article._id}` : "/knowledge", { method: article ? "PATCH" : "POST", body: JSON.stringify(form) });
       onSaved();
@@ -86,7 +97,7 @@ export function ArticleEditor({ article, canPublish, onClose, onSaved }: EditorA
     <form className="form-stack" onSubmit={submit}>
       <label className="field"><span>{text("Tên tài liệu", "Document title")}</span><input required minLength={5} maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
       <label className="field"><span>{text("Nội dung", "Content")}</span><textarea rows={10} required minLength={20} maxLength={50000} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} /></label>
-      <label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
+      <label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{categories.map((category) => <option key={category} value={category}>{categoryLabels[category][locale]}</option>)}</select></label>
       <label className="field"><span>{text("Nguồn ban hành", "Issuing source")}</span><input required minLength={2} maxLength={120} value={form.sourceLabel} onChange={(e) => setForm({ ...form, sourceLabel: e.target.value })} /></label>
       <label className="field"><span>{text("Liên kết nguồn", "Source URL")}</span><input type="url" value={form.sourceUrl} onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })} /></label>
       <label className="field"><span>{text("Phiên bản", "Version")}</span><input required maxLength={30} value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} /></label>

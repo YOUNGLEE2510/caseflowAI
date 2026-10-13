@@ -26,6 +26,8 @@ export function caseScope(auth: AuthUser): Record<string, unknown> {
 
 export function presentCase(record: any, role: AuthUser["role"]) {
   const value = typeof record.toObject === "function" ? record.toObject({ flattenMaps: true }) : { ...record };
+  delete value.idempotencyKeyHash;
+  delete value.requestFingerprint;
   if (role !== "requester") return value;
   return {
     ...value,

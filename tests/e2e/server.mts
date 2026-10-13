@@ -21,6 +21,12 @@ const { app } = await import("../../apps/api/src/app.js");
 const { seedDatabase } = await import("../../apps/api/src/seed.js");
 await mongoose.connect(database.getUri(), { dbName: process.env.MONGODB_DB });
 await seedDatabase(false);
+// Approved fixture only in this disposable database; never publish production drafts.
+const { KnowledgeArticle, Organization } = await import("../../apps/api/src/models.js");
+const organization = await Organization.findOne({ slug: "minh-khai-university" });
+await KnowledgeArticle.create({ organizationId: organization!._id, title: "Kiểm thử khôi phục mật khẩu sinh viên",
+  content: "Tài liệu kiểm thử: sinh viên quên mật khẩu liên hệ đơn vị hỗ trợ tài khoản để xác minh danh tính.",
+  category: "it_access", sourceLabel: "Fixture E2E, không phải quy trình thực tế", status: "published", effectiveAt: new Date(), reviewedByName: "E2E reviewer", reviewedAt: new Date() });
 const api = app.listen(0, "127.0.0.1");
 await new Promise<void>((done) => api.once("listening", done));
 const address = api.address();

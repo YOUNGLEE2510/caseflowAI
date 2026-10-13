@@ -17,8 +17,10 @@ jobs:
           cache: pip
           cache-dependency-path: apps/ai/requirements.txt
       - run: npm ci
-      - run: npm audit --omit=dev
+      - run: npm audit --audit-level=high
       - run: pip install -r apps/ai/requirements.txt
+      - run: pip install pip-audit==2.10.0
+      - run: pip-audit -r apps/ai/requirements.txt
       - run: npm run build
       - run: npm test
       - run: npm run evaluate:retrieval

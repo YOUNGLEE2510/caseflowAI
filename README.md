@@ -27,7 +27,6 @@ docs/
   EXPERIMENT_PROTOCOL.md
   OAUTH_SETUP.md
   QUICKSTART.md
-  PROJECT_OVERVIEW_FOR_ADVISOR.md
 ```
 
 ## Chạy dự án
@@ -111,7 +110,7 @@ Tài liệu OpenAPI của dịch vụ AI: `http://127.0.0.1:8001/docs`.
 
 Chuẩn bị dữ liệu phân loại đã được phép sử dụng: `python -m apps.ai.prepare_caseflow_dataset --input path/to/reviewed.csv --output artifacts/caseflow-dataset`. CSV đầu vào cần `text,label`; có thể thêm `group_id,created_at`. Pipeline ẩn email, số điện thoại, mã sinh viên phổ biến, loại bản ghi trùng và chia tập không làm rò rỉ cùng nhóm hồ sơ.
 
-Đánh giá truy xuất RAG: `npm run evaluate:retrieval` chạy fixture tái lập và ghi báo cáo tại `docs/ai-evaluation/retrieval_demo_report.json`. Với dữ liệu pilot, dùng `python -m apps.ai.evaluate_retrieval --articles path/to/knowledge.json --questions path/to/questions.csv --output artifacts/retrieval-evaluation.json`. Bộ câu hỏi dùng cột `id,query,expected_ids,answerable`; `expected_ids` là các mã tài liệu, phân cách bằng dấu `;`. Fixture demo chỉ kiểm tra pipeline, không phải chỉ số RAG thực tế.
+Đánh giá truy xuất RAG: `npm run evaluate:retrieval` chạy fixture tái lập và ghi kết quả tại `artifacts/ai-evaluation/retrieval_demo_report.json`. Với dữ liệu pilot, dùng `python -m apps.ai.evaluate_retrieval --articles path/to/knowledge.json --questions path/to/questions.csv --output artifacts/retrieval-evaluation.json`. Bộ câu hỏi dùng cột `id,query,expected_ids,answerable`; `expected_ids` là các mã tài liệu, phân cách bằng dấu `;`. Fixture demo chỉ kiểm tra pipeline, không phải chỉ số chất lượng thực tế.
 
 
 `npm run seed` chỉ tạo dữ liệu khi tổ chức demo chưa tồn tại. `npm run seed:force` xóa và tạo lại dữ liệu demo; không dùng lệnh này với database sản xuất.

@@ -4,9 +4,11 @@ import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { api } from "../api";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { useLocale } from "../i18n";
+import { useConfirmation } from "../components/ConfirmationProvider";
 
 export function ResetPasswordPage() {
   const { text } = useLocale();
+  const confirm = useConfirmation();
   const [params] = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -23,6 +25,7 @@ export function ResetPasswordPage() {
       setMessage(text("Mật khẩu xác nhận chưa khớp.", "Password confirmation does not match."));
       return;
     }
+    if (!await confirm({ title: text("Đặt lại mật khẩu?", "Reset password?"), message: text("Bạn sẽ sử dụng mật khẩu mới cho các lần đăng nhập tiếp theo.", "Your next sign-in will use the new password.") })) return;
     setLoading(true);
     setMessage("");
     try {

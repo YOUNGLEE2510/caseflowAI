@@ -4,6 +4,7 @@ import { KnowledgeArticle } from "../models.js";
 import { retrieveKnowledge } from "../services/aiClient.js";
 import { generationEnabled, groundedAnswer } from "../services/groundedAnswer.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
+import { expandKnowledgeQuery, knowledgeTerms } from "../services/knowledgeQuery.js";
 
 export const knowledgeRouter = Router();
 knowledgeRouter.get("/knowledge/capabilities", (req, res) => {
@@ -33,6 +34,7 @@ knowledgeRouter.get("/knowledge", async (req, res) => {
 
 knowledgeRouter.post("/knowledge/search", async (req, res) => {
   const input = z.object({ query: z.string().trim().min(3).max(1_000), generate: z.boolean().default(false) }).parse(req.body);
+  const query = expandKnowledgeQuery(input.query);
   const MAX_ARTICLES = 50;
   const baseFilter = {
     organizationId: req.auth!.organizationId,
@@ -43,7 +45,7 @@ knowledgeRouter.post("/knowledge/search", async (req, res) => {
   };
   // Pre-filter with MongoDB text search to avoid sending the entire knowledge base
   let articles = await KnowledgeArticle.find(
-    { ...baseFilter, $text: { $search: input.query } },
+    { ...baseFilter, $text: { $search: knowledgeTerms(query).join(" ") || query } },
     { score: { $meta: "textScore" } }
   )
     .sort({ score: { $meta: "textScore" } })
@@ -57,7 +59,7 @@ knowledgeRouter.post("/knowledge/search", async (req, res) => {
       .lean();
   }
   const result = await retrieveKnowledge(
-    input.query,
+    query,
     articles.map((article: any) => ({
       id: String(article._id),
       title: article.title,

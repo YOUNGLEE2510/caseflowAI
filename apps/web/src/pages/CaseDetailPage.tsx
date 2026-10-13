@@ -31,8 +31,10 @@ import {
 import { useApiData } from "../hooks/useApiData";
 import { AssignmentSuggestions } from "../components/AssignmentSuggestions";
 import { useLocale } from "../i18n";
+import { timelineLabel } from "../utils/labels";
 import type { Attachment, CaseRecord, CaseStatus, ServiceDefinition, User } from "../types";
 import { ReadMore } from "../components/ReadMore";
+import { useConfirmation } from "../components/ConfirmationProvider";
 
 const statusOptions: Array<{ value: CaseStatus; vi: string; en: string }> = [
   { value: "new", vi: "Mới", en: "New" },
@@ -70,6 +72,7 @@ export function CaseDetailPage() {
   const location = useLocation();
   const { user } = useAuth();
   const { locale, text } = useLocale();
+  const confirm = useConfirmation();
   const { data, loading, error, reload, setData } = useApiData<{ case: CaseRecord }>(`/cases/${id}`);
   const {
     data: attachmentData,
@@ -113,6 +116,7 @@ export function CaseDetailPage() {
 
   async function updateCase(payload: Record<string, unknown>) {
     if (saving) return;
+    if (!await confirm({ title: text("Cập nhật hồ sơ?", "Update case?"), message: text(`Áp dụng thay đổi cho ${record.code}.`, `Apply changes to ${record.code}.`) })) return;
     setSaving(true);
     setActionError("");
     try {
@@ -131,6 +135,7 @@ export function CaseDetailPage() {
   async function addComment(event: React.FormEvent) {
     event.preventDefault();
     if (saving || !comment.trim()) return;
+    if (!await confirm({ title: internal ? text("Gửi ghi chú nội bộ?", "Send internal note?") : text("Gửi phản hồi?", "Send reply?"), message: comment })) return;
     setSaving(true);
     setActionError("");
     try {
@@ -149,6 +154,7 @@ export function CaseDetailPage() {
 
   async function requesterAction(action: "close" | "reopen" | "satisfaction", payload?: Record<string, unknown>) {
     if (saving) return;
+    if (!await confirm({ title: text("Xác nhận thao tác", "Confirm action"), message: action === "close" ? text("Đóng hồ sơ đã được giải quyết?", "Close this resolved case?") : action === "reopen" ? text("Mở lại hồ sơ để tiếp tục xử lý?", "Reopen this case for further assistance?") : text("Gửi đánh giá dịch vụ?", "Submit your service rating?") })) return;
     setSaving(true);
     setActionError("");
     try {
@@ -166,10 +172,11 @@ export function CaseDetailPage() {
 
   async function uploadAttachments() {
     if (!files.length) return;
+    if (!await confirm({ title: text("Tải tệp lên?", "Upload files?"), message: files.map(file => file.name).join(", ") })) return;
     setUploading(true);
     setAttachmentError("");
     try {
-      const failed: string[] = [];
+      const failed: File[] = [];
       for (const file of files) {
         try {
           await api(`/cases/${record._id}/attachments`, {
@@ -181,16 +188,16 @@ export function CaseDetailPage() {
             body: file
           });
         } catch {
-          failed.push(file.name);
+          failed.push(file);
         }
       }
-      setFiles([]);
+      setFiles(failed);
       await Promise.all([reloadAttachments(), reload()]);
       if (failed.length) {
         setAttachmentError(
           text(
-            `Không thể tải lên: ${failed.join(", ")}.`,
-            `Unable to upload: ${failed.join(", ")}.`
+            `Không thể tải lên: ${failed.map(file => file.name).join(", ")}.`,
+            `Unable to upload: ${failed.map(file => file.name).join(", ")}.`
           )
         );
       }
@@ -241,10 +248,10 @@ export function CaseDetailPage() {
             {text("Tạo bởi", "Created by")} {record.requesterName} · {formatDate(record.createdAt)}
           </p>
         </div>
-        <div className="detail-header-actions">
+        {canOperate ? <div className="detail-header-actions">
           <PriorityBadge priority={record.priority} />
           <RiskBadge score={record.ai.riskScore} />
-        </div>
+        </div> : null}
       </div>
 
       {canOperate ? (
@@ -366,7 +373,7 @@ export function CaseDetailPage() {
                     </button>
                   ))}
                 </div>
-                <textarea value={satisfactionComment} onChange={(event) => setSatisfactionComment(event.target.value)} rows={2} maxLength={1000} placeholder={text("Nhận xét thêm (không bắt buộc)", "Optional feedback")} />
+                <textarea aria-label={text("Nhận xét đánh giá", "Rating feedback")} value={satisfactionComment} onChange={(event) => setSatisfactionComment(event.target.value)} rows={2} maxLength={1000} placeholder={text("Nhận xét thêm (không bắt buộc)", "Optional feedback")} />
                 {record.satisfaction ? <small>{text(`Bạn đã đánh giá ${record.satisfaction}/5. Có thể chọn lại để cập nhật.`, `You rated this ${record.satisfaction}/5. Select another rating to update.`)}</small> : null}
               </div>
             </section>
@@ -458,6 +465,7 @@ export function CaseDetailPage() {
             </div>
             <form className="comment-form" onSubmit={addComment}>
               <textarea
+                aria-label={text("Nội dung phản hồi", "Reply content")}
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 placeholder={text("Nhập phản hồi hoặc cập nhật tiến độ...", "Write a reply or share a progress update...")}
@@ -501,7 +509,7 @@ export function CaseDetailPage() {
                       {event.type === "resolved" ? <CheckCircle2 size={14} /> : <span />}
                     </span>
                     <div>
-                      <strong>{event.label}</strong>
+                      <strong>{timelineLabel(event, locale)}</strong>
                       <span>{event.actorName}</span>
                     </div>
                     <time>{formatDate(event.createdAt)}</time>
@@ -513,11 +521,12 @@ export function CaseDetailPage() {
 
         <aside className="case-side-column">
           {canOperate && !["resolved", "closed"].includes(record.status) ? <AssignmentSuggestions caseId={record._id} revision={record.updatedAt} saving={saving} onAssign={(assigneeId) => updateCase({ assigneeId })} /> : null}
-          <section className="panel ai-insight-panel">
+          {canOperate && !["resolved", "closed"].includes(record.status) ? <section className="panel ai-insight-panel">
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">{text("Tín hiệu hỗ trợ", "Service signals")}</span>
                 <h2>{text("Phân tích AI", "AI analysis")}</h2>
+                <small>{text("Ước tính thử nghiệm · Nhân viên xác nhận", "Experimental estimate · Staff review required")}</small>
               </div>
               <span className="ai-label">
                 <Sparkles size={14} /> AI
@@ -581,6 +590,7 @@ export function CaseDetailPage() {
             </div>
           </section>
 
+          : null}
           <section className="panel case-metadata">
             <div className="panel-heading">
               <div>

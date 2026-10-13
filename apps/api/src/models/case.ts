@@ -1,14 +1,4 @@
-/**
- * CaseRecord — trung tâm của toàn bộ domain model.
- *
- * Timeline events và comments được embed (không tách collection riêng) vì:
- * - Luôn đọc cùng case → tránh N+1 query
- * - Không cần query timeline across cases (nếu cần thì dùng aggregation)
- * - Mongoose subdocument giữ được _id riêng cho mỗi entry
- *
- * optimisticConcurrency: true → Mongoose tự tăng __v và kiểm tra khi save,
- * tránh 2 agent cùng cập nhật 1 case ghi đè lẫn nhau.
- */
+// Embed the conversation with the case; optimistic concurrency rejects conflicting saves.
 import mongoose from "mongoose";
 const { Schema, model, models } = mongoose;
 import { CASE_STATUSES, PRIORITIES, CHANNELS } from "./constants.js";
@@ -40,6 +30,8 @@ const caseSchema = new Schema(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     code: { type: String, required: true, unique: true },
+    idempotencyKeyHash: { type: String },
+    requestFingerprint: { type: String },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     serviceKey: { type: String, required: true, index: true },
@@ -92,6 +84,10 @@ const caseSchema = new Schema(
   { timestamps: true, optimisticConcurrency: true }
 );
 caseSchema.index({ organizationId: 1, createdAt: -1 });
+caseSchema.index({ organizationId: 1, requesterId: 1, idempotencyKeyHash: 1 }, {
+  unique: true,
+  partialFilterExpression: { idempotencyKeyHash: { $type: "string" } }
+});
 caseSchema.index({ organizationId: 1, status: 1, dueAt: 1 });
 caseSchema.index({ organizationId: 1, "ai.riskScore": -1 });
 caseSchema.index({ organizationId: 1, assigneeId: 1, status: 1 });

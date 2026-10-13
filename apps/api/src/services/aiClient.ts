@@ -1,5 +1,6 @@
 import { config } from "../config.js";
 import { CircuitBreakerState } from "../models.js";
+import { knowledgeTerms, normalizedKnowledgeText } from "./knowledgeQuery.js";
 
 export interface ClassificationResult {
   modelVersion?: string;
@@ -204,7 +205,7 @@ export async function retrieveKnowledge(
       citations: Array<{ id: string; title: string; sourceLabel: string; excerpt: string; score: number }>;
     }>("/knowledge/retrieve", { query, articles, topK: 4 });
   } catch {
-    const queryWords = new Set(query.toLocaleLowerCase("vi").split(/\W+/).filter((word) => word.length > 3));
+    const queryWords = new Set(knowledgeTerms(query).map(normalizedKnowledgeText));
     const chunks = (content: string) => {
       const normalized = content.replace(/\s+/g, " ").trim();
       return normalized.match(/.{1,500}(?:\s|$)|.{1,500}/g)?.map((part) => part.trim()).filter(Boolean) || [];
@@ -213,7 +214,7 @@ export async function retrieveKnowledge(
       .map((article) => {
         const allChunks = [article.title, `${article.title} ${article.category}`, ...chunks(article.content)];
         const best = allChunks
-          .map((excerpt) => ({ excerpt, score: [...queryWords].filter((word) => excerpt.toLocaleLowerCase("vi").includes(word)).length / Math.max(queryWords.size, 1) }))
+          .map((excerpt) => ({ excerpt, score: [...queryWords].filter((word) => normalizedKnowledgeText(excerpt).includes(word)).length / Math.max(queryWords.size, 1) }))
           .sort((left, right) => right.score - left.score)[0];
         return {
           id: article.id,

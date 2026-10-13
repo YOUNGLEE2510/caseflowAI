@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Activity, Database, RefreshCw, ShieldCheck } from "lucide-react";
+import { Activity, Database, Download, RefreshCw, ShieldCheck } from "lucide-react";
+import { apiBlob } from "../api";
+import { useAuth } from "../auth";
+import { useConfirmation } from "../components/ConfirmationProvider";
 import { ErrorState, LoadingState, PageHeader, Pagination, formatDate } from "../components/ui";
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
@@ -13,6 +16,7 @@ interface SystemStatus {
     connected: boolean;
     classifier?: string;
     trainingSamples?: number;
+    modelVersion?: string;
   };
   storage: {
     provider: string;
@@ -35,7 +39,8 @@ interface AuditLogItem {
   action: string;
   resource: string;
   resourceId?: string;
-  changes?: { code?: string; filename?: string; caseId?: string } | null;
+  resourceLabel?: string;
+  changes?: { code?: string; filename?: string; caseId?: string; name?: string; email?: string; title?: string; rows?: number; format?: string } | null;
   createdAt: string;
 }
 
@@ -64,10 +69,28 @@ const AUDIT_RESOURCES = [
   "Incident"
 ];
 
-const SECURITY_ACTIONS = ["auth.login", "auth.logout", "case.view", "attachment.download"];
+const resourceLabels: Record<string, { vi: string; en: string }> = {
+  CaseRecord: { vi: "Hồ sơ", en: "Case" }, User: { vi: "Người dùng", en: "User" }, ServiceDefinition: { vi: "Dịch vụ", en: "Service" },
+  KnowledgeArticle: { vi: "Tài liệu", en: "Document" }, Attachment: { vi: "Tệp đính kèm", en: "Attachment" }, Incident: { vi: "Sự cố", en: "Incident" }
+};
+const actionLabels: Record<string, { vi: string; en: string }> = {
+  "auth.login": { vi: "Đăng nhập", en: "Sign in" }, "auth.logout": { vi: "Đăng xuất", en: "Sign out" },
+  "case.view": { vi: "Xem hồ sơ", en: "View case" }, "attachment.download": { vi: "Tải tệp", en: "Download attachment" },
+  "case.create": { vi: "Tạo hồ sơ", en: "Create case" }, "case.update": { vi: "Cập nhật hồ sơ", en: "Update case" },
+  "user.create": { vi: "Thêm người dùng", en: "Add user" }, "user.update": { vi: "Sửa người dùng", en: "Update user" },
+  "knowledge.create": { vi: "Thêm tài liệu", en: "Add document" }, "knowledge.update": { vi: "Sửa tài liệu", en: "Update document" },
+  "service.create": { vi: "Thêm dịch vụ", en: "Add service" }, "service.update": { vi: "Sửa dịch vụ", en: "Update service" },
+  "attachment.upload": { vi: "Tải tệp lên", en: "Upload attachment" }, "ai.training_export": { vi: "Xuất dữ liệu huấn luyện", en: "Export training data" },
+  "case.export": { vi: "Xuất hồ sơ", en: "Export cases" }, "knowledge.delete": { vi: "Ẩn tài liệu", en: "Disable document" },
+  "service.delete": { vi: "Vô hiệu dịch vụ", en: "Disable service" }
+};
 
 export function SystemPage() {
-  const { text } = useLocale();
+  const { user } = useAuth();
+  const confirm = useConfirmation();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const { locale, text } = useLocale();
   const [page, setPage] = useState(1);
   const [resource, setResource] = useState("");
   const [action, setAction] = useState("");
@@ -77,6 +100,17 @@ export function SystemPage() {
     `/analytics/audit-log?page=${page}${resource ? `&resource=${resource}` : ""}${action ? `&action=${action}` : ""}`
   );
   const reviews = useApiData<ReviewMetrics>("/analytics/ai-accuracy");
+  async function exportTraining() {
+    if (!await confirm({ title: text("Xuất dữ liệu huấn luyện?", "Export training data?"), message: text("Chỉ xuất hồ sơ đã được xác nhận nhãn. Kiểm tra lại dữ liệu cá nhân trước khi chia sẻ hoặc huấn luyện.", "Only reviewed labels are exported. Review personal data before sharing or training.") })) return;
+    setExporting(true); setExportError("");
+    try {
+      const blob = await apiBlob("/analytics/export/training.csv");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a"); link.href = url; link.download = "caseflow-reviewed-training.csv"; link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { setExportError(error instanceof Error ? error.message : text("Không thể xuất dữ liệu.", "Unable to export data.")); }
+    finally { setExporting(false); }
+  }
 
   const handleRefresh = () => {
     void status.reload();
@@ -126,8 +160,9 @@ export function SystemPage() {
                 </dt>
                 <dd>
                   {status.data.ai.connected
-                    ? status.data.ai.classifier
+                    ? text("Đã kết nối", "Connected")
                     : text("Đang dùng bộ quy tắc dự phòng", "Rule-based fallback active")}
+                  {status.data.ai.connected ? <small className="system-model-detail">{status.data.ai.classifier || text("Bộ phân loại", "Classifier")} · {status.data.ai.modelVersion || "—"}{status.data.ai.trainingSamples !== undefined ? ` · ${status.data.ai.trainingSamples} ${text("mẫu huấn luyện", "training samples")}` : ""}</small> : null}
                 </dd>
               </div>
               <div>
@@ -135,7 +170,7 @@ export function SystemPage() {
                 <dd>
                   {status.data.storage.files} {text("tệp", "files")} ·{" "}
                   {(status.data.storage.bytes / 1048576).toFixed(1)} MB ·{" "}
-                  {text("Ổ đĩa cục bộ", "Local disk")}
+                  {status.data.storage.provider === "s3" ? text("Kho đối tượng S3", "S3 object storage") : text("Ổ đĩa cục bộ", "Local disk")}
                 </dd>
               </div>
               <div>
@@ -175,6 +210,8 @@ export function SystemPage() {
           <h2>
             <ShieldCheck size={18} /> {text("Đánh giá phân luồng AI", "AI routing review")}
           </h2>
+          {["org_admin", "platform_admin"].includes(user?.role || "") ? <button className="button button-secondary" type="button" disabled={exporting} onClick={() => void exportTraining()}><Download size={16} />{text("Tải dữ liệu huấn luyện CSV", "Download training CSV")}</button> : null}
+          {exportError ? <ErrorState message={exportError} onRetry={exportTraining} /> : null}
           <dl className="system-counters">
             <div>
               <dt>{text("Đã được đánh giá", "Reviewed")}</dt>
@@ -201,6 +238,7 @@ export function SystemPage() {
       <section className="table-panel">
         <div className="panel-heading">
           <h2>{text("Nhật ký bảo mật và thay đổi", "Security and audit log")}</h2>
+          <div className="audit-filters">
           <select
             className="sort-dropdown"
             aria-label={text("Loại dữ liệu", "Resource type")}
@@ -213,7 +251,7 @@ export function SystemPage() {
             <option value="">{text("Tất cả", "All resources")}</option>
             {AUDIT_RESOURCES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {resourceLabels[value]?.[locale] || value}
               </option>
             ))}
           </select>
@@ -227,12 +265,13 @@ export function SystemPage() {
             }}
           >
             <option value="">{text("Mọi hoạt động", "All activities")}</option>
-            {SECURITY_ACTIONS.map((value) => (
+            {Object.keys(actionLabels).map((value) => (
               <option key={value} value={value}>
-                {value}
+                {actionLabels[value]?.[locale] || value}
               </option>
             ))}
           </select>
+          </div>
         </div>
 
         {audit.loading ? <LoadingState /> : null}
@@ -256,9 +295,9 @@ export function SystemPage() {
                     <tr key={log._id}>
                       <td>{formatDate(log.createdAt)}</td>
                       <td>{log.actorName}</td>
-                      <td>{log.action}</td>
-                      <td>{log.resource}</td>
-                      <td>{log.changes?.code || log.changes?.filename || log.changes?.caseId || log.resourceId || "-"}</td>
+                      <td title={log.action}>{log.resource === "Attachment" && log.action === "case.update" ? actionLabels["attachment.upload"][locale] : actionLabels[log.action]?.[locale] || log.action}</td>
+                      <td title={log.resource}>{resourceLabels[log.resource]?.[locale] || log.resource}</td>
+                      <td title={log.resourceId}>{log.changes?.rows !== undefined ? text(`${log.changes.rows} dòng · ${log.changes.format || "CSV"}`, `${log.changes.rows} rows · ${log.changes.format || "CSV"}`) : log.resourceLabel || log.changes?.code || log.changes?.filename || log.changes?.name || log.changes?.title || log.changes?.email || (log.resource === "User" && log.action.startsWith("auth.") ? log.actorName : log.changes?.caseId || log.resourceId || "-")}</td>
                     </tr>
                   ))}
                 </tbody>

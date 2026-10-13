@@ -1,6 +1,8 @@
 import { Activity, ArrowUpRight, Link2, Radio, Siren, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { EmptyState, ErrorState, formatRelative, LoadingState, PageHeader } from "../components/ui";
+import { Modal } from "../components/Modal";
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { Incident } from "../types";
@@ -13,6 +15,7 @@ const incidentStatusLabels: Record<Incident["status"], { vi: string; en: string 
 };
 
 export function IncidentsPage() {
+  const [opened, setOpened] = useState<Incident | null>(null);
   const { locale, text } = useLocale();
   const { data, loading, error, reload } = useApiData<{ incidents: Incident[] }>("/incidents");
 
@@ -73,11 +76,11 @@ export function IncidentsPage() {
                 </div>
                 <footer>
                   <span>{incident.team} · {text("phát hiện", "detected")} {formatRelative(incident.detectedAt)}</span>
-                  {incident.caseIds[0] ? (
-                    <Link to={`/cases/${incident.caseIds[0]._id}`} className="text-link">
-                      {text("Mở hồ sơ", "Open case")}
+                  {incident.caseIds.length ? (
+                    <button type="button" onClick={() => setOpened(incident)} className="text-link">
+                      {text(`Xem ${incident.caseIds.length} hồ sơ liên kết`, `View ${incident.caseIds.length} linked cases`)}
                       <ArrowUpRight size={15} />
-                    </Link>
+                    </button>
                   ) : null}
                 </footer>
               </article>
@@ -87,6 +90,7 @@ export function IncidentsPage() {
           <EmptyState title={text("Không có sự cố đang theo dõi", "No active incidents")} detail={text("Các cụm bất thường mới sẽ xuất hiện tại đây.", "New anomaly clusters will appear here.")} />
         )
       ) : null}
+      {opened ? <Modal title={opened.title} onClose={() => setOpened(null)}><div className="incident-case-list">{opened.caseIds.map(item => <Link key={item._id} to={`/cases/${item._id}`}><span className="case-code">{item.code}</span><strong>{item.title}</strong><ArrowUpRight size={16} /></Link>)}</div></Modal> : null}
     </div>
   );
 }

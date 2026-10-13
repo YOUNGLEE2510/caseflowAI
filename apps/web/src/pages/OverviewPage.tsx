@@ -31,7 +31,9 @@ const DashboardCharts = lazy(async () => ({ default: (await import("../component
 
 function uniqueCases(primary: CaseRecord[], secondary: CaseRecord[]) {
   const records = new Map<string, CaseRecord>();
-  for (const item of [...primary, ...secondary]) records.set(item._id, item);
+  for (const item of [...primary, ...secondary]) {
+    if (!["resolved", "closed"].includes(item.status)) records.set(item._id, item);
+  }
   return [...records.values()].slice(0, 7);
 }
 
@@ -49,7 +51,7 @@ export function OverviewPage() {
   if (error || !data) return <ErrorState message={error || text("Không có dữ liệu.", "No data available.")} onRetry={reload} />;
 
   if (user?.role === "requester") {
-    const recentCases = data.recentCases.slice(0, 3);
+    const recentCases = data.recentCases.slice(0, 6);
     const waitingCount = data.statusDistribution.find((item) => item.name === "waiting")?.value || 0;
     const displayName = user.name.split(" ").at(-1);
 
@@ -82,12 +84,12 @@ export function OverviewPage() {
           <div className="requester-summary-grid">
             <article>
               <strong>{data.metrics.open}</strong>
-              <span>{text("Đang xử lý", "In progress")}</span>
+              <span>{text("Yêu cầu chưa hoàn tất", "Open requests")}</span>
             </article>
-            <article className="requester-summary-warning">
+            <Link to="/cases?status=waiting" className="requester-summary-warning">
               <strong>{waitingCount}</strong>
               <span>{text("Chờ bạn phản hồi", "Waiting for you")}</span>
-            </article>
+            </Link>
           </div>
         </section>
 
@@ -191,11 +193,11 @@ export function OverviewPage() {
       {data.metrics.atRisk || data.metrics.activeIncidents ? (
         <section className="system-alert-grid" aria-label={text("Cảnh báo vận hành", "Operational alerts")}>
           {data.metrics.atRisk ? (
-            <Link to="/cases?queue=overdue" className="system-alert-link">
+            <Link to="/cases?queue=at_risk" className="system-alert-link">
               <SystemAlert
                 type="warning"
                 title={text(`${data.metrics.atRisk} hồ sơ có nguy cơ trễ SLA`, `${data.metrics.atRisk} cases at SLA risk`)}
-                detail={text("Mở hàng đợi quá hạn để ưu tiên xử lý.", "Open the overdue queue to prioritize work.")}
+                detail={text("Xem hồ sơ quá hạn hoặc có dự báo rủi ro cao.", "View overdue cases and high-risk predictions.")}
                 progress={atRiskPercentage}
               />
             </Link>
@@ -268,7 +270,6 @@ export function OverviewPage() {
         )}
         <footer className="table-footer">
           <span>{text(`Hiển thị ${priorityCases.length} hồ sơ ưu tiên`, `Showing ${priorityCases.length} priority cases`)}</span>
-          <Link to="/cases" className="text-link">{text("Xem toàn bộ hồ sơ", "View all cases")}</Link>
         </footer>
       </section>
     </div>

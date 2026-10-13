@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, LoadingState, PageHeader } from "../components/
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import { Modal } from "../components/Modal";
+import { useConfirmation } from "../components/ConfirmationProvider";
 
 interface ProfileData {
   id: string;
@@ -37,6 +38,7 @@ const roleLabels: Record<string, { vi: string; en: string }> = {
 
 export function ProfilePage() {
   const { text, locale } = useLocale();
+  const confirm = useConfirmation();
   const { logout } = useAuth();
   const toast = useToast();
   const { data, loading, error, reload } = useApiData<{ profile: ProfileData }>("/profile");
@@ -64,6 +66,7 @@ export function ProfilePage() {
 
   async function linkMicrosoft(event: React.FormEvent) {
     event.preventDefault();
+    if (!await confirm({ title: text("Liên kết Microsoft?", "Link Microsoft?"), message: text("Bạn sẽ được chuyển đến Microsoft để xác minh danh tính.", "You will be redirected to Microsoft to verify your identity.") })) return;
     setLinking(true);
     try {
       const result = await api<{ url: string }>("/auth/microsoft/link", { method: "POST", body: JSON.stringify({ currentPassword: linkPassword }) });
@@ -85,6 +88,7 @@ export function ProfilePage() {
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
+    if (!await confirm({ title: text("Lưu thông tin cá nhân?", "Save profile?"), message: editName })) return;
     setSaving(true);
     try {
       const changes: Record<string, string> = {};
@@ -112,6 +116,7 @@ export function ProfilePage() {
       toast.error(text("Mật khẩu xác nhận không khớp.", "Passwords do not match."));
       return;
     }
+    if (!await confirm({ title: text("Đổi mật khẩu?", "Change password?"), message: text("Các phiên đăng nhập hiện tại sẽ bị thu hồi.", "Existing sessions will be revoked.") })) return;
     setChangingPassword(true);
     try {
       await api("/profile/change-password", {

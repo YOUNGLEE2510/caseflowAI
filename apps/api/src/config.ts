@@ -34,7 +34,7 @@ const envSchema = z.object({
   CLAMAV_HOST: z.string().default("127.0.0.1"),
   CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
   CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(20000),
-  WEB_ORIGIN: z.string().default("http://localhost:5173"),
+  WEB_ORIGIN: z.string().url().refine(value => ["http:", "https:"].includes(new URL(value).protocol), "Web origin must use HTTP or HTTPS").default("http://localhost:5173"),
   GOOGLE_OAUTH_CLIENT_ID: z.string().trim().default(""),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().trim().default(""),
   GOOGLE_OAUTH_REDIRECT_URI: z.string().trim().default(""),
@@ -66,6 +66,7 @@ const envSchema = z.object({
   SMTP_FROM: z.string().trim().optional()
 }).superRefine((value, ctx) => {
   if (value.DEPLOYMENT_MODE === "pilot") {
+    if (!value.WEB_ORIGIN.startsWith("https://")) ctx.addIssue({ code: "custom", path: ["WEB_ORIGIN"], message: "Pilot web origin must use HTTPS" });
     if (value.AUTO_SEED) ctx.addIssue({ code: "custom", path: ["AUTO_SEED"], message: "Pilot deployments must not seed demo users" });
     if (!value.AI_INTERNAL_TOKEN) ctx.addIssue({ code: "custom", path: ["AI_INTERNAL_TOKEN"], message: "Pilot AI authentication is required" });
     if (!new URL(value.MONGODB_URI).username) ctx.addIssue({ code: "custom", path: ["MONGODB_URI"], message: "Pilot Mongo authentication is required" });

@@ -5,6 +5,7 @@ import { HttpError } from "../middleware/error.js";
 import { Organization, RefreshSession, User } from "../models.js";
 import type { Types } from "mongoose";
 import type { PublicUserSource } from "./publicUser.js";
+import { allowedWebOrigins } from "./webOrigins.js";
 
 export interface RefreshSessionRecord {
   _id: Types.ObjectId;
@@ -25,7 +26,7 @@ export function clearRefreshCookie(res: Response) {
 }
 
 export function checkRefreshOrigin(req: Request) {
-  if (req.headers.origin && req.headers.origin !== new URL(config.WEB_ORIGIN).origin) throw new HttpError(403, "Origin not allowed.");
+  if (req.headers.origin && !allowedWebOrigins(config.WEB_ORIGIN, config.DEPLOYMENT_MODE).includes(req.headers.origin)) throw new HttpError(403, "Origin not allowed.");
   if (req.headers["sec-fetch-site"] === "cross-site") throw new HttpError(403, "Cross-site request not allowed.");
 }
 

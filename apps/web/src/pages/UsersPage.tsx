@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { Check, Plus, Search, ShieldCheck, Pencil } from "lucide-react";
+import { Check, Plus, Search, ShieldCheck, Pencil, LockKeyhole, UnlockKeyhole, Mail, Minus } from "lucide-react";
 import { useAuth } from "../auth";
 import { UserEditor } from "../components/AdminEditors";
-import { Avatar, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { Avatar, ErrorState, LoadingState, PageHeader, Pagination } from "../components/ui";
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { Role, User } from "../types";
+import { api } from "../api";
+import { useConfirmation } from "../components/ConfirmationProvider";
+import { matchesSearch } from "../utils/search";
+import { useToast } from "../components/Toast";
 
 const roleLabels: Record<Role, { vi: string; en: string }> = {
   requester: { vi: "Người yêu cầu", en: "Requester" },
@@ -48,19 +52,42 @@ const permissionsByRole: Record<Role, Array<{ vi: string; en: string; enabled: b
 export function UsersPage() {
   const { locale, text } = useLocale();
   const { user } = useAuth();
+  const confirm = useConfirmation();
+  const toast = useToast();
   const canManage = user && ["org_admin", "platform_admin"].includes(user.role);
   const { data, loading, error, reload } = useApiData<{ users: User[] }>("/users?includeInactive=true");
   const [editing, setEditing] = useState<User | "new" | null>(null);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const normalizedQuery = query.trim().toLocaleLowerCase(locale);
-  const filteredUsers = data?.users.filter((member) =>
-    [member.name, member.email, member.team, roleLabels[member.role][locale]]
-      .join(" ")
-      .toLocaleLowerCase(locale)
-      .includes(normalizedQuery)
-  ) || [];
-  const selected = data?.users.find((member) => member.id === selectedId) || filteredUsers[0] || data?.users[0];
+  const [roleFilter, setRoleFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const filteredUsers = data?.users.filter(member => matchesSearch([member.name, member.email, member.team, roleLabels[member.role][locale]].join(" "), query)
+    && (!roleFilter || member.role === roleFilter)
+    && (!stateFilter || (stateFilter === "active" ? member.active !== false : member.active === false))) || [];
+  const totalPages = Math.ceil(filteredUsers.length / 8);
+  const displayPage = Math.min(page, Math.max(1, totalPages));
+  const visibleUsers = filteredUsers.slice((displayPage - 1) * 8, displayPage * 8);
+  const selected = filteredUsers.find(member => member.id === selectedId) || visibleUsers[0];
+
+  async function memberAction(member: User, action: "status" | "reset") {
+    if (!canManage || busy) return;
+    const title = action === "reset" ? text("Gửi hướng dẫn đổi mật khẩu?", "Send password reset instructions?") : member.active === false ? text("Mở khóa tài khoản?", "Enable account?") : text("Khóa tài khoản?", "Disable account?");
+    if (!await confirm({ title, message: `${member.name} · ${member.email}`, danger: action === "status" && member.active !== false })) return;
+    setBusy(true);
+    try {
+      if (action === "reset") {
+        const response = await api<{ message: string }>("/auth/password-reset/request", { method: "POST", body: JSON.stringify({ organizationSlug: user!.organizationSlug, email: member.email }) });
+        toast.success(response.message);
+      } else {
+        await api(`/users/${member.id}`, { method: "PATCH", body: JSON.stringify({ active: member.active === false }) });
+        await reload();
+        toast.success(text("Đã cập nhật tài khoản.", "Account updated."));
+      }
+    } catch (error) { toast.error(error instanceof Error ? error.message : text("Không thể cập nhật.", "Unable to update.")); }
+    finally { setBusy(false); }
+  }
 
   return (
     <div className="page-stack">
@@ -95,10 +122,15 @@ export function UsersPage() {
               <Search size={18} />
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+                aria-label={text("Tìm thành viên", "Search members")}
                 placeholder={text("Tìm theo tên, email hoặc đơn vị", "Search by name, email, or team")}
               />
             </label>
+            <div className="member-filters">
+              <select aria-label={text("Lọc vai trò", "Filter role")} value={roleFilter} onChange={event => { setRoleFilter(event.target.value); setPage(1); }}><option value="">{text("Mọi vai trò", "All roles")}</option>{Object.entries(roleLabels).map(([role, label]) => <option key={role} value={role}>{label[locale]}</option>)}</select>
+              <select aria-label={text("Lọc tài khoản", "Filter accounts")} value={stateFilter} onChange={event => { setStateFilter(event.target.value); setPage(1); }}><option value="">{text("Mọi tài khoản", "All accounts")}</option><option value="active">{text("Hoạt động", "Active")}</option><option value="inactive">{text("Đã khóa", "Disabled")}</option></select>
+            </div>
 
             <div className="user-list-heading" aria-hidden="true">
               <span>{text("Thành viên", "Member")}</span>
@@ -107,7 +139,7 @@ export function UsersPage() {
               <span>{text("Trạng thái", "Status")}</span>
             </div>
             <div className="user-list">
-              {filteredUsers.map((member) => (
+              {visibleUsers.map((member) => (
                 <button
                   key={member.id}
                   type="button"
@@ -125,12 +157,13 @@ export function UsersPage() {
                     <ShieldCheck size={14} />
                     {roleLabels[member.role][locale]}
                   </span>
-                  <span>{member.team || text("Toàn tổ chức", "All teams")}</span>
+                  <span>{member.team || text("Chưa có đơn vị", "No team assigned")}</span>
                   <span className={member.active === false ? "inactive-label" : "active-label"}>{member.active === false ? text("Đã khóa", "Disabled") : text("Hoạt động", "Active")}</span>
                 </button>
               ))}
             </div>
             {!filteredUsers.length ? <div className="inline-empty">{text("Không tìm thấy thành viên phù hợp.", "No matching members found.")}</div> : null}
+            <Pagination page={displayPage} totalPages={totalPages} total={filteredUsers.length} limit={8} onPageChange={setPage} />
           </section>
 
           {selected ? (
@@ -143,6 +176,10 @@ export function UsersPage() {
                 </span>
               </div>
               {canManage && selected.role !== "platform_admin" ? <button className="button button-secondary button-small" onClick={() => setEditing(selected)}><Pencil size={16} />{text("Sửa thành viên", "Edit member")}</button> : null}
+              {canManage && !["org_admin", "platform_admin"].includes(selected.role) && selected.id !== user?.id ? <div className="member-actions">
+                <button type="button" className="button button-secondary" disabled={busy} onClick={() => void memberAction(selected, "status")}>{selected.active === false ? <UnlockKeyhole size={16} /> : <LockKeyhole size={16} />}{selected.active === false ? text("Mở khóa", "Enable account") : text("Khóa tài khoản", "Disable account")}</button>
+                <button type="button" className="button button-secondary" disabled={busy || selected.active === false} onClick={() => void memberAction(selected, "reset")}><Mail size={16} />{text("Gửi link đổi mật khẩu", "Send reset link")}</button>
+              </div> : null}
               <div className="config-divider" />
               <dl className="permission-meta">
                 <div>
@@ -167,7 +204,7 @@ export function UsersPage() {
                 <h3>{text("Quyền hiệu lực", "Effective permissions")}</h3>
                 {permissionsByRole[selected.role].map((permission) => (
                   <div key={permission.en} className={permission.enabled ? "enabled" : ""}>
-                    <span className="permission-toggle"><span /></span>
+                    {permission.enabled ? <Check size={16} aria-hidden="true" /> : <Minus size={16} aria-hidden="true" />}
                     <span>{permission[locale]}</span>
                   </div>
                 ))}

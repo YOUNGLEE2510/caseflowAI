@@ -1,0 +1,25 @@
+services:
+  api:
+    environment:
+      WEB_ORIGIN: https://${PUBLIC_DOMAIN:?Set a DNS hostname pointing to the deployment server}
+      TRUST_PROXY_HOPS: '2'
+      GOOGLE_OAUTH_REDIRECT_URI: https://${PUBLIC_DOMAIN}/api/auth/google/callback
+      MICROSOFT_OAUTH_REDIRECT_URI: https://${PUBLIC_DOMAIN}/api/auth/microsoft/callback
+  edge:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?Set a DNS hostname pointing to the deployment server}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_started
+volumes:
+  caddy-data:
+  caddy-config:

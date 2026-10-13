@@ -17,7 +17,7 @@ export function SystemAlert({ type, title, detail, progress }: {
 }) {
   const { text } = useLocale();
   const Icon = icons[type];
-  const safeProgress = Math.max(0, Math.min(100, progress || 0));
+  const safeProgress = Math.round(Math.max(0, Math.min(100, progress || 0)));
 
   return (
     <div className={`system-alert system-alert-${type}`}>

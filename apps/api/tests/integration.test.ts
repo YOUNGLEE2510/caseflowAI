@@ -92,6 +92,38 @@ afterAll(async () => {
 });
 
 describe("tenant and privacy boundaries", () => {
+  it("clamps case pagination and separates predicted risk from overdue cases", async () => {
+    const paged = await request("/cases?page=999&limit=8", admin);
+    expect(paged.body.page).toBe(1);
+    expect(paged.body.cases).toHaveLength(1);
+    await models.CaseRecord.updateOne({ _id: record._id }, { $set: { "ai.riskScore": 0.8 } });
+    expect((await request("/cases?queue=at_risk", admin)).body.total).toBe(1);
+    expect((await request("/cases?queue=overdue", admin)).body.total).toBe(0);
+    expect((await request("/cases?queue=at_risk", requester)).status).toBe(403);
+  });
+  it("deduplicates simultaneous case submissions and rejects key reuse with changed content", async () => {
+    await models.CaseRecord.init();
+    const body = { description: "I need assistance with my account", serviceKey: "general_support" };
+    const send = (user = requester, payload = body) => fetch(`${base}/api/cases`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token(user)}`, "Idempotency-Key": "test-idempotency-key-123" },
+      body: JSON.stringify(payload)
+    });
+    const results = await Promise.all([send(), send()]);
+    expect(results.map(result => result.status).sort()).toEqual([200, 201]);
+    const values = await Promise.all(results.map(result => result.json()));
+    expect(values[0].case._id).toBe(values[1].case._id);
+    expect(values[0].case.idempotencyKeyHash).toBeUndefined();
+    expect(values[0].case.requestFingerprint).toBeUndefined();
+    expect(await models.CaseRecord.countDocuments({ idempotencyKeyHash: { $exists: true } })).toBe(1);
+    expect((await send(requester, { ...body, description: "A different request using the same key" })).status).toBe(409);
+    expect((await send(admin)).status).toBe(201);
+  });
+  it("rejects operator-shaped input and unknown fields", async () => {
+    const result = await request("/cases", requester, "POST", { description: "I need assistance with my account", unexpected: "field" });
+    expect(result.status).toBe(400);
+    expect((await request("/cases", requester, "POST", { description: { $ne: null } })).status).toBe(400);
+  });
   it("exchanges a Google login ticket once and rejects replay", async () => {
     const rawTicket = randomBytes(32).toString("hex");
     await models.OAuthLoginTicket.create({
@@ -346,6 +378,8 @@ describe("attachments", () => {
     const listing = await request(`/cases/${record._id}/attachments`);
     expect(listing.body.attachments[0]).not.toHaveProperty("storagePath");
     const fileId = result.body.attachment._id;
+    const uploaded = await models.AuditLog.findOne({ action: "attachment.upload", resourceId: fileId }).lean();
+    expect(uploaded?.changes).toMatchObject({ filename: "test.pdf" });
     expect((await request(`/attachments/${fileId}/download`, outsider)).status).toBe(404);
     const download = await fetch(`${base}/api/attachments/${fileId}/download`, { headers: { Authorization: `Bearer ${token(requester)}` } });
     expect(download.status).toBe(200);

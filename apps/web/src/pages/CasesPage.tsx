@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Columns3, Filter, List, Plus, Search, X } from "lucide-react";
+import { Columns3, Filter, List, Plus, Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 import {
@@ -16,6 +16,7 @@ import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { CaseRecord, CaseStatus } from "../types";
 import { CaseKanbanBoard } from "../components/CaseKanbanBoard";
+import { categoryLabels } from "../utils/labels";
 
 const statusTabs: Array<{ value: string; vi: string; en: string }> = [
   { value: "all", vi: "Tất cả", en: "All" },
@@ -31,6 +32,7 @@ const queueLabels: Record<string, { vi: string; en: string }> = {
   unassigned: { vi: "Chưa phân công", en: "Unassigned" },
   assigned: { vi: "Giao cho tôi", en: "Assigned to me" },
   overdue: { vi: "Quá hạn", en: "Overdue" },
+  at_risk: { vi: "Nguy cơ trễ SLA", en: "At SLA risk" },
   due_soon: { vi: "Đến hạn trong 24 giờ", en: "Due within 24 hours" }
 };
 
@@ -39,7 +41,7 @@ export function CasesPage() {
   const { locale, text } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get("status") || "all";
-  const priority = searchParams.get("priority") || "all";
+  const priority = user?.role === "requester" ? "all" : searchParams.get("priority") || "all";
   const search = searchParams.get("search") || "";
   const page = searchParams.get("page") || "1";
   const queue = user?.role === "requester" ? "all" : searchParams.get("queue") || "all";
@@ -132,6 +134,7 @@ export function CasesPage() {
               <option value="unassigned">{text("Chưa phân công", "Unassigned")}</option>
               <option value="assigned">{text("Giao cho tôi", "Assigned to me")}</option>
               <option value="overdue">{text("Quá hạn", "Overdue")}</option>
+              <option value="at_risk">{text("Nguy cơ trễ SLA", "At SLA risk")}</option>
               <option value="due_soon">{text("Đến hạn trong 24 giờ", "Due within 24 hours")}</option>
             </select>
           </label> : null}
@@ -151,6 +154,11 @@ export function CasesPage() {
             />
           </form>
           <label className="compact-select">
+            <select aria-label={text("Lọc trạng thái", "Filter status")} value={status} onChange={event => updateFilter("status", event.target.value)}>
+              {statusTabs.map(tab => <option key={tab.value} value={tab.value}>{text(tab.vi, tab.en)}</option>)}
+            </select>
+          </label>
+          {canUseBoard ? <label className="compact-select">
             <Filter size={16} />
             <select aria-label={text("Lọc ưu tiên", "Filter priority")} value={priority} onChange={(event) => updateFilter("priority", event.target.value)}>
               <option value="all">{text("Mọi mức ưu tiên", "Any priority")}</option>
@@ -159,29 +167,9 @@ export function CasesPage() {
               <option value="normal">{text("Bình thường", "Normal")}</option>
               <option value="low">{text("Thấp", "Low")}</option>
             </select>
-          </label>
+          </label> : null}
+          {activeFilters.length ? <button type="button" className="clear-filter-button" onClick={clearFilters}>{text("Xóa bộ lọc", "Clear filters")}</button> : null}
         </div>
-        <div className="status-tabs" role="tablist" aria-label={text("Lọc theo trạng thái", "Filter by status")}>
-          {statusTabs.map((tab) => (
-            <button
-              key={tab.value}
-              className={status === tab.value ? "active" : ""}
-              onClick={() => updateFilter("status", tab.value)}
-              role="tab"
-              aria-selected={status === tab.value}
-            >
-              {text(tab.vi, tab.en)}
-            </button>
-          ))}
-        </div>
-        {activeFilters.length ? <div className="active-filter-row" aria-label={text("Bộ lọc đang áp dụng", "Applied filters")}>
-          {activeFilters.map((filter) => (
-            <button key={filter.key} type="button" className="active-filter-chip" onClick={() => updateFilter(filter.key, "")}>
-              <span>{filter.label}</span><X size={13} />
-            </button>
-          ))}
-          <button type="button" className="clear-filter-button" onClick={clearFilters}>{text("Xóa bộ lọc", "Clear filters")}</button>
-        </div> : null}
       </section>
 
       {loading ? <LoadingState label={text("Đang tải hàng đợi hồ sơ", "Loading case queue")} /> : null}
@@ -191,6 +179,7 @@ export function CasesPage() {
           <EmptyState title={text("Không có hồ sơ phù hợp", "No matching cases")} detail={text("Thay đổi bộ lọc để xem hàng đợi khác.", "Adjust the filters to view another queue.")} />
         )
       ) : null}
+      {!loading && !error && data && viewMode === "board" ? <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPageChange={next => updateFilter("page", String(next))} /> : null}
       {!loading && !error && data && viewMode === "table" ? (
         <section className="panel table-panel">
           <div className="table-summary">
@@ -204,9 +193,9 @@ export function CasesPage() {
                   <tr>
                     <th>{text("Mã hồ sơ", "Case ID")}</th>
                     <th>{text("Tiêu đề", "Subject")}</th>
-                    <th>{text("Người yêu cầu", "Requester")}</th>
+                    {canUseBoard ? <th>{text("Người yêu cầu", "Requester")}</th> : null}
                     <th>{text("Trạng thái", "Status")}</th>
-                    <th>{text("Ưu tiên", "Priority")}</th>
+                    {canUseBoard ? <th>{text("Ưu tiên", "Priority")}</th> : null}
                     <th>{text("Cập nhật", "Updated")}</th>
                   </tr>
                 </thead>
@@ -218,17 +207,17 @@ export function CasesPage() {
                       </td>
                       <td>
                         <Link to={`/cases/${item._id}`} className="case-title-cell">
-                          <strong>{item.title}</strong>
-                          <small>{item.category}</small>
+                          <strong title={item.title}>{item.title}</strong>
+                          <small>{categoryLabels[item.category]?.[locale] || item.category}</small>
                         </Link>
                       </td>
-                      <td>{item.requesterName}</td>
+                      {canUseBoard ? <td>{item.requesterName}</td> : null}
                       <td>
                         <StatusBadge status={item.status as CaseStatus} />
                       </td>
-                      <td>
+                      {canUseBoard ? <td>
                         <PriorityBadge priority={item.priority} />
-                      </td>
+                      </td> : null}
                       <td>{formatRelative(item.updatedAt)}</td>
                     </tr>
                   ))}

@@ -6,22 +6,19 @@ import { api, apiUrl } from "../api";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { Modal } from "../components/Modal";
 import { useLocale } from "../i18n";
+import { useConfirmation } from "../components/ConfirmationProvider";
 
-const demoAccounts = [
-  { label: { vi: "Quản lý", en: "Manager" }, email: "manager@caseflow.local" },
-  { label: { vi: "Nhân viên", en: "Staff" }, email: "agent@caseflow.local" },
-  { label: { vi: "Sinh viên", en: "Student" }, email: "student@caseflow.local" }
-];
 const demoOrganizationSlug = "minh-khai-university";
 
 export function LoginPage() {
   const { user, login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const { text } = useLocale();
+  const confirm = useConfirmation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [organizationSlug, setOrganizationSlug] = useState(demoOrganizationSlug);
-  const [email, setEmail] = useState(demoAccounts[0].email);
-  const [password, setPassword] = useState("Demo123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -92,6 +89,7 @@ export function LoginPage() {
 
   async function requestPasswordReset(event: React.FormEvent) {
     event.preventDefault();
+    if (!await confirm({ title: text("Gửi hướng dẫn đổi mật khẩu?", "Send password reset instructions?"), message: email })) return;
     setResetLoading(true);
     setResetMessage("");
     try {
@@ -122,7 +120,7 @@ export function LoginPage() {
           </span>
           <span>
             <strong>CaseFlow</strong>
-            <small>Service Intelligence Platform</small>
+            <small>{text("Quản lý dịch vụ", "Service management")}</small>
           </span>
         </div>
         <div className="login-visual-copy">
@@ -139,23 +137,6 @@ export function LoginPage() {
             <span className="eyebrow">{text("Đại học Minh Khai", "Minh Khai University")}</span>
             <h1>{text("Chào mừng trở lại", "Welcome back")}</h1>
             <p>{text("Đăng nhập để tiếp tục công việc đang dang dở.", "Sign in to pick up where you left off.")}</p>
-          </div>
-
-          <div className="demo-switcher" aria-label={text("Chọn tài khoản demo", "Choose a demo account")}>
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                className={email === account.email ? "active" : ""}
-                onClick={() => {
-                  setOrganizationSlug(demoOrganizationSlug);
-                  setEmail(account.email);
-                  setPassword("Demo123!");
-                }}
-              >
-                {text(account.label.vi, account.label.en)}
-              </button>
-            ))}
           </div>
 
           <form onSubmit={handleSubmit} className="form-stack">

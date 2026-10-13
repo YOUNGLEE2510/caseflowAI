@@ -4,7 +4,6 @@ import { useLocale } from "../../i18n";
 
 export function PageHeader({
   title,
-  description,
   actions
 }: {
   title: string;
@@ -15,7 +14,6 @@ export function PageHeader({
     <div className="page-header">
       <div>
         <h1>{title}</h1>
-        {description ? <p>{description}</p> : null}
       </div>
       {actions ? <div className="page-actions">{actions}</div> : null}
     </div>
@@ -40,29 +38,31 @@ export function Pagination({
   const to = Math.min(page * limit, total);
 
   return (
-    <div className="pagination">
+    <nav className="pagination" aria-label={text("Phân trang", "Pagination")}>
       <span className="pagination-info">
         {from}-{to} {text("trong", "of")} {total}
       </span>
       <div className="pagination-controls">
         <button
           className="icon-button"
+          type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
           aria-label={text("Trang trước", "Previous page")}
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="pagination-current">{page}</span>
+        <span className="pagination-current" aria-live="polite">{page} / {Math.max(1, totalPages)}</span>
         <button
           className="icon-button"
-          disabled={page >= totalPages}
+          type="button"
+          disabled={totalPages < 1 || page >= totalPages}
           onClick={() => onPageChange(page + 1)}
           aria-label={text("Trang sau", "Next page")}
         >
           <ChevronRight size={18} />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

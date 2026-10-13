@@ -12,7 +12,7 @@ export class HttpError extends Error {
 }
 
 export function notFound(req: Request, res: Response) {
-  res.status(404).json({ message: `Không tìm thấy ${req.method} ${req.originalUrl}.` });
+  res.status(404).json({ message: "Không tìm thấy tài nguyên.", requestId: req.requestId });
 }
 
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {

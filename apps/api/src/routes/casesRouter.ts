@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { publicUser, type PublicUserSource } from "../services/publicUser.js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { requireRoles } from "../middleware/auth.js";
@@ -59,7 +59,7 @@ const intakeSchema = z.object({
   priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
   channel: z.enum(["portal", "phone", "email", "walk_in", "api"]).default("portal"),
   customFields: z.record(z.string().max(2000)).default({})
-});
+}).strict();
 
 export const casesRouter = Router();
 
@@ -91,7 +91,7 @@ casesRouter.get("/cases", async (req, res) => {
   if (typeof req.query.status === "string" && req.query.status !== "all") filter.status = z.enum(CASE_STATUSES).parse(req.query.status);
   if (typeof req.query.priority === "string" && req.query.priority !== "all") filter.priority = z.enum(["low", "normal", "high", "urgent"]).parse(req.query.priority);
   if (typeof req.query.serviceKey === "string" && req.query.serviceKey !== "all") filter.serviceKey = req.query.serviceKey.slice(0, 50);
-  const queue = z.enum(["all", "unassigned", "assigned", "overdue", "due_soon"]).parse(req.query.queue || "all");
+  const queue = z.enum(["all", "unassigned", "assigned", "overdue", "due_soon", "at_risk"]).parse(req.query.queue || "all");
   if (queue !== "all") {
     if (req.auth!.role === "requester") throw new HttpError(403, "Hàng đợi vận hành chỉ dành cho nhân viên.");
     const conditions: any[] = [{ status: { $nin: ["resolved", "closed"] } }];
@@ -99,6 +99,7 @@ casesRouter.get("/cases", async (req, res) => {
     if (queue === "assigned") conditions.push({ assigneeId: req.auth!.id });
     const now = new Date();
     if (queue === "overdue") conditions.push({ dueAt: { $lt: now } });
+    if (queue === "at_risk") conditions.push({ $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] });
     if (queue === "due_soon") conditions.push({ dueAt: { $gte: now, $lte: new Date(now.getTime() + 86_400_000) } });
     filter.$and = conditions;
   }
@@ -107,19 +108,19 @@ casesRouter.get("/cases", async (req, res) => {
     filter.$or = [{ code: pattern }, { title: pattern }, { requesterName: pattern }];
   }
 
-  const page = pageNumber(req.query.page, 1, 100000);
+  const requestedPage = pageNumber(req.query.page, 1, 100000);
   const limit = pageNumber(req.query.limit, 8, 50);
+  const total = await CaseRecord.countDocuments(filter);
+  const totalPages = Math.ceil(total / limit);
+  const page = Math.min(requestedPage, Math.max(1, totalPages));
   const skip = (page - 1) * limit;
 
   const sortField = req.query.sort === "dueAt" || queue !== "all" ? "dueAt" : "updatedAt";
   const sortOrder = queue !== "all" || req.query.order === "asc" ? 1 : -1;
 
-  const [cases, total] = await Promise.all([
-    CaseRecord.find(filter).sort({ [sortField]: sortOrder, _id: 1 }).skip(skip).limit(limit).lean(),
-    CaseRecord.countDocuments(filter)
-  ]);
+  const cases = await CaseRecord.find(filter).sort({ [sortField]: sortOrder, _id: 1 }).skip(skip).limit(limit).lean();
 
-  res.json({ cases: cases.map((item) => presentCase(item, req.auth!.role)), total, page, limit, totalPages: Math.ceil(total / limit) });
+  res.json({ cases: cases.map((item) => presentCase(item, req.auth!.role)), total, page, limit, totalPages });
 });
 
 /* ── AI Analyze Intake (pre-submit) ── */
@@ -161,6 +162,26 @@ casesRouter.post("/ai/analyze-intake", async (req, res) => {
 
 casesRouter.post("/cases", async (req, res) => {
   const input = intakeSchema.parse(req.body);
+  const rawKey = req.get("Idempotency-Key");
+  const idempotencyKeyHash = rawKey === undefined ? undefined : createHash("sha256")
+    .update(z.string().regex(/^[A-Za-z0-9_-]{16,128}$/).parse(rawKey)).digest("hex");
+  const requestFingerprint = createHash("sha256").update(JSON.stringify({
+    ...input, customFields: Object.fromEntries(Object.entries(input.customFields).sort(([a], [b]) => a.localeCompare(b)))
+  })).digest("hex");
+  const replayFilter = {
+    organizationId: req.auth!.organizationId, requesterId: req.auth!.id, idempotencyKeyHash
+  };
+  const replay = async () => {
+    if (!idempotencyKeyHash) return false;
+    const existing = await CaseRecord.findOne(replayFilter).lean<{ _id: mongoose.Types.ObjectId; requestFingerprint?: string }>();
+    if (!existing) return false;
+    if (existing.requestFingerprint !== requestFingerprint) throw new HttpError(409, "Khóa gửi yêu cầu đã được dùng cho nội dung khác.");
+    const visible = await CaseRecord.exists({ _id: existing._id, ...caseScope(req.auth!) });
+    if (!visible) throw new HttpError(403, "Bạn không còn quyền truy cập hồ sơ này.");
+    res.set("Idempotency-Replayed", "true").status(200).json({ case: presentCase(existing, req.auth!.role), similar: [] });
+    return true;
+  };
+  if (await replay()) return;
   if (req.auth!.role === "requester" && input.channel !== "portal") {
     throw new HttpError(422, "Người gửi yêu cầu chỉ được sử dụng kênh cổng trực tuyến.");
   }
@@ -231,6 +252,7 @@ casesRouter.post("/cases", async (req, res) => {
     "Yêu cầu hỗ trợ mới";
 
   const casePayload = {
+    ...(idempotencyKeyHash ? { idempotencyKeyHash, requestFingerprint } : {}),
     organizationId: req.auth!.organizationId,
     title,
     description: input.description,
@@ -281,6 +303,7 @@ casesRouter.post("/cases", async (req, res) => {
       record = (await CaseRecord.create({ ...casePayload, code: nextCaseCode() })) as any;
       break;
     } catch (error) {
+      if (isDuplicateKeyError(error) && await replay()) return;
       if (!isDuplicateKeyError(error) || attempt === 2) throw error;
     }
   }

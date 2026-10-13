@@ -48,7 +48,6 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
 
   return (
     <section className="dashboard-charts">
-      {/* Donut — phân bố trạng thái */}
       <figure>
         <figcaption>{text("Phân bố trạng thái", "Status distribution")}</figcaption>
         <div className="donut-layout">
@@ -90,15 +89,15 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
         </div>
       </figure>
 
-      {/* Bar — workload theo đội */}
       <figure>
         <figcaption>{text("Hồ sơ đang mở theo bộ phận", "Open cases by team")}</figcaption>
-        <div className="dashboard-chart" role="img" aria-label={barData.map(d => `${d.name}: ${d.open}`).join(", ")}>
+        <div className="workload-legend"><span><i style={{ background: "#28705c" }} />{text("Đang mở", "Open")}</span><span><i style={{ background: "#c2522a" }} />{text("Nguy cơ SLA", "At SLA risk")}</span></div>
+        <div className="dashboard-chart workload-chart" style={{ height: Math.max(100, Math.min(380, barData.length * 52 + 40)) }} role="img" aria-label={barData.map(d => `${d.name}: ${d.open} ${text("đang mở", "open")}, ${d.risk} ${text("rủi ro", "at risk")}`).join(", ")}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 24 }} accessibilityLayer>
               <CartesianGrid horizontal={false} stroke="#e4e8ec" />
               <XAxis type="number" allowDecimals={false} />
-              <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+              <YAxis type="category" dataKey="name" width={140} tickMargin={12} axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ fontSize: 13, borderRadius: 6 }} />
               <Bar
                 dataKey="open"

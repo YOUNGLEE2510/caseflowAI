@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, CheckCircle2, SearchCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, SearchCheck, Sparkles, TriangleAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { ErrorState, FileUploadArea, PageHeader } from "../components/ui";
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { ServiceDefinition } from "../types";
+import { useAuth } from "../auth";
+import { useConfirmation } from "../components/ConfirmationProvider";
+import { categoryLabels } from "../utils/labels";
 
 interface IntakeAnalysis {
   classification: {
@@ -23,7 +26,9 @@ interface IntakeAnalysis {
 
 export function NewCasePage() {
   const navigate = useNavigate();
-  const { text } = useLocale();
+  const { locale, text } = useLocale();
+  const { user } = useAuth();
+  const confirm = useConfirmation();
   const { data: serviceData } = useApiData<{ services: ServiceDefinition[] }>("/services");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -33,6 +38,7 @@ export function NewCasePage() {
   const [priority, setPriority] = useState("normal");
   const [channel, setChannel] = useState("portal");
   const [files, setFiles] = useState<File[]>([]);
+  const submission = useRef<{ body: string; key: string } | null>(null);
   const [analysis, setAnalysis] = useState<IntakeAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const analysisRequest = useRef<AbortController | null>(null);
@@ -86,12 +92,17 @@ export function NewCasePage() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (submitting) return;
+    if (!await confirm({ title: text("Gửi yêu cầu?", "Submit request?"), message: <><p>{title || description.slice(0, 120)}</p><p>{selectedService?.name || text("Tiếp nhận chung", "General intake")} · {files.length} {text("tệp đính kèm", "attachments")}</p></> })) return;
     setSubmitting(true);
     setError("");
     try {
+      const body = JSON.stringify({ title, description, serviceKey: serviceKey || undefined, priority, channel, customFields });
+      if (submission.current?.body !== body) submission.current = { body, key: crypto.randomUUID() };
       const response = await api<{ case: { _id: string } }>("/cases", {
         method: "POST",
-        body: JSON.stringify({ title, description, serviceKey: serviceKey || undefined, priority, channel, customFields })
+        headers: { "Idempotency-Key": submission.current.key },
+        body
       });
       const failedUploads: string[] = [];
       for (const file of files) {
@@ -138,7 +149,7 @@ export function NewCasePage() {
       <form className="intake-layout" onSubmit={submit}>
         <section className="panel intake-form">
           <div className="section-heading">
-            <span className="step-index">01</span>
+            <span className="step-index"><FileText size={20} aria-hidden="true" /></span>
             <div>
               <h2>{text("Nội dung yêu cầu", "Request details")}</h2>
               <p>{text("Chỉ cần những thông tin giúp người xử lý hiểu đúng vấn đề.", "Share what the service team needs to understand the issue.")}</p>
@@ -173,7 +184,7 @@ export function NewCasePage() {
               />
               <small>{description.length}/5,000 {text("ký tự", "characters")}</small>
             </label>
-            <label className="field">
+            {user?.role !== "requester" ? <label className="field">
               <span>{text("Kênh tiếp nhận", "Intake channel")}</span>
               <select value={channel} onChange={(event) => setChannel(event.target.value)}>
                 <option value="portal">{text("Cổng trực tuyến", "Portal")}</option>
@@ -182,8 +193,8 @@ export function NewCasePage() {
                 <option value="walk_in">{text("Tiếp nhận trực tiếp", "Walk-in")}</option>
                 <option value="api">{text("Hệ thống tích hợp", "Integrated system")}</option>
               </select>
-            </label>
-            <label className="field">
+            </label> : null}
+            {user?.role !== "requester" ? <label className="field">
               <span>{text("Mức ưu tiên", "Priority")}</span>
               <select value={priority} onChange={(event) => setPriority(event.target.value)}>
                 <option value="low">{text("Thấp", "Low")}</option>
@@ -191,7 +202,7 @@ export function NewCasePage() {
                 <option value="high">{text("Cao", "High")}</option>
                 <option value="urgent">{text("Khẩn cấp", "Urgent")}</option>
               </select>
-            </label>
+            </label> : null}
             <label className="field field-wide">
               <span>{text("Dịch vụ", "Service")}</span>
               <select aria-label={text("Dịch vụ", "Service")} value={serviceKey} onChange={(event) => setServiceKey(event.target.value)}>
@@ -235,7 +246,7 @@ export function NewCasePage() {
           </div>
         </section>
 
-        <aside className="panel ai-preview">
+        {analysis || citations.length > 0 ? <aside className="panel ai-preview">
           {citations.length > 0 && <section className="analysis-content">
             <h2>{text("Tài liệu liên quan", "Related guidance")}</h2>
             {citations.map(item => <details key={item.id}><summary>{item.title}</summary><p>{item.excerpt}</p><small>{item.sourceLabel}</small></details>)}
@@ -254,7 +265,7 @@ export function NewCasePage() {
               <div className="confidence-block">
                 <div>
                   <span>{text("Phân loại đề xuất", "Suggested category")}</span>
-                  <strong>{analysis.service?.name || analysis.classification.label}</strong>
+                  <strong>{analysis.service?.name || categoryLabels[analysis.classification.label]?.[locale] || analysis.classification.label}</strong>
                 </div>
                 <span>{Math.round(analysis.classification.confidence * 100)}%</span>
               </div>
@@ -322,7 +333,7 @@ export function NewCasePage() {
               <span>{text("Nhập mô tả rồi chạy phân tích để xem gợi ý.", "Add a description, then run the analysis to see guidance.")}</span>
             </div>
           )}
-        </aside>
+        </aside> : null}
       </form>
     </div>
   );

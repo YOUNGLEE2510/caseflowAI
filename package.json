@@ -21,7 +21,7 @@
     "test": "npm run test --workspace=@caseflow/api && npm run test --workspace=@caseflow/web && python -m pytest apps/ai/tests -q",
     "test:e2e": "playwright test",
     "evaluate:ai": "python apps/ai/evaluate.py",
-    "evaluate:retrieval": "python -m apps.ai.evaluate_retrieval --articles apps/ai/tests/fixtures/retrieval_demo_articles.json --questions apps/ai/tests/fixtures/retrieval_demo_questions.csv --output docs/ai-evaluation/retrieval_demo_report.json",
+    "evaluate:retrieval": "python -m apps.ai.evaluate_retrieval --articles apps/ai/tests/fixtures/retrieval_demo_articles.json --questions apps/ai/tests/fixtures/retrieval_demo_questions.csv --output artifacts/ai-evaluation/retrieval_demo_report.json",
     "seed": "npm run seed --workspace=@caseflow/api",
     "seed:force": "npm run seed:force --workspace=@caseflow/api",
     "start": "npm run start --workspace=@caseflow/api"

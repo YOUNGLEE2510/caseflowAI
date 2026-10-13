@@ -1,4 +1,5 @@
 import cors from "cors";
+import { allowedWebOrigins } from "./services/webOrigins.js";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { createHash } from "node:crypto";
@@ -8,14 +9,16 @@ import { config } from "./config.js";
 import { errorHandler, notFound } from "./middleware/error.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
 import { apiRouter } from "./routes.js";
+import { inputBoundary } from "./middleware/inputBoundary.js";
 
 export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", config.TRUST_PROXY_HOPS);
 app.use(helmet());
-app.use(cors({ origin: config.WEB_ORIGIN, credentials: true }));
+app.use(cors({ origin: allowedWebOrigins(config.WEB_ORIGIN, config.DEPLOYMENT_MODE), credentials: true }));
 app.use(requestIdMiddleware);
 app.use(express.json({ limit: "2mb" }));
+app.use(inputBoundary);
 if (process.env.NODE_ENV !== "test") app.use(requestLogger);
 app.use("/api", rateLimit({
   windowMs: 60_000,

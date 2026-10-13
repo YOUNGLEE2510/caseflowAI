@@ -13,9 +13,6 @@ const passwordSchema = z.string()
   .max(128)
   .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Mật khẩu không được vượt quá 72 byte.");
 
-/* ═══════════════════════════════════════════════
-   SERVICE DEFINITION CRUD
-   ═══════════════════════════════════════════════ */
 
 const createServiceSchema = z.object({
   key: z.string().trim().min(2).max(50).regex(/^[a-z][a-z0-9_]*$/),
@@ -108,9 +105,6 @@ adminRouter.delete(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   USER MANAGEMENT CRUD
-   ═══════════════════════════════════════════════ */
 
 const createUserSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -244,9 +238,6 @@ adminRouter.patch(
   }
 );
 
-/* ═══════════════════════════════════════════════
-   KNOWLEDGE ARTICLE CRUD
-   ═══════════════════════════════════════════════ */
 
 const createArticleSchema = z.object({
   title: z.string().trim().min(5).max(200),

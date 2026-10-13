@@ -5,6 +5,7 @@ import { AppShell } from "./components/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoadingState } from "./components/ui";
 import { useLocale } from "./i18n";
+import { ConfirmationProvider } from "./components/ConfirmationProvider";
 
 const LoginPage = lazy(async () => ({ default: (await import("./pages/LoginPage")).LoginPage }));
 const ResetPasswordPage = lazy(async () => ({ default: (await import("./pages/ResetPasswordPage")).ResetPasswordPage }));
@@ -50,7 +51,7 @@ function IncidentRoute({ children }: { children: ReactNode }) {
 export default function App() {
   const { text } = useLocale();
   return (
-    <ErrorBoundary><Suspense
+    <ErrorBoundary><ConfirmationProvider><Suspense
       fallback={
         <div className="boot-screen">
           <LoadingState label={text("Đang tải không gian làm việc", "Loading workspace")} />
@@ -98,6 +99,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </Suspense></ErrorBoundary>
+    </Suspense></ConfirmationProvider></ErrorBoundary>
   );
 }
