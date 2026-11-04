@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, Link2, Radio, Siren, UsersRound } from "lucide-react";
+import { ArrowUpRight, Link2, Radio, Siren, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { EmptyState, ErrorState, formatRelative, LoadingState, PageHeader } from "../components/ui";
@@ -55,13 +55,6 @@ export function IncidentsPage() {
                     </span>
                   </div>
                   <div>
-                    <Activity size={17} />
-                    <span>
-                      <strong>{incident.signal.growthRate}x</strong>
-                      {text("tốc độ tăng", "growth rate")}
-                    </span>
-                  </div>
-                  <div>
                     <Link2 size={17} />
                     <span>
                       <strong>{incident.caseIds.length}</strong>
@@ -87,7 +80,7 @@ export function IncidentsPage() {
             ))}
           </div>
         ) : (
-          <EmptyState title={text("Không có sự cố đang theo dõi", "No active incidents")} detail={text("Các cụm bất thường mới sẽ xuất hiện tại đây.", "New anomaly clusters will appear here.")} />
+          <EmptyState title={text("Không có sự cố đang theo dõi", "No active incidents")} detail={text("Chưa có sự cố được ghi nhận.", "No incidents have been recorded.")} />
         )
       ) : null}
       {opened ? <Modal title={opened.title} onClose={() => setOpened(null)}><div className="incident-case-list">{opened.caseIds.map(item => <Link key={item._id} to={`/cases/${item._id}`}><span className="case-code">{item.code}</span><strong>{item.title}</strong><ArrowUpRight size={16} /></Link>)}</div></Modal> : null}

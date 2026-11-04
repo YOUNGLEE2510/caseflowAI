@@ -15,7 +15,8 @@ describe("fallbackClassify", () => {
   it("routes login problems to IT access", () => {
     const result = fallbackClassify("Em không đăng nhập được tài khoản sinh viên và quên mật khẩu");
     expect(result.label).toBe("it_access");
-    expect(result.confidence).toBeGreaterThan(0.5);
+    expect(result.confidence).toBeLessThan(0.55);
+    expect(result.provider).toBe("fallback");
   });
 
   it("routes transcript problems to academic records", () => {

@@ -102,7 +102,7 @@ export function ServicesPage() {
                   <dd>{selected.team}</dd>
                 </div>
                 <div>
-                  <dt><Clock3 size={16} /> {text("SLA phản hồi", "Response target")}</dt>
+                  <dt><Clock3 size={16} /> {text("SLA giải quyết", "Resolution target")}</dt>
                   <dd>{selected.slaHours} {text("giờ", "hours")}</dd>
                 </div>
                 <div>

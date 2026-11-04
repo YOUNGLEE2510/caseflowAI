@@ -47,7 +47,7 @@ export function ServiceEditor({ service, onClose, onSaved }: EditorActions & { s
 export function UserEditor({ member, onClose, onSaved }: EditorActions & { member?: User }) {
   const { text } = useLocale();
   const confirm = useConfirmation();
-  const [form, setForm] = useState({ name: member?.name || "", email: member?.email || "", password: "", role: member?.role || "requester", team: member?.team || "", title: member?.title || "", active: member?.active !== false });
+  const [form, setForm] = useState({ name: member?.name || "", email: member?.email || "", password: "", role: member?.role || "requester", team: member?.team || "", title: member?.title || "", active: member?.active !== false, personnelManager: Boolean(member?.personnelManager) });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent) {
@@ -67,9 +67,10 @@ export function UserEditor({ member, onClose, onSaved }: EditorActions & { membe
       <label className="field"><span>{text("Họ tên", "Full name")}</span><input required minLength={2} maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
       <label className="field"><span>Email</span><input type="email" required disabled={Boolean(member)} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
       {!member && <label className="field"><span>{text("Mật khẩu ban đầu", "Initial password")}</span><input type="password" required minLength={10} maxLength={128} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>}
-      <label className="field"><span>{text("Vai trò", "Role")}</span><select disabled={Boolean(protectedAdmin)} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as User["role"] })}><option value="requester">{text("Người yêu cầu", "Requester")}</option><option value="agent">{text("Nhân viên", "Agent")}</option><option value="manager">{text("Quản lý", "Manager")}</option><option value="org_admin">{text("Quản trị tổ chức", "Organization admin")}</option>{form.role === "platform_admin" && <option value="platform_admin">Platform admin</option>}</select></label>
+      <label className="field"><span>{text("Vai trò", "Role")}</span><select disabled={Boolean(protectedAdmin)} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as User["role"], personnelManager: e.target.value === "requester" ? false : form.personnelManager })}><option value="requester">{text("Người yêu cầu", "Requester")}</option><option value="agent">{text("Nhân viên", "Agent")}</option><option value="manager">{text("Quản lý", "Manager")}</option><option value="org_admin">{text("Quản trị tổ chức", "Organization admin")}</option>{form.role === "platform_admin" && <option value="platform_admin">Platform admin</option>}</select></label>
       <label className="field"><span>{text("Đơn vị", "Team")}</span><input required={form.role === "agent"} maxLength={60} value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })} /></label>
       <label className="field"><span>{text("Chức danh", "Job title")}</span><input maxLength={100} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
+      {form.role !== "requester" && <label className="checkbox-field"><input type="checkbox" checked={form.personnelManager} onChange={event => setForm({ ...form, personnelManager: event.target.checked })} />{text("Quản lý nhân sự (không cấp tài khoản)", "Manage personnel (no account provisioning)")}</label>}
       {member && <label className="checkbox-field"><input type="checkbox" disabled={Boolean(protectedAdmin)} checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />{text("Đang hoạt động", "Active")}</label>}
       {error && <ErrorState message={error} />}
       <footer className="editor-actions"><button type="button" className="button button-secondary" onClick={onClose}>{text("Hủy", "Cancel")}</button><button className="button button-primary" disabled={busy}><Save size={16} />{text("Lưu thành viên", "Save member")}</button></footer>
@@ -80,6 +81,13 @@ export function UserEditor({ member, onClose, onSaved }: EditorActions & { membe
 export function ArticleEditor({ article, canPublish, onClose, onSaved }: EditorActions & { article?: KnowledgeArticle; canPublish: boolean }) {
   const { locale, text } = useLocale();
   const confirm = useConfirmation();
+  const localDateTime = (value?: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  const [effectiveAt, setEffectiveAt] = useState(localDateTime(article?.effectiveAt));
+  const [expiresAt, setExpiresAt] = useState(localDateTime(article?.expiresAt));
   const [form, setForm] = useState({ title: article?.title || "", content: article?.content || "", category: article?.category || "general_support", sourceLabel: article?.sourceLabel || "", sourceUrl: article?.sourceUrl || "", version: article?.version || "1.0", status: canPublish ? article?.status || "draft" : "draft" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -88,7 +96,12 @@ export function ArticleEditor({ article, canPublish, onClose, onSaved }: EditorA
     if (busy || !await confirm({ title: form.status === "published" ? text("Công bố tài liệu?", "Publish document?") : text("Lưu bản nháp?", "Save draft?"), message: form.title })) return;
     setBusy(true); setError("");
     try {
-      await api(article ? `/knowledge/${article._id}` : "/knowledge", { method: article ? "PATCH" : "POST", body: JSON.stringify(form) });
+      await api(article ? `/knowledge/${article._id}` : "/knowledge", { method: article ? "PATCH" : "POST", body: JSON.stringify({
+        ...form,
+        ...(article?.updatedAt ? { expectedUpdatedAt: article.updatedAt } : {}),
+        ...(effectiveAt ? { effectiveAt: new Date(effectiveAt).toISOString() } : {}),
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+      }) });
       onSaved();
     } catch (err) { setError(err instanceof Error ? err.message : text("Không thể lưu.", "Unable to save.")); }
     finally { setBusy(false); }
@@ -101,6 +114,10 @@ export function ArticleEditor({ article, canPublish, onClose, onSaved }: EditorA
       <label className="field"><span>{text("Nguồn ban hành", "Issuing source")}</span><input required minLength={2} maxLength={120} value={form.sourceLabel} onChange={(e) => setForm({ ...form, sourceLabel: e.target.value })} /></label>
       <label className="field"><span>{text("Liên kết nguồn", "Source URL")}</span><input type="url" value={form.sourceUrl} onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })} /></label>
       <label className="field"><span>{text("Phiên bản", "Version")}</span><input required maxLength={30} value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} /></label>
+      <div className="form-grid">
+        <label className="field"><span>{text("Có hiệu lực từ", "Effective from")}</span><input type="datetime-local" value={effectiveAt} onChange={event => setEffectiveAt(event.target.value)} /></label>
+        <label className="field"><span>{text("Hết hiệu lực", "Expires at")}</span><input type="datetime-local" min={effectiveAt || undefined} value={expiresAt} onChange={event => setExpiresAt(event.target.value)} /></label>
+      </div>
       {canPublish && <label className="checkbox-field"><input type="checkbox" checked={form.status === "published"} onChange={(e) => setForm({ ...form, status: e.target.checked ? "published" : "draft" })} />{text("Phê duyệt và công bố", "Approve and publish")}</label>}
       {error && <ErrorState message={error} />}
       <footer className="editor-actions"><button type="button" className="button button-secondary" onClick={onClose}>{text("Hủy", "Cancel")}</button><button className="button button-primary" disabled={busy}><Save size={16} />{text("Lưu tài liệu", "Save document")}</button></footer>

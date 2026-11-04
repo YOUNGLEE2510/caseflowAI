@@ -8,6 +8,7 @@ const schema = new Schema({
   familyId: { type: String, required: true, index: true },
   tokenVersion: { type: Number, required: true },
   remember: { type: Boolean, default: false },
+  mfaVerified: { type: Boolean, default: false },
   expiresAt: { type: Date, required: true },
   consumedAt: { type: Date, default: null },
   revokedAt: { type: Date, default: null }

@@ -14,11 +14,15 @@ import { logAudit } from "../services/helpers.js";
 import { microsoftRouter } from "./microsoftAuth.js";
 import { publicUser, type PublicUserSource } from "../services/publicUser.js";
 import type { RefreshSessionRecord } from "../services/refreshSession.js";
+import { currentPasswordSchema, newPasswordSchema } from "../services/passwordPolicy.js";
+import { consumeAuthAttempt } from "../services/authThrottle.js";
+import { googleDomainAllowed } from "../services/googleDomain.js";
 
 interface LeanOrganization {
   _id: import("mongoose").Types.ObjectId;
   name: string;
   slug: string;
+  settings?: { googleHostedDomains?: string[] };
 }
 
 interface LoginUser extends PublicUserSource { passwordHash: string }
@@ -27,11 +31,15 @@ interface LoginTicket { userId: import("mongoose").Types.ObjectId; organizationI
 const dummyPasswordHash = bcrypt.hashSync(randomBytes(32).toString("hex"), 12);
 export const authRouter = Router();
 authRouter.use(microsoftRouter);
+authRouter.get("/auth/organizations", async (_req, res) => {
+  const organizations = await Organization.find({ status: "active" }).select("name slug -_id").sort({ name: 1 }).limit(100).lean();
+  res.json({ organizations });
+});
 
 const loginSchema = z.object({
   organizationSlug: z.string().trim().min(2).max(80),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: currentPasswordSchema,
   remember: z.boolean().default(true)
 });
 
@@ -43,7 +51,7 @@ const passwordResetRequestSchema = z.object({
 const passwordResetConfirmSchema = z.object({
   organizationSlug: z.string().trim().min(2).max(80),
   token: z.string().regex(/^[a-f0-9]{64}$/i),
-  password: z.string().min(10).max(128).refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Mật khẩu không được vượt quá 72 byte.")
+  password: newPasswordSchema
 });
 const googleStartSchema = z.object({
   organization: z.string().trim().min(2).max(80),
@@ -69,9 +77,9 @@ function resetTokenHash(token: string) {
 
 const resetRequestMessage = "Nếu tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.";
 
-function issueAccessToken(user: Pick<PublicUserSource, "_id" | "organizationId" | "tokenVersion">) {
+function issueAccessToken(user: Pick<PublicUserSource, "_id" | "organizationId" | "tokenVersion">, familyId: string) {
   return jwt.sign(
-    { id: String(user._id), organizationId: String(user.organizationId), tokenVersion: user.tokenVersion || 0 },
+    { id: String(user._id), organizationId: String(user.organizationId), tokenVersion: user.tokenVersion || 0, sid: familyId },
     config.JWT_SECRET,
     { expiresIn: config.JWT_ACCESS_TTL_SECONDS, algorithm: "HS256" }
   );
@@ -108,6 +116,7 @@ function loginRedirect(res: Response, error?: string, organization?: string) {
 authRouter.post("/auth/login", async (req, res) => {
   checkRefreshOrigin(req);
   const input = loginSchema.parse(req.body);
+  await consumeAuthAttempt(`${input.organizationSlug}:${input.email}`);
   const organization = (await Organization.findOne({
     slug: input.organizationSlug.toLowerCase(),
     status: "active"
@@ -128,8 +137,8 @@ authRouter.post("/auth/login", async (req, res) => {
   }
 
   const payload = publicUser(user, organization);
-  const token = issueAccessToken(user);
-  await createRefreshSession(res, user, input.remember);
+  const session = await createRefreshSession(res, user, input.remember);
+  const token = issueAccessToken(user, session.familyId);
   await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
   await logAudit({
     organizationId: String(organization._id), actorId: String(user._id), actorName: user.name,
@@ -144,7 +153,7 @@ authRouter.post("/auth/refresh", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   try {
     const session = await rotateRefreshSession(readCookie(req, REFRESH_COOKIE), res);
-    res.json({ token: issueAccessToken(session.user), user: publicUser(session.user, session.organization), remember: session.remember });
+    res.json({ token: issueAccessToken(session.user, session.familyId), user: publicUser(session.user, session.organization, session.mfaVerified), remember: session.remember });
   } catch (error) {
     if (error instanceof HttpError && error.status === 401) clearRefreshCookie(res);
     throw error;
@@ -232,6 +241,8 @@ authRouter.get("/auth/google/callback", async (req, res) => {
       status: "active"
     }).lean()) as LeanOrganization | null;
     if (!organization) throw new Error("Organization unavailable");
+    const domains = organization.settings?.googleHostedDomains?.length ? organization.settings.googleHostedDomains : config.GOOGLE_OAUTH_HOSTED_DOMAINS.split(",").map(value => value.trim()).filter(Boolean);
+    if (!googleDomainAllowed(identity.hd, domains)) throw new Error("Google hosted domain is not allowed");
 
     const user = await User.findOneAndUpdate(
       {
@@ -290,13 +301,13 @@ authRouter.post(["/auth/google/exchange", "/auth/microsoft/exchange"], async (re
   if (!user || !organization) throw new HttpError(401, "Tài khoản không còn khả dụng.");
 
   const payload = publicUser(user, organization);
-  const token = issueAccessToken(user);
+  const session = await createRefreshSession(res, user, Boolean(ticket.remember));
+  const token = issueAccessToken(user, session.familyId);
   await logAudit({
     organizationId: String(organization._id), actorId: String(user._id), actorName: user.name,
     actorRole: user.role, action: "auth.login", resource: "User", resourceId: String(user._id),
     changes: { provider }
   }, req);
-  await createRefreshSession(res, user, Boolean(ticket.remember));
   res.setHeader("Cache-Control", "no-store");
   res.json({ token, user: payload, remember: Boolean(ticket.remember) });
 });
@@ -327,7 +338,7 @@ authRouter.post("/auth/password-reset/confirm", async (req, res) => {
   const passwordHash = await bcrypt.hash(input.password, 12);
   const user = await User.findOneAndUpdate(
     { _id: token.userId, organizationId: organization._id, active: true },
-    { $set: { passwordHash }, $inc: { tokenVersion: 1 } },
+    { $set: { passwordHash, mustChangePassword: false }, $inc: { tokenVersion: 1 } },
     { new: true }
   ).lean<PublicUserSource>();
   if (!user) throw new HttpError(422, "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
@@ -354,7 +365,7 @@ authRouter.get("/auth/me", authenticate, async (req, res) => {
     status: "active"
   }).lean()) as LeanOrganization | null;
   if (!organization) throw new HttpError(403, "Tổ chức hiện không hoạt động.");
-  res.json({ user: publicUser(user, organization) });
+  res.json({ user: publicUser(user, organization, req.auth!.mfaVerified) });
 });
 
 authRouter.post("/auth/logout", async (req, res) => {
@@ -365,11 +376,9 @@ authRouter.post("/auth/logout", async (req, res) => {
     tokenHash: hashRefreshToken(rawToken), consumedAt: null, revokedAt: null, expiresAt: { $gt: new Date() }
   }).lean<RefreshSessionRecord>() : null;
   if (session) {
-    const user = await User.findOneAndUpdate({ _id: session.userId, organizationId: session.organizationId,
-      $or: [{ tokenVersion: session.tokenVersion }, ...(session.tokenVersion === 0 ? [{ tokenVersion: { $exists: false } }] : [])]
-    }, { $inc: { tokenVersion: 1 } }).lean<PublicUserSource>();
+    const user = await User.findOne({ _id: session.userId, organizationId: session.organizationId }).lean<PublicUserSource>();
     if (user) {
-      await RefreshSession.updateMany({ userId: session.userId, organizationId: session.organizationId }, { $set: { revokedAt: new Date() } });
+      await RefreshSession.updateMany({ userId: session.userId, organizationId: session.organizationId, familyId: session.familyId }, { $set: { revokedAt: new Date() } });
       await logAudit({ organizationId: String(user.organizationId), actorId: String(user._id), actorName: user.name,
         actorRole: user.role, action: "auth.logout", resource: "User", resourceId: String(user._id) }, req);
       res.json({ message: "Đã đăng xuất." });
@@ -380,14 +389,20 @@ authRouter.post("/auth/logout", async (req, res) => {
   await authenticate(req, res, (error) => { authenticationError = error; });
   if (authenticationError) throw authenticationError;
   if (res.headersSent || !req.auth) return;
-  await RefreshSession.updateMany({ userId: req.auth!.id, organizationId: req.auth!.organizationId }, { $set: { revokedAt: new Date() } });
-  await User.updateOne(
-    { _id: req.auth!.id, organizationId: req.auth!.organizationId },
-    { $inc: { tokenVersion: 1 } }
-  );
+  if (req.auth!.sessionId) await RefreshSession.updateMany({ userId: req.auth!.id, organizationId: req.auth!.organizationId, familyId: req.auth!.sessionId }, { $set: { revokedAt: new Date() } });
   await logAudit({
     organizationId: req.auth!.organizationId, actorId: req.auth!.id, actorName: req.auth!.name,
     actorRole: req.auth!.role, action: "auth.logout", resource: "User", resourceId: req.auth!.id
   }, req);
   res.json({ message: "Đã đăng xuất." });
+});
+
+authRouter.post("/auth/logout-all", authenticate, async (req, res) => {
+  checkRefreshOrigin(req);
+  await User.updateOne({ _id: req.auth!.id, organizationId: req.auth!.organizationId }, { $inc: { tokenVersion: 1 } });
+  await RefreshSession.updateMany({ userId: req.auth!.id, organizationId: req.auth!.organizationId }, { $set: { revokedAt: new Date() } });
+  clearRefreshCookie(res);
+  await logAudit({ organizationId: req.auth!.organizationId, actorId: req.auth!.id, actorName: req.auth!.name,
+    actorRole: req.auth!.role, action: "auth.logout_all", resource: "User", resourceId: req.auth!.id }, req);
+  res.json({ message: "Đã đăng xuất mọi thiết bị." });
 });

@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { CaseRecord, Organization, ServiceDefinition, User } from "../models.js";
+import { CaseRecord, Organization, User } from "../models.js";
 import { predictSla } from "../services/aiClient.js";
 import { notify, notifyMany } from "../services/helpers.js";
 import { acquireJobLease, releaseJobLease } from "../services/jobLease.js";
-import { addBusinessHours, businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
+import { businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
 
 const SLA_PREDICTION_CONCURRENCY = 5;
 
@@ -33,18 +33,15 @@ export async function runSlaCheck() {
   console.log(`[SLA Checker] Running at ${now.toISOString()}`);
 
   try {
-    const openCases = await CaseRecord.find({
-      status: { $nin: ["resolved", "closed"] }
-    }).lean();
-    const organizationIds = [...new Set(openCases.map((item: any) => String(item.organizationId)))];
-    const [organizations, services, managers] = await Promise.all([
+    const activeFilter = { status: { $nin: ["resolved", "closed", "waiting"] } };
+    const organizationIds = await CaseRecord.distinct("organizationId", activeFilter);
+    const workloads = await CaseRecord.aggregate([{ $match: { status: { $nin: ["resolved", "closed"] } } },
+      { $group: { _id: { organizationId: "$organizationId", team: "$team" }, count: { $sum: 1 } } }]);
+    const workloadByTeam = new Map(workloads.map(row => [`${row._id.organizationId}:${row._id.team}`, row.count as number]));
+    const [organizations, managers] = await Promise.all([
       Organization.find({ _id: { $in: organizationIds } })
         .select("settings.holidayDates")
         .lean(),
-      ServiceDefinition.find({
-        organizationId: { $in: organizationIds },
-        active: true
-      }).select("organizationId key slaHours").lean(),
       User.find({
         organizationId: { $in: organizationIds },
         role: { $in: ["manager", "org_admin"] },
@@ -52,7 +49,6 @@ export async function runSlaCheck() {
       }).select("_id organizationId").lean()
     ]);
     const calendars = new Map(organizations.map((organization: any) => [String(organization._id), organizationCalendar(organization.settings)]));
-    const serviceHours = new Map(services.map((service: any) => [`${service.organizationId}:${service.key}`, service.slaHours]));
     const managerIdsByOrganization = new Map<string, string[]>();
     for (const manager of managers) {
       const organizationId = String((manager as any).organizationId);
@@ -62,30 +58,24 @@ export async function runSlaCheck() {
     }
 
     let updated = 0;
+    let scanned = 0;
     let breached = 0;
     let warned = 0;
 
     const processRecord = async (record: any) => {
       const caseDoc = record as any;
       const calendar = calendars.get(String(caseDoc.organizationId)) || organizationCalendar();
-      const configuredHours = serviceHours.get(`${caseDoc.organizationId}:${caseDoc.serviceKey}`);
-      let dueAt = new Date(caseDoc.dueAt);
+      const dueAt = new Date(caseDoc.dueAt);
       const slaStart = new Date(caseDoc.slaStartedAt || caseDoc.createdAt);
-      const elapsedHours = businessHoursBetween(slaStart, now, calendar);
-      if (typeof configuredHours === "number") {
-        const recalculatedDueAt = addBusinessHours(slaStart, configuredHours, calendar);
-        if (recalculatedDueAt.getTime() !== dueAt.getTime()) {
-          dueAt = recalculatedDueAt;
-        }
-      }
-      const dueHours = businessHoursBetween(slaStart, dueAt, calendar);
+      const elapsedHours = Math.max(0, businessHoursBetween(slaStart, now, calendar) - (caseDoc.slaPausedHours || 0));
+      const dueHours = Math.max(0, businessHoursBetween(slaStart, dueAt, calendar) - (caseDoc.slaPausedHours || 0));
 
       // Re-predict SLA risk
       const sla = await predictSla({
         elapsedHours,
         dueHours,
         transfers: caseDoc.transferCount || 0,
-        workload: 0, // simplified for batch job
+        workload: Math.max(0, (workloadByTeam.get(`${caseDoc.organizationId}:${caseDoc.team}`) || 0) - 1),
         remainingSteps: caseDoc.status === "in_progress" ? 2 : 3,
         priority: caseDoc.priority
       });
@@ -105,11 +95,12 @@ export async function runSlaCheck() {
 
       // Update if risk score changed significantly
       if (Math.abs((caseDoc.ai?.riskScore || 0) - sla.riskScore) > 0.05 || changes.slaBreached || changes.dueAt) {
-        await CaseRecord.updateOne({ _id: caseDoc._id }, { $set: changes });
+        const saved = await CaseRecord.updateOne({ _id: caseDoc._id, status: caseDoc.status, updatedAt: caseDoc.updatedAt }, { $set: changes, $inc: { __v: 1 } });
+        if (!saved.modifiedCount) return;
         updated++;
 
         // Warn assignee/managers for high-risk cases
-        if (sla.riskScore >= 0.7 && (caseDoc.ai?.riskScore || 0) < 0.7) {
+        if (changes.slaBreached || (sla.riskScore >= 0.7 && (caseDoc.ai?.riskScore || 0) < 0.7)) {
           const recipients: string[] = [];
           if (caseDoc.assigneeId) recipients.push(String(caseDoc.assigneeId));
 
@@ -124,8 +115,8 @@ export async function runSlaCheck() {
             await notifyMany(recipients, {
               organizationId: String(caseDoc.organizationId),
               type: "sla_warning",
-              title: `⚠ ${caseDoc.code} có nguy cơ trễ SLA`,
-              message: `Rủi ro ${Math.round(sla.riskScore * 100)}% — ${sla.factors[0] || "Cần xử lý sớm"}`,
+              title: changes.slaBreached ? `${caseDoc.code} đã quá hạn SLA` : `${caseDoc.code} có nguy cơ trễ SLA`,
+              message: changes.slaBreached ? "Cần kiểm tra nguyên nhân chậm và phương án xử lý." : `Rủi ro dự báo ${Math.round(sla.riskScore * 100)}%: ${sla.factors[0] || "Cần xử lý sớm"}`,
               relatedCaseId: String(caseDoc._id),
               actionUrl: `/cases/${caseDoc._id}`
             });
@@ -135,11 +126,16 @@ export async function runSlaCheck() {
       }
     };
 
-    for (let start = 0; start < openCases.length; start += SLA_PREDICTION_CONCURRENCY) {
-      await Promise.all(openCases.slice(start, start + SLA_PREDICTION_CONCURRENCY).map(processRecord));
+    const cursor = CaseRecord.find(activeFilter).select("organizationId serviceKey team dueAt slaStartedAt createdAt updatedAt slaPausedHours transferCount status priority ai.riskScore assigneeId slaBreached code").lean().cursor();
+    let batch: unknown[] = [];
+    for await (const record of cursor) {
+      scanned++;
+      batch.push(record);
+      if (batch.length >= SLA_PREDICTION_CONCURRENCY) { await Promise.all(batch.map(processRecord)); batch = []; }
     }
+    await Promise.all(batch.map(processRecord));
 
-    console.log(`[SLA Checker] Done: ${openCases.length} cases scanned, ${updated} updated, ${breached} newly breached, ${warned} warnings sent.`);
+    console.log(`[SLA Checker] Done: ${scanned} cases scanned, ${updated} updated, ${breached} newly breached, ${warned} warnings sent.`);
   } catch (error) {
     console.error("[SLA Checker] Error:", error);
   } finally {

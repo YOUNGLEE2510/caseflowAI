@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { UserCsvImport } from "../components/UserCsvImport";
 import { Check, Plus, Search, ShieldCheck, Pencil, LockKeyhole, UnlockKeyhole, Mail, Minus } from "lucide-react";
 import { useAuth } from "../auth";
 import { UserEditor } from "../components/AdminEditors";
@@ -92,16 +93,16 @@ export function UsersPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title={text("Nhân sự và phân quyền", "People and access")}
+        title={text("Tài khoản và phân quyền", "Accounts and access")}
         description={text(
           "Quản lý thành viên, vai trò và phạm vi dữ liệu trong tổ chức.",
           "Manage members, roles, and data access across the organization."
         )}
         actions={
-          canManage ? <button className="button button-primary" onClick={() => setEditing("new")}>
+          canManage ? <><UserCsvImport onSaved={() => void reload()} /><button className="button button-primary" onClick={() => setEditing("new")}>
             <Plus size={17} />
             {text("Thêm thành viên", "Add member")}
-          </button> : null
+          </button></> : null
         }
       />
 

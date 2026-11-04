@@ -86,6 +86,13 @@ def retrieve_knowledge(request: KnowledgeRequest) -> dict:
             break
         if article_id in seen:
             continue
+        if is_title:
+            body_positions = [i for i, entry in enumerate(entries)
+                              if entry[0] == article_id and not entry[5]]
+            if not body_positions:
+                continue
+            body_position = max(body_positions, key=lambda i: scores[i])
+            passage = entries[body_position][4]
         seen.add(article_id)
         citations.append({"id": article_id, "title": title, "sourceLabel": source_label,
                           "excerpt": passage, "score": round(score, 4)})

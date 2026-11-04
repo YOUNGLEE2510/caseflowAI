@@ -13,7 +13,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 3_600_000);
 
   const openScope = { ...scope, status: { $nin: ["resolved", "closed"] } };
-  const riskScope = { ...openScope, $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] };
+  const riskScope = { ...openScope, status: { $nin: ["resolved", "closed", "waiting"] }, $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] };
   const aggregateScope: Record<string, unknown> = scope;
   const incidentScope = {
     organizationId,
@@ -46,7 +46,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
               _id: "$team",
               open: { $sum: 1 },
               risk: {
-                $sum: { $cond: [{ $or: [{ $gte: ["$ai.riskScore", 0.65] }, { $lt: ["$dueAt", now] }] }, 1, 0] }
+                $sum: { $cond: [{ $and: [{ $ne: ["$status", "waiting"] }, { $or: [{ $gte: ["$ai.riskScore", 0.65] }, { $lt: ["$dueAt", now] }] }] }, 1, 0] }
               }
             }
           },

@@ -49,6 +49,7 @@ const workspaceItems: NavItem[] = [
 ];
 
 const adminItems: NavItem[] = [
+  { to: "/personnel", label: { vi: "Nhân sự", en: "Personnel" }, icon: Users, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/system", label: { vi: "Vận hành", en: "System" }, icon: Activity, roles: ["manager", "org_admin", "platform_admin"] },
   {
     to: "/services",
@@ -58,7 +59,7 @@ const adminItems: NavItem[] = [
   },
   {
     to: "/users",
-    label: { vi: "Người dùng", en: "People" },
+    label: { vi: "Tài khoản", en: "Accounts" },
     icon: Users,
     roles: ["manager", "org_admin", "platform_admin"]
   }
@@ -79,7 +80,8 @@ const routeMeta = [
   { prefix: "/incidents", title: { vi: "Trung tâm sự cố", en: "Incident center" }, subtitle: { vi: "Theo dõi sự cố đã ghi nhận", en: "Recorded incidents" } },
   { prefix: "/knowledge", title: { vi: "Kho tri thức", en: "Knowledge base" }, subtitle: { vi: "Tìm kiếm có căn cứ và kiểm soát nguồn", en: "Grounded answers from approved sources" } },
   { prefix: "/services", title: { vi: "Quản trị dịch vụ", en: "Service management" }, subtitle: { vi: "Cấu hình danh mục và quy tắc định tuyến", en: "Catalog, routing and SLA rules" } },
-  { prefix: "/users", title: { vi: "Nhân sự và phân quyền", en: "People and access" }, subtitle: { vi: "Quản lý quyền truy cập theo vai trò", en: "Role-based access management" } },
+  { prefix: "/personnel", title: { vi: "Nhân sự", en: "Personnel" }, subtitle: { vi: "Hồ sơ, lịch làm việc và nghỉ phép", en: "Staff, schedules and leave" } },
+  { prefix: "/users", title: { vi: "Tài khoản và phân quyền", en: "Accounts and access" }, subtitle: { vi: "Quản lý quyền truy cập theo vai trò", en: "Role-based access management" } },
   { prefix: "/overview", title: { vi: "Tổng quan vận hành", en: "Operations overview" }, subtitle: { vi: "Tình trạng dịch vụ theo thời gian thực", en: "Live service health" } }
 ];
 
@@ -100,6 +102,7 @@ export function AppShell() {
     const query = window.matchMedia("(max-width: 900px)");
     const update = () => { setMobileViewport(query.matches); if (!query.matches) setMobileOpen(false); };
     query.addEventListener("change", update);
+    update();
     return () => query.removeEventListener("change", update);
   }, []);
   useEffect(() => {
@@ -168,6 +171,10 @@ export function AppShell() {
 
   useEffect(() => {
     void loadNotifications();
+    const refresh = () => { if (document.visibilityState === "visible") void loadNotifications(); };
+    const interval = window.setInterval(refresh, 45000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refresh); };
   }, [loadNotifications, user?.id]);
 
   useEffect(() => {

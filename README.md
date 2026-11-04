@@ -4,13 +4,13 @@ Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI
 
 ## Giá trị chính
 
-Hệ thống tích hợp bảo mật nâng cao (refresh token rotation với HttpOnly cookie), kiểm tra tệp an toàn với ClamAV, lưu trữ đối tượng S3-compatible riêng tư và model AI có phiên bản được cấu hình sẵn trong Docker.
+Hệ thống dùng refresh token HttpOnly, quét tệp với ClamAV, MongoDB Atlas cho metadata và Cloudinary cho PDF/ảnh riêng tư. AI local là baseline demo; huấn luyện nghiệp vụ đang chờ dữ liệu được duyệt.
 
 - Một hồ sơ xuyên suốt từ tiếp nhận, phân loại, giao việc, phản hồi đến đóng yêu cầu.
 - Cổng làm việc theo vai trò: người yêu cầu, nhân viên, quản lý và quản trị tổ chức.
 - AI tiếng Việt hỗ trợ phân loại, trích xuất thông tin, phát hiện hồ sơ tương tự, truy xuất kho tri thức và dự báo nguy cơ trễ SLA.
 - Dashboard vận hành, danh sách sự cố demo, nhật ký xử lý và nguồn trích dẫn phục vụ kiểm soát trách nhiệm. Chưa có phát hiện cụm sự cố tự động hay đầy đủ CRUD incident.
-- MongoDB lưu dữ liệu nghiệp vụ tập trung; dịch vụ AI tách riêng để có thể thay model mà không đổi hệ thống lõi.
+- MongoDB Atlas lưu dữ liệu nghiệp vụ và metadata; Cloudinary lưu PDF/ảnh gốc riêng tư. Dịch vụ AI tách riêng khỏi hệ thống lõi.
 
 ## Kiến trúc thư mục
 
@@ -101,10 +101,15 @@ npm test
 npm run evaluate:ai
 npm run evaluate:retrieval
 npm run test:e2e
+npm run test:audit
 npm audit
 ```
 
 Tài liệu OpenAPI của dịch vụ AI: `http://127.0.0.1:8001/docs`.
+
+`npm run test:audit` chạy thêm các hợp đồng sản phẩm và xuất danh sách lỗi tại `artifacts/product-audit/ISSUES.md`. Lệnh trả exit code khác 0 khi còn lỗi, không che các ca thất bại bằng skip/expected failure. Xem phạm vi, điều kiện chạy và giới hạn tại [tests/audit/README.md](tests/audit/README.md).
+
+`npm run test:audit:docker` kiểm tra riêng các kết nối của stack Docker đang chạy, không ghi dữ liệu nghiệp vụ hoặc gọi dịch vụ AI trả phí.
 
 Đánh giá SLA trên CSV đã gán nhãn: `python -m apps.ai.evaluate_sla --dataset path/to/sla.csv`. Các cột bắt buộc: `elapsedHours,dueHours,transfers,workload,remainingSteps,priority,breached`. Công cụ không tự tạo dữ liệu để báo cáo kết quả thực tế.
 
@@ -113,17 +118,17 @@ Chuẩn bị dữ liệu phân loại đã được phép sử dụng: `python -
 Đánh giá truy xuất RAG: `npm run evaluate:retrieval` chạy fixture tái lập và ghi kết quả tại `artifacts/ai-evaluation/retrieval_demo_report.json`. Với dữ liệu pilot, dùng `python -m apps.ai.evaluate_retrieval --articles path/to/knowledge.json --questions path/to/questions.csv --output artifacts/retrieval-evaluation.json`. Bộ câu hỏi dùng cột `id,query,expected_ids,answerable`; `expected_ids` là các mã tài liệu, phân cách bằng dấu `;`. Fixture demo chỉ kiểm tra pipeline, không phải chỉ số chất lượng thực tế.
 
 
-`npm run seed` chỉ tạo dữ liệu khi tổ chức demo chưa tồn tại. `npm run seed:force` xóa và tạo lại dữ liệu demo; không dùng lệnh này với database sản xuất.
+`npm run seed` chỉ tạo dữ liệu demo ở local. `seed:force` bị vô hiệu hóa; khi cần làm mới hãy dùng database demo dùng một lần, không dùng database thật.
 
 Integration test và E2E dùng MongoDB tạm, không sử dụng Atlas trong `.env`. E2E dùng Chrome cài sẵn, cổng riêng 5188. `AUTO_SEED` mặc định false. Tài liệu cần được quản lý phê duyệt trong Kho tri thức trước khi xuất hiện với sinh viên hoặc được dùng trong truy xuất AI.
 
-Trang **Vận hành** dành cho quản lý/quản trị hiển thị kết nối MongoDB, AI, cấu hình lưu tệp, hồ sơ quá hạn và nhật ký. MongoDB giữ metadata; nội dung tệp dùng local storage hoặc S3 theo cấu hình. Docker dùng S3 riêng tư qua SeaweedFS.
+Trang **Vận hành** hiển thị kết nối, hồ sơ quá hạn và nhật ký. Atlas giữ metadata, Cloudinary giữ PDF/ảnh authenticated. S3 chỉ còn adapter tương thích với tệp cũ và không cần chạy mặc định.
 
 Tải tệp đính kèm có kiểm tra kích thước, phần mở rộng và chữ ký định dạng. Docker bật quét ClamAV trước khi cho phép sử dụng tệp; nếu scanner lỗi thì từ chối upload. Chế độ local có thể tắt scanner nên cần kiểm tra `MALWARE_SCAN_MODE` trước pilot. Quét malware không bảo đảm phát hiện mọi mã độc.
 
 Docker không tự tạo tài khoản demo mặc định. Với cơ sở dữ liệu mới chỉ phục vụ demo, đặt `AUTO_SEED=true` trong `.env.docker`; không bật ở môi trường pilot/production. `TRUST_PROXY_HOPS=1` chỉ dành cho API nằm sau một nginx không có cổng công khai; nginx ghi đè IP chuyển tiếp để không tin header do khách gửi.
 
-Access token được giữ trong bộ nhớ trình duyệt; phiên được khôi phục bằng refresh cookie HttpOnly. Hồ sơ mới lưu phiên bản phân loại AI và thông tin trích xuất. Mở lại hồ sơ bắt đầu một chu kỳ SLA mới; dữ liệu đánh giá SLA hiện phản ánh chu kỳ mới nhất, chưa phải thống kê từng chu kỳ lịch sử.
+Access token ở bộ nhớ trình duyệt; refresh cookie HttpOnly khôi phục phiên. Hồ sơ ghi phiên bản AI và quyết định con người. Mở lại hồ sơ tạo chu kỳ SLA mới; analytics có tổng hợp lịch sử chu kỳ. Không dùng KPI này để tự động xếp loại nhân viên.
 
 API chạy kiểm tra SLA khi khởi động và lặp lại theo `SLA_CHECK_INTERVAL_MINUTES` (mặc định 15 phút). SLA dùng giờ phục vụ Thứ 2–Thứ 6, 08:00–12:00 và 13:00–17:00 theo Việt Nam; ngày nghỉ có thể khai báo tại `Organization.settings.holidayDates` dưới dạng `YYYY-MM-DD`. Job tự hiệu chỉnh hạn của các hồ sơ còn mở sau khi nâng cấp lịch.
 
@@ -131,6 +136,8 @@ Requester có thể xác nhận đóng, mở lại hồ sơ đã giải quyết 
 
 
 ## Luồng demo đề xuất
+
+Huấn luyện nghiệp vụ đang chờ dữ liệu được duyệt. Model 60 mẫu và SLA synthetic chỉ là demo/pipeline, không chứng minh chất lượng thực tế. Không tự nhập corpus đã cào hoặc tự retrain; xem [AI_AND_DATA.md](docs/AI_AND_DATA.md).
 
 1. Đăng nhập vai trò sinh viên và tạo một yêu cầu bằng tiếng Việt tự nhiên.
 2. Chạy phân tích AI để xem nhãn, độ tin cậy, dữ liệu trích xuất và hồ sơ tương tự.

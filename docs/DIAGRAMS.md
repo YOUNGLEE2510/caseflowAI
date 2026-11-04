@@ -14,7 +14,7 @@ flowchart LR
   API --> CASE[Quản lý hồ sơ và SLA]
   API --> KB[Kho tri thức]
   API --> ADMIN[Quản trị danh mục]
-  AUTH --> DB[(MongoDB)]
+  AUTH --> DB[(MongoDB Atlas: metadata)]
   CASE --> DB
   KB --> DB
   ADMIN --> DB
@@ -22,7 +22,7 @@ flowchart LR
   AI --> CLS[Phân loại và trích xuất]
   AI --> RET[Hồ sơ tương tự và retrieval]
   AI --> SLA[Dự báo rủi ro SLA]
-  API --> FILES[(Lưu tệp cục bộ POC)]
+  API --> FILES[Cloudinary: PDF và ảnh authenticated]
 ```
 
 ## Use case theo vai trò
@@ -50,6 +50,7 @@ sequenceDiagram
   participant A as API
   participant I as AI Service
   participant D as MongoDB
+  participant J as Background worker
   actor S as Nhân viên
   U->>W: Nhập nội dung yêu cầu
   W->>A: Gửi yêu cầu phân tích
@@ -58,8 +59,12 @@ sequenceDiagram
   A-->>W: Hiển thị để người dùng kiểm tra
   U->>W: Xác nhận và gửi hồ sơ
   W->>A: Tạo hồ sơ
-  A->>D: Lưu hồ sơ, SLA và timeline
+  A->>D: Lưu hồ sơ, SLA, timeline và ai.queued
   A-->>S: Đưa vào hàng đợi xử lý
+  J->>D: Nhận job bằng lease
+  J->>I: Phân tích sau tiếp nhận
+  I-->>J: Model hoặc fallback
+  J->>D: Ghi kết quả nếu chưa được người dùng duyệt
   S->>A: Xác nhận hoặc sửa phân loại
   A->>D: Lưu quyết định con người và audit
   S->>A: Cập nhật trạng thái, phản hồi

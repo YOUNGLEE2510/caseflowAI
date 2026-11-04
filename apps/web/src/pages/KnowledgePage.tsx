@@ -1,15 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { BookMarked, ExternalLink, Search, Send, Sparkles, Plus, Pencil } from "lucide-react";
 import { useAuth } from "../auth";
 import { ArticleEditor } from "../components/AdminEditors";
 import { Modal } from "../components/Modal";
 import { api } from "../api";
-import { EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { EmptyState, ErrorState, LoadingState, PageHeader, Pagination } from "../components/ui";
 import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { KnowledgeArticle } from "../types";
 import { ReadMore } from "../components/ReadMore";
-import { matchesSearch } from "../utils/search";
 import { categoryLabels } from "../utils/labels";
 
 interface SearchResult {
@@ -17,6 +16,7 @@ interface SearchResult {
   answer: string;
   citations: Array<{
     id: string;
+    version?: string;
     title: string;
     sourceLabel: string;
     excerpt: string;
@@ -31,24 +31,48 @@ export function KnowledgePage() {
   const canPublish = Boolean(user && ["manager", "org_admin", "platform_admin"].includes(user.role));
   const [editing, setEditing] = useState<KnowledgeArticle | "new" | null>(null);
   const [opened, setOpened] = useState<KnowledgeArticle | null>(null);
-  const { data, loading, error, reload } = useApiData<{ articles: KnowledgeArticle[] }>("/knowledge");
+  const [page, setPage] = useState(1);
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const { data, loading, error, reload } = useApiData<{ articles: KnowledgeArticle[]; total: number }>(`/knowledge?page=${page}&limit=20&search=${encodeURIComponent(libraryQuery)}`);
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [generate, setGenerate] = useState(false);
-  const filteredArticles = useMemo(() => data?.articles.filter(article => matchesSearch([article.title, article.content, article.sourceLabel, categoryLabels[article.category]?.[locale] || article.category].join(" "), query)) || [], [data, query, locale]);
+  const filteredArticles = data?.articles || [];
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setLibraryQuery(query.trim().slice(0, 160));
+      setPage(1);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [query]);
   const { data: capabilities } = useApiData<{ generation: boolean }>("/knowledge/capabilities");
 
-  function openSource(id: string) {
+  async function openSource(id: string, version?: string) {
+    if (version) {
+      try {
+        const response = await api<{ article: KnowledgeArticle }>(`/knowledge/${encodeURIComponent(id)}/versions/${encodeURIComponent(version)}`);
+        setOpened(response.article);
+      } catch { setSearchError(text("Không thể mở phiên bản nguồn.", "Unable to open source version.")); }
+      return;
+    }
     const article = data?.articles.find(item => item._id === id);
     if (article) setOpened(article);
-    else setSearchError(text("Nguồn không còn trong danh mục khả dụng. Hãy tải lại trang và tra cứu lại.", "This source is no longer available. Reload and search again."));
+    else {
+      try {
+        const response = await api<{ articles: KnowledgeArticle[] }>(`/knowledge?id=${encodeURIComponent(id)}`);
+        if (!response.articles[0]) throw new Error("Source unavailable");
+        setOpened(response.articles[0]);
+      } catch { setSearchError(text("Không thể mở tài liệu nguồn.", "Unable to open source.")); }
+    }
   }
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
     if (searching || query.trim().length < 3) return;
+    setLibraryQuery(query.trim().slice(0, 160));
+    setPage(1);
     setSearching(true);
     setSearchError("");
     setResult(null);
@@ -111,7 +135,7 @@ export function KnowledgePage() {
                     <span>{text("Liên quan", "Relevance")} {Math.round(citation.score * 100)}%</span>
                   </header>
                   <p>{citation.excerpt}</p>
-                  <footer>{citation.sourceLabel}<button type="button" className="text-link" onClick={() => openSource(citation.id)}>{text("Mở nguồn", "Open source")}</button></footer>
+                  <footer>{citation.sourceLabel}<button type="button" className="text-link" onClick={() => openSource(citation.id, citation.version)}>{text("Mở nguồn", "Open source")}</button></footer>
                 </article>
               ))}
               {!result.citations.length ? (
@@ -128,7 +152,7 @@ export function KnowledgePage() {
             <span className="eyebrow">{text("Tài liệu tổ chức", "Organization documents")}</span>
             <h2>{text("Danh mục tài liệu", "Document library")}</h2>
           </div>
-          <span className="panel-kpi">{filteredArticles.length} / {data?.articles.length || 0} {text("tài liệu", "documents")}</span>
+          <span className="panel-kpi">{filteredArticles.length} / {data?.total || 0} {text("tài liệu", "documents")}</span>
         </div>
         {loading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} onRetry={reload} /> : null}
@@ -164,8 +188,11 @@ export function KnowledgePage() {
           )
         ) : null}
       </section>
+      <nav aria-label={text("Phân trang tài liệu", "Document pages")}>
+        <Pagination page={page} totalPages={Math.max(1, Math.ceil((data?.total || 0) / 20))} total={data?.total || 0} limit={20} onPageChange={setPage} />
+      </nav>
       {editing ? <ArticleEditor article={editing === "new" ? undefined : editing} canPublish={canPublish} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setResult(null); void reload(); }} /> : null}
-      {opened ? <Modal title={opened.title} onClose={() => setOpened(null)}><p>{opened.sourceLabel} · {opened.version}</p><div className="document-content">{opened.content}</div><footer className="editor-actions">{opened.sourceUrl && /^https?:\/\//i.test(opened.sourceUrl) ? <a className="button button-secondary" href={opened.sourceUrl} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} />{text("Nguồn gốc", "Original source")}</a> : null}{canPublish || (canWrite && opened.authorId === user?.id) ? <button className="button button-primary" onClick={() => { setEditing(opened); setOpened(null); }}><Pencil size={16} />{text("Sửa / Phê duyệt", "Edit / Approve")}</button> : null}</footer></Modal> : null}
+      {opened ? <Modal title={opened.title} onClose={() => setOpened(null)}><p>{opened.sourceLabel} · {opened.version}</p><div className="document-content">{opened.content}</div><footer className="editor-actions">{opened.sourceUrl && /^https?:\/\//i.test(opened.sourceUrl) ? <a className="button button-secondary" href={opened.sourceUrl} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} />{text("Nguồn gốc", "Original source")}</a> : null}{!opened.archived && (canPublish || (canWrite && opened.authorId === user?.id)) ? <button className="button button-primary" onClick={() => { setEditing(opened); setOpened(null); }}><Pencil size={16} />{text("Sửa / Phê duyệt", "Edit / Approve")}</button> : null}</footer></Modal> : null}
     </div>
   );
 }

@@ -53,6 +53,7 @@ function nextWorkingMoment(value: Date, calendar: WorkingHoursCalendar) {
 }
 
 export function addBusinessHours(start: Date, hours: number, calendar: WorkingHoursCalendar = DEFAULT_CALENDAR) {
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(hours) || hours < 0) throw new RangeError("Invalid SLA start or duration");
   let remainingMs = Math.max(0, hours * 3_600_000);
   let cursor = nextWorkingMoment(start, calendar);
   while (remainingMs > 0) {
@@ -74,6 +75,7 @@ export function addBusinessHours(start: Date, hours: number, calendar: WorkingHo
 }
 
 export function businessHoursBetween(start: Date, end: Date, calendar: WorkingHoursCalendar = DEFAULT_CALENDAR) {
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) throw new RangeError("Invalid SLA interval");
   if (end <= start) return 0;
   let cursor = nextWorkingMoment(start, calendar);
   let milliseconds = 0;

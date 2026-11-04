@@ -5,10 +5,24 @@ import { HttpError } from "../middleware/error.js";
 import { AuditLog, CaseRecord, Incident, Organization, ServiceDefinition, SLASnapshot, User, KnowledgeArticle, Attachment } from "../models.js";
 import { pageNumber } from "../services/casePolicy.js";
 import { buildReviewedTrainingCsv, type ReviewedCase } from "../services/trainingDataset.js";
-import { addBusinessHours, businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
+import { businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
 
 export const analyticsRouter = Router();
+
+function resolutionCycles(organizationId: mongoose.Types.ObjectId, since: Date): mongoose.PipelineStage[] {
+  return [
+    { $match: { organizationId, $or: [{ resolvedAt: { $gte: since } }, { "cycles.resolvedAt": { $gte: since } }] } },
+    { $project: { records: { $concatArrays: [{ $ifNull: ["$cycles", []] }, [{
+      team: "$team", serviceKey: "$serviceKey", startedAt: { $ifNull: ["$slaStartedAt", "$createdAt"] },
+      resolvedAt: "$resolvedAt", dueAt: "$dueAt", slaPausedHours: "$slaPausedHours",
+      satisfaction: "$satisfaction", satisfactionAt: "$satisfactionAt"
+    }]] } } },
+    { $unwind: "$records" },
+    { $match: { "records.resolvedAt": { $gte: since } } },
+    { $replaceRoot: { newRoot: "$records" } }
+  ];
+}
 
 function csvCell(value: unknown) {
   let cell = value === null || value === undefined ? "" : String(value);
@@ -31,7 +45,7 @@ analyticsRouter.get(
         { $match: { organizationId, createdAt: { $gte: since } } },
         {
           $group: {
-            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
             count: { $sum: 1 }
           }
         },
@@ -41,7 +55,7 @@ analyticsRouter.get(
         { $match: { organizationId, resolvedAt: { $gte: since } } },
         {
           $group: {
-            _id: { $dateToString: { format: "%Y-%m-%d", date: "$resolvedAt" } },
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$resolvedAt", timezone: "Asia/Ho_Chi_Minh" } },
             count: { $sum: 1 }
           }
         },
@@ -65,24 +79,19 @@ analyticsRouter.get(
     const days = Math.max(7, pageNumber(req.query.days, 30, 90));
     const since = new Date(Date.now() - days * 24 * 3_600_000);
 
-    const [organization, services, resolvedRows] = await Promise.all([
+    const [organization, resolvedRows] = await Promise.all([
       Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean(),
-      ServiceDefinition.find({ organizationId, active: true }).select("key slaHours").lean(),
-      CaseRecord.find({ organizationId, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: since } })
-        .select("team serviceKey createdAt slaStartedAt dueAt resolvedAt")
-        .lean()
+      CaseRecord.aggregate(resolutionCycles(organizationId, since))
     ]);
     const calendar = organizationCalendar((organization as { settings?: { holidayDates?: string[] } } | null)?.settings);
-    const slaHoursByService = new Map((services as unknown as Array<{ key: string; slaHours: number }>).map((service) => [service.key, service.slaHours]));
     const grouped = new Map<string, { total: number; breached: number; onTime: number; durationHours: number }>();
-    for (const row of resolvedRows as unknown as Array<{ team: string; serviceKey: string; createdAt: Date; slaStartedAt?: Date; dueAt: Date; resolvedAt: Date | null }>) {
+    for (const row of resolvedRows as unknown as Array<{ team: string; serviceKey: string; startedAt: Date; slaPausedHours?: number; dueAt: Date; resolvedAt: Date | null }>) {
       if (!row.resolvedAt) continue;
-      const configuredHours = slaHoursByService.get(row.serviceKey);
-      const slaStart = new Date(row.slaStartedAt || row.createdAt);
-      const dueAt = configuredHours === undefined ? new Date(row.dueAt) : addBusinessHours(slaStart, configuredHours, calendar);
+      const slaStart = new Date(row.startedAt);
+      const dueAt = new Date(row.dueAt);
       const item = grouped.get(row.team) || { total: 0, breached: 0, onTime: 0, durationHours: 0 };
       item.total += 1;
-      item.durationHours += businessHoursBetween(slaStart, new Date(row.resolvedAt), calendar);
+      item.durationHours += Math.max(0, businessHoursBetween(slaStart, new Date(row.resolvedAt), calendar) - (row.slaPausedHours || 0));
       if (new Date(row.resolvedAt) > dueAt) item.breached += 1;
       else item.onTime += 1;
       grouped.set(row.team, item);
@@ -189,7 +198,7 @@ analyticsRouter.get(
     const days = Math.max(7, pageNumber(req.query.days, 30, 365));
     const since = new Date(Date.now() - days * 24 * 3_600_000);
     const [summary] = await CaseRecord.aggregate([
-      { $match: { organizationId, status: { $in: ["resolved", "closed"] }, resolvedAt: { $gte: since } } },
+      ...resolutionCycles(organizationId, since),
       {
         $group: {
           _id: null,

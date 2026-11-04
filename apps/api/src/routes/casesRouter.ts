@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { withAiBudget } from "../services/aiBudget.js";
 import { publicUser, type PublicUserSource } from "../services/publicUser.js";
 import { createHash, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
@@ -16,6 +17,7 @@ import {
 } from "../models.js";
 import {
   classifyText,
+  fallbackClassify,
   findSimilarCases,
   predictSla
 } from "../services/aiClient.js";
@@ -23,6 +25,7 @@ import { auditFromReq, logAudit, notify, notifyMany } from "../services/helpers.
 import { canUseAiRouting } from "../services/routing.js";
 import { caseScope, pageNumber, presentCase, validateStatusTransition } from "../services/casePolicy.js";
 import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
+import { searchTerms } from "../services/caseSearch.js";
 
 interface LeanService {
   _id: mongoose.Types.ObjectId;
@@ -31,10 +34,6 @@ interface LeanService {
   team: string;
   slaHours: number;
   requiredFields: string[];
-}
-
-function escapeRegex(input: string) {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function activeCaseFilter(organizationId: string) {
@@ -56,12 +55,22 @@ const intakeSchema = z.object({
   title: z.string().trim().max(160).optional(),
   description: z.string().trim().min(12).max(5_000),
   serviceKey: z.string().trim().optional(),
+  requesterId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
   channel: z.enum(["portal", "phone", "email", "walk_in", "api"]).default("portal"),
-  customFields: z.record(z.string().max(2000)).default({})
+  customFields: z.record(z.string(), z.string().max(2000)).default({})
 }).strict();
 
 export const casesRouter = Router();
+
+casesRouter.get("/cases/requester-options", requireRoles("agent", "manager", "org_admin", "platform_admin"), async (req, res) => {
+  const query = z.string().trim().min(2).max(80).parse(req.query.search);
+  const prefix = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const users = await User.find({ organizationId: req.auth!.organizationId, active: true, role: "requester",
+    $or: [{ email: query.toLowerCase() }, { name: { $regex: `^${prefix}`, $options: "i" } }] })
+    .select("name").sort({ name: 1, _id: 1 }).limit(20).lean();
+  res.json({ users });
+});
 
 /* ── Dashboard ── */
 
@@ -96,6 +105,7 @@ casesRouter.get("/cases", async (req, res) => {
     if (req.auth!.role === "requester") throw new HttpError(403, "Hàng đợi vận hành chỉ dành cho nhân viên.");
     const conditions: any[] = [{ status: { $nin: ["resolved", "closed"] } }];
     if (queue === "unassigned") conditions.push({ assigneeId: null });
+    if (["overdue", "due_soon", "at_risk"].includes(queue)) conditions.push({ status: { $ne: "waiting" } });
     if (queue === "assigned") conditions.push({ assigneeId: req.auth!.id });
     const now = new Date();
     if (queue === "overdue") conditions.push({ dueAt: { $lt: now } });
@@ -104,8 +114,10 @@ casesRouter.get("/cases", async (req, res) => {
     filter.$and = conditions;
   }
   if (typeof req.query.search === "string" && req.query.search.trim()) {
-    const pattern = new RegExp(escapeRegex(req.query.search.trim()), "i");
-    filter.$or = [{ code: pattern }, { title: pattern }, { requesterName: pattern }];
+    const input = z.string().trim().max(160).parse(req.query.search);
+    const terms = searchTerms(input);
+    if (terms.length) filter.searchTokens = { $all: terms };
+    else filter._id = { $in: [] };
   }
 
   const requestedPage = pageNumber(req.query.page, 1, 100000);
@@ -118,9 +130,11 @@ casesRouter.get("/cases", async (req, res) => {
   const sortField = req.query.sort === "dueAt" || queue !== "all" ? "dueAt" : "updatedAt";
   const sortOrder = queue !== "all" || req.query.order === "asc" ? 1 : -1;
 
-  const cases = await CaseRecord.find(filter).sort({ [sortField]: sortOrder, _id: 1 }).skip(skip).limit(limit).lean();
+  const cases = await CaseRecord.find(filter).select("-comments -events -cycles -deliveryEvents").sort({ [sortField]: sortOrder, _id: 1 }).skip(skip).limit(limit).lean();
+  const statusCounts = req.query.includeCounts === "true" ? Object.fromEntries(await Promise.all(CASE_STATUSES.map(async status => [status,
+    await CaseRecord.countDocuments({ $and: [filter, { status }] })]))) : undefined;
 
-  res.json({ cases: cases.map((item) => presentCase(item, req.auth!.role)), total, page, limit, totalPages });
+  res.json({ cases: cases.map((item) => presentCase(item, req.auth!.role)), total, page, limit, totalPages, statusCounts });
 });
 
 /* ── AI Analyze Intake (pre-submit) ── */
@@ -154,14 +168,22 @@ casesRouter.post("/ai/analyze-intake", async (req, res) => {
     classification,
     similar,
     service,
-    needsReview: !service || !canUseAiRouting(classification.confidence)
+    needsReview: !service || !canUseAiRouting(classification.confidence, classification.provider)
   });
 });
 
 /* ── Create Case ── */
 
-casesRouter.post("/cases", async (req, res) => {
+casesRouter.post("/cases", (_req, _res, next) => withAiBudget(5000, next), async (req, res) => {
   const input = intakeSchema.parse(req.body);
+  if (req.auth!.role === "requester" && input.requesterId && input.requesterId !== req.auth!.id) throw new HttpError(403, "Không được tạo hồ sơ thay người khác.");
+  if (req.auth!.role !== "requester" && input.channel !== "portal" && !input.requesterId) throw new HttpError(422, "Chọn người yêu cầu khi tiếp nhận hộ.");
+  const requester = input.requesterId ? await User.findOne({ _id: input.requesterId,
+    organizationId: req.auth!.organizationId, active: true, role: "requester" }).select("name").lean<{ _id: mongoose.Types.ObjectId; name: string }>() : null;
+  if (input.requesterId && !requester) throw new HttpError(422, "Người yêu cầu không hợp lệ.");
+  const requesterId = requester ? String(requester._id) : req.auth!.id;
+  const requesterName = requester?.name || req.auth!.name;
+  if (req.auth!.role === "requester") input.priority = "normal";
   const rawKey = req.get("Idempotency-Key");
   const idempotencyKeyHash = rawKey === undefined ? undefined : createHash("sha256")
     .update(z.string().regex(/^[A-Za-z0-9_-]{16,128}$/).parse(rawKey)).digest("hex");
@@ -169,7 +191,7 @@ casesRouter.post("/cases", async (req, res) => {
     ...input, customFields: Object.fromEntries(Object.entries(input.customFields).sort(([a], [b]) => a.localeCompare(b)))
   })).digest("hex");
   const replayFilter = {
-    organizationId: req.auth!.organizationId, requesterId: req.auth!.id, idempotencyKeyHash
+    organizationId: req.auth!.organizationId, requesterId, idempotencyKeyHash
   };
   const replay = async () => {
     if (!idempotencyKeyHash) return false;
@@ -185,15 +207,8 @@ casesRouter.post("/cases", async (req, res) => {
   if (req.auth!.role === "requester" && input.channel !== "portal") {
     throw new HttpError(422, "Người gửi yêu cầu chỉ được sử dụng kênh cổng trực tuyến.");
   }
-  const [classification, openCases, organization] = await Promise.all([
-    classifyText(`${input.title || ""}. ${input.description}`),
-    CaseRecord.find({ ...activeCaseFilter(req.auth!.organizationId), ...caseScope(req.auth!) })
-      .select("_id title description")
-      .sort({ createdAt: -1 })
-      .limit(100)
-      .lean(),
-    Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean()
-  ]);
+  const classification = fallbackClassify(`${input.title || ""}. ${input.description}`);
+  const organization = await Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean();
 
   const service = (
     (input.serviceKey
@@ -210,6 +225,7 @@ casesRouter.post("/cases", async (req, res) => {
     }).lean())) as LeanService | null;
 
   if (!service) throw new HttpError(422, "Tổ chức chưa cấu hình dịch vụ phù hợp.");
+  if (requester && req.auth!.role === "agent" && service.team !== req.auth!.team) throw new HttpError(403, "Chỉ được tiếp nhận hộ trong đơn vị phụ trách.");
   const allowedFields = new Set(service.requiredFields || []);
   if (Object.keys(input.customFields).some((field) => !allowedFields.has(field))) {
     throw new HttpError(422, "Thông tin bổ sung chứa trường không thuộc dịch vụ được chọn.");
@@ -219,28 +235,8 @@ casesRouter.post("/cases", async (req, res) => {
     if (!input.customFields[field]?.trim()) throw new HttpError(422, `Vui lòng bổ sung: ${field}.`);
   }
 
-  const similar = await findSimilarCases(
-    `${input.title || ""}. ${input.description}`,
-    openCases.map((item: any) => ({
-      id: String(item._id),
-      title: item.title,
-      text: `${item.title}. ${item.description}`
-    }))
-  );
-
-  const workload = await CaseRecord.countDocuments({
-    organizationId: req.auth!.organizationId,
-    team: service.team,
-    status: { $nin: ["resolved", "closed"] }
-  });
-  const sla = await predictSla({
-    elapsedHours: 0,
-    dueHours: service.slaHours,
-    transfers: 0,
-    workload,
-    remainingSteps: 3,
-    priority: input.priority
-  });
+  const similar: Array<{ id: string; title: string; score: number }> = [];
+  const sla = { riskScore: 0, factors: [] as string[] };
   const dueAt = addBusinessHours(
     new Date(),
     service.slaHours,
@@ -262,14 +258,18 @@ casesRouter.post("/cases", async (req, res) => {
     priority: input.priority,
     status: "new",
     channel: input.channel,
-    requesterId: req.auth!.id,
-    requesterName: req.auth!.name,
+    requesterId,
+    requesterName,
+    createdById: req.auth!.id,
+    createdByName: req.auth!.name,
     assigneeId: null,
     assigneeName: "",
     team: service.team,
     dueAt,
     ai: {
+      processingStatus: "queued",
       classification: classification.label,
+      routingMismatch: classification.label !== service.category,
       confidence: classification.confidence,
       summary: classification.summary,
       modelVersion: classification.modelVersion || `${classification.provider}-unversioned`,
@@ -289,9 +289,7 @@ casesRouter.post("/cases", async (req, res) => {
       },
       {
         type: "ai_triage",
-        label: `AI đề xuất ${classification.label} cho ${service.team} với độ tin cậy ${Math.round(
-          classification.confidence * 100
-        )}%; đang chờ nhân viên xác nhận`,
+        label: `Đã tiếp nhận tại ${service.team}; đang chờ phân tích tự động và nhân viên xác nhận`,
         actorName: "CaseFlow AI"
       }
     ]
@@ -332,7 +330,7 @@ casesRouter.post("/cases", async (req, res) => {
       organizationId: req.auth!.organizationId,
       type: "case_updated",
       title: `Hồ sơ ${record.code} cần xác nhận phân luồng`,
-      message: `AI đề xuất chuyển "${title}" đến ${service.team}.`,
+      message: `Yêu cầu "${title}" được tiếp nhận tại ${service.team}; cần nhân viên xác nhận phân luồng.`,
       relatedCaseId: String(record._id),
       actionUrl: `/cases/${record._id}`
     }
@@ -347,14 +345,9 @@ casesRouter.get("/cases/:id", validateObjectId("id"), async (req, res) => {
   const filter: any = { _id: req.params.id, ...caseScope(req.auth!) };
   const record = await CaseRecord.findOne(filter).lean<any>();
   if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
-  await logAudit({
-    ...auditFromReq(req),
-    action: "case.view",
-    resource: "CaseRecord",
-    resourceId: String(record._id),
-    changes: { code: record.code }
-  }, req);
-  res.json({ case: presentCase(record, req.auth!.role) });
+  const mergedCases = await CaseRecord.find({ ...caseScope(req.auth!), mergedIntoId: record._id })
+    .select("code title status mergedAt").sort({ mergedAt: -1 }).limit(100).lean();
+  res.json({ case: presentCase({ ...record, mergedCases }, req.auth!.role) });
 });
 
 /* ── Update Case ── */
@@ -396,7 +389,8 @@ casesRouter.get(
   requireRoles("agent", "manager", "org_admin", "platform_admin"),
   async (req, res) => {
     const includeInactive = ["org_admin", "platform_admin"].includes(req.auth!.role) && req.query.includeInactive === "true";
-    const users = await User.find({ organizationId: req.auth!.organizationId, ...(includeInactive ? {} : { active: true }) })
+    const users = await User.find({ organizationId: req.auth!.organizationId, ...(includeInactive ? {} : { active: true }),
+      ...(req.auth!.role === "agent" ? { role: "agent", team: req.auth!.team } : {}) })
       .sort({ role: 1, name: 1 })
       .lean<PublicUserSource[]>();
     res.json({ users: users.map((user) => publicUser(user)) });

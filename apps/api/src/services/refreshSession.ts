@@ -15,6 +15,7 @@ export interface RefreshSessionRecord {
   tokenVersion: number;
   remember: boolean;
   expiresAt: Date;
+  mfaVerified?: boolean;
 }
 
 export const REFRESH_COOKIE = "caseflow_refresh";
@@ -36,7 +37,7 @@ export async function createRefreshSession(res: Response, user: Pick<PublicUserS
   const session = await RefreshSession.create({
     userId: user._id, organizationId: user.organizationId,
     tokenHash: hashRefreshToken(token), familyId: previous?.familyId || randomUUID(),
-    tokenVersion: user.tokenVersion || 0, remember, expiresAt
+    tokenVersion: user.tokenVersion || 0, remember, expiresAt, mfaVerified: previous?.mfaVerified || false
   });
   // A replay can revoke the family while the replacement is being inserted.
   if (previous && await RefreshSession.exists({ familyId: previous.familyId, revokedAt: { $ne: null } })) {
@@ -66,5 +67,5 @@ export async function rotateRefreshSession(rawToken: string, res: Response) {
     throw new HttpError(401, "Account unavailable.");
   }
   await createRefreshSession(res, user, session.remember, session);
-  return { user, organization, remember: session.remember };
+  return { user, organization, remember: session.remember, familyId: session.familyId, mfaVerified: Boolean(session.mfaVerified) };
 }

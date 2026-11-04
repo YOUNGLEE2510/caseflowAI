@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 async function login(page: Page, email: string) {
   await page.goto("/login");
   await expect(page.locator(".demo-switcher")).toHaveCount(0);
-  await page.getByLabel("Mã tổ chức").fill("minh-khai-university");
+  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
   await page.getByLabel("Email tổ chức").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

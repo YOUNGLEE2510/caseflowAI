@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Activity, Database, Download, RefreshCw, ShieldCheck } from "lucide-react";
-import { apiBlob } from "../api";
+import { api, apiBlob } from "../api";
 import { useAuth } from "../auth";
 import { useConfirmation } from "../components/ConfirmationProvider";
 import { ErrorState, LoadingState, PageHeader, Pagination, formatDate } from "../components/ui";
@@ -75,7 +75,12 @@ const resourceLabels: Record<string, { vi: string; en: string }> = {
 };
 const actionLabels: Record<string, { vi: string; en: string }> = {
   "auth.login": { vi: "Đăng nhập", en: "Sign in" }, "auth.logout": { vi: "Đăng xuất", en: "Sign out" },
+  "auth.logout_all": { vi: "Đăng xuất mọi thiết bị", en: "Sign out all devices" },
+  "auth.mfa_enable": { vi: "Bật xác thực hai bước", en: "Enable two-factor authentication" },
+  "auth.mfa_verify": { vi: "Xác thực hai bước", en: "Verify second factor" },
+  "attachment.delete": { vi: "Xóa tệp đính kèm", en: "Delete attachment" },
   "case.view": { vi: "Xem hồ sơ", en: "View case" }, "attachment.download": { vi: "Tải tệp", en: "Download attachment" },
+  "case.merge": { vi: "Gộp hồ sơ trùng", en: "Merge duplicate case" },
   "case.create": { vi: "Tạo hồ sơ", en: "Create case" }, "case.update": { vi: "Cập nhật hồ sơ", en: "Update case" },
   "user.create": { vi: "Thêm người dùng", en: "Add user" }, "user.update": { vi: "Sửa người dùng", en: "Update user" },
   "knowledge.create": { vi: "Thêm tài liệu", en: "Add document" }, "knowledge.update": { vi: "Sửa tài liệu", en: "Update document" },
@@ -90,12 +95,15 @@ export function SystemPage() {
   const confirm = useConfirmation();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState("");
   const { locale, text } = useLocale();
   const [page, setPage] = useState(1);
   const [resource, setResource] = useState("");
   const [action, setAction] = useState("");
 
   const status = useApiData<SystemStatus>("/system/status");
+  const jobs = useApiData<{ jobs: Array<{ caseId: string; code: string; kind: "triage" | "delivery" | "upload" }> }>("/system/jobs");
   const audit = useApiData<AuditPage>(
     `/analytics/audit-log?page=${page}${resource ? `&resource=${resource}` : ""}${action ? `&action=${action}` : ""}`
   );
@@ -113,6 +121,7 @@ export function SystemPage() {
   }
 
   const handleRefresh = () => {
+    void jobs.reload();
     void status.reload();
     void audit.reload();
     void reviews.reload();
@@ -170,7 +179,7 @@ export function SystemPage() {
                 <dd>
                   {status.data.storage.files} {text("tệp", "files")} ·{" "}
                   {(status.data.storage.bytes / 1048576).toFixed(1)} MB ·{" "}
-                  {status.data.storage.provider === "s3" ? text("Kho đối tượng S3", "S3 object storage") : text("Ổ đĩa cục bộ", "Local disk")}
+                  {status.data.storage.provider === "cloudinary" ? "Cloudinary" : status.data.storage.provider === "s3" ? text("Kho đối tượng S3", "S3 object storage") : text("Ổ đĩa cục bộ", "Local disk")}
                 </dd>
               </div>
               <div>
@@ -204,6 +213,10 @@ export function SystemPage() {
         </>
       ) : null}
 
+      {jobs.data?.jobs.length ? <section><h2>{text("Tác vụ cần xử lý", "Failed jobs")}</h2>{retryError && <ErrorState message={retryError} />}{jobs.data.jobs.map(job => <div className="panel-heading" key={`${job.caseId}:${job.kind}`}><span>{job.code} · {job.kind === "triage" ? text("Phân tích AI", "AI analysis") : job.kind === "upload" ? text("Dọn tệp tải lên chưa hoàn tất", "Recover incomplete upload") : text("Thông báo hồ sơ", "Case notifications")}</span><button className="button button-secondary" disabled={retrying} onClick={async () => {
+        if (!await confirm({ title: text("Thử lại tác vụ?", "Retry job?"), message: job.code })) return;
+        setRetrying(true); setRetryError(""); try { await api(`/system/jobs/${job.caseId}/retry`, { method: "POST", body: JSON.stringify({ kind: job.kind }) }); await jobs.reload(); } catch (cause) { setRetryError(cause instanceof Error ? cause.message : text("Không thể thử lại.", "Retry failed.")); } finally { setRetrying(false); }
+      }}><RefreshCw size={16} />{text("Thử lại", "Retry")}</button></div>)}</section> : null}
       {reviews.error ? <ErrorState message={reviews.error} onRetry={reviews.reload} /> : null}
       {reviews.data ? (
         <section>

@@ -1,0 +1,31 @@
+name: Product Contract Audit
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: apps/ai/requirements-research.txt
+      - run: npm ci
+      - run: pip install -r apps/ai/requirements-research.txt
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:audit
+        env:
+          E2E_BROWSER_CHANNEL: chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: product-audit
+          path: artifacts/product-audit

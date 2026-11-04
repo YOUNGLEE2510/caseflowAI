@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "./auth";
 import { AppShell } from "./components/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -17,11 +17,13 @@ const IncidentsPage = lazy(async () => ({ default: (await import("./pages/Incide
 const KnowledgePage = lazy(async () => ({ default: (await import("./pages/KnowledgePage")).KnowledgePage }));
 const ServicesPage = lazy(async () => ({ default: (await import("./pages/ServicesPage")).ServicesPage }));
 const UsersPage = lazy(async () => ({ default: (await import("./pages/UsersPage")).UsersPage }));
+const PersonnelPage = lazy(async () => ({ default: (await import("./pages/PersonnelPage")).PersonnelPage }));
 const SystemPage = lazy(async () => ({ default: (await import("./pages/SystemPage")).SystemPage }));
 const ProfilePage = lazy(async () => ({ default: (await import("./pages/ProfilePage")).ProfilePage }));
 const NotFoundPage = lazy(async () => ({ default: (await import("./pages/NotFoundPage")).NotFoundPage }));
 
 function ProtectedRoutes() {
+  const location = useLocation();
   const { user, loading } = useAuth();
   const { text } = useLocale();
   if (loading) {
@@ -31,6 +33,7 @@ function ProtectedRoutes() {
       </div>
     );
   }
+  if (user?.securityRequired && location.pathname !== "/profile") return <Navigate to="/profile" replace />;
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
@@ -66,6 +69,7 @@ export default function App() {
             <Route index element={<Navigate to="/overview" replace />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/personnel" element={<IncidentRoute><PersonnelPage /></IncidentRoute>} />
             <Route path="/cases" element={<CasesPage />} />
             <Route path="/cases/new" element={<NewCasePage />} />
             <Route path="/cases/:id" element={<CaseDetailPage />} />

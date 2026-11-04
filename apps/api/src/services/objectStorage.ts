@@ -2,6 +2,7 @@ import { S3Client, HeadBucketCommand, CreateBucketCommand, PutObjectCommand, Del
 import { Readable } from "node:stream";
 import { config } from "../config.js";
 import { HttpError } from "../middleware/error.js";
+import { storeCloudinaryObject, deleteCloudinaryObject, getCloudinaryObjectStream } from "./cloudinaryStorage.js";
 
 const client = new S3Client({
   endpoint: config.S3_ENDPOINT, region: config.S3_REGION, forcePathStyle: Boolean(config.S3_ENDPOINT),
@@ -23,13 +24,16 @@ export async function initializeObjectStorage() {
   }
 }
 
-export async function storeObject(key: string, body: Buffer, contentType: string) {
+export async function storeObject(key: string, body: Buffer, contentType: string, provider: "s3" | "cloudinary" = "s3") {
+  if (provider === "cloudinary") return storeCloudinaryObject(key, body);
   await client.send(new PutObjectCommand({ Bucket: config.S3_BUCKET, Key: key, Body: body, ContentType: contentType }));
 }
-export async function deleteObject(key: string) {
+export async function deleteObject(key: string, provider: "s3" | "cloudinary" = "s3") {
+  if (provider === "cloudinary") return deleteCloudinaryObject(key);
   await client.send(new DeleteObjectCommand({ Bucket: config.S3_BUCKET, Key: key }));
 }
-export async function getObjectStream(key: string) {
+export async function getObjectStream(key: string, provider: "s3" | "cloudinary" = "s3") {
+  if (provider === "cloudinary") return getCloudinaryObjectStream(key);
   try {
     const result = await client.send(new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: key }));
     if (!(result.Body instanceof Readable)) throw new Error("Missing object body");

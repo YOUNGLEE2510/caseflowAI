@@ -19,12 +19,12 @@ from apps.ai.config import TRAINING_EXAMPLES
 
 EMAIL = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
 PHONE = re.compile(r"(?:\+?\d[\d .()-]{7,}\d)")
-STUDENT_ID = re.compile(r"\b(?:SV|CT|IT)?\d{6,10}\b", re.IGNORECASE)
+STUDENT_ID = re.compile(r"\b(?:[BND]\d{2}[A-Z]{2,8}\d{3,6}|(?:SV|CT|IT)?\d{6,10})\b", re.IGNORECASE)
 
 
 def redact_pii(text: str) -> tuple[str, int]:
     replacements = 0
-    for pattern, marker in ((EMAIL, "[EMAIL]"), (PHONE, "[PHONE]"), (STUDENT_ID, "[STUDENT_ID]")):
+    for pattern, marker in ((EMAIL, "[EMAIL]"), (STUDENT_ID, "[STUDENT_ID]"), (PHONE, "[PHONE]")):
         text, count = pattern.subn(marker, text)
         replacements += count
     return " ".join(text.split()), replacements

@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
+import { consumeAuthAttempt } from "../services/authThrottle.js";
 import jwt from "jsonwebtoken";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
@@ -10,6 +11,7 @@ import { OAuthLoginTicket, Organization, User } from "../models.js";
 import { checkRefreshOrigin } from "../services/refreshSession.js";
 import { logAudit } from "../services/helpers.js";
 import { verifyMicrosoftIdentity } from "../services/microsoftOAuth.js";
+import { currentPasswordSchema } from "../services/passwordPolicy.js";
 
 export const microsoftRouter = Router();
 const cookieName = "caseflow_microsoft_oauth";
@@ -61,7 +63,8 @@ microsoftRouter.get("/auth/microsoft", async (req, res) => {
 
 microsoftRouter.post("/auth/microsoft/link", authenticate, async (req, res) => {
   checkRefreshOrigin(req);
-  const { currentPassword } = z.object({ currentPassword: z.string().min(6).max(128) }).parse(req.body);
+  const { currentPassword } = z.object({ currentPassword: currentPasswordSchema }).parse(req.body);
+  await consumeAuthAttempt(`${req.auth!.organizationId}:${req.auth!.id}`, "password-step-up");
   const user = await User.findOne({ _id: req.auth!.id, organizationId: req.auth!.organizationId, active: true }).select("+passwordHash").lean<any>();
   if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) throw new HttpError(401, "Mật khẩu hiện tại không chính xác.");
   const org = await Organization.findOne({ _id: user.organizationId, status: "active" }).lean<any>();

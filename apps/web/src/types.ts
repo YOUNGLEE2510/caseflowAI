@@ -14,6 +14,10 @@ export interface User {
   title: string;
   avatarColor: string;
   active?: boolean;
+  personnelManager?: boolean;
+  mustChangePassword?: boolean;
+  mfaEnabled?: boolean;
+  securityRequired?: boolean;
 }
 
 export interface TimelineEvent {
@@ -33,6 +37,8 @@ export interface CaseComment {
 }
 
 export interface CaseRecord {
+  mergedIntoId?: string | null;
+  mergedCases?: Array<{ _id: string; code: string; title: string; status: CaseStatus }>;
   _id: string;
   code: string;
   title: string;
@@ -44,6 +50,8 @@ export interface CaseRecord {
   channel: string;
   requesterId: string;
   requesterName: string;
+  createdByName?: string;
+  cycles?: Array<{ cycleNumber: number; startedAt: string; resolvedAt?: string; dueAt: string; breached: boolean; satisfaction?: number | null; satisfactionComment?: string }>;
   assigneeId?: string;
   assigneeName?: string;
   team: string;
@@ -58,7 +66,9 @@ export interface CaseRecord {
   updatedAt: string;
   customFields?: Record<string, string>;
   ai: {
+    processingStatus?: "queued" | "running" | "complete" | "failed" | "cancelled";
     classification: string;
+    routingMismatch?: boolean;
     confidence: number;
     summary: string;
     riskScore: number;
@@ -88,6 +98,8 @@ export interface ServiceDefinition {
 }
 
 export interface Attachment {
+  uploaderId?: string;
+  internal?: boolean;
   _id: string;
   caseId: string;
   uploaderName: string;
@@ -128,6 +140,8 @@ export interface Incident {
 }
 
 export interface KnowledgeArticle {
+  archived?: boolean;
+  updatedAt?: string;
   _id: string;
   title: string;
   content: string;
@@ -136,6 +150,7 @@ export interface KnowledgeArticle {
   sourceLabel: string;
   version: string;
   effectiveAt: string;
+  expiresAt?: string | null;
   sourceUrl?: string;
   status?: "draft" | "published";
   authorId?: string;

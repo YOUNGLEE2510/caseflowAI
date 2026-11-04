@@ -1,0 +1,8 @@
+.recommendation-panel { padding: 20px; min-width: 0; }
+.recommendation-panel .panel-heading { flex-wrap: wrap; gap: 12px; }
+.recommendation-item { border-top: 1px solid var(--border, #cbd5d1); padding: 16px 0; overflow-wrap: anywhere; }
+.recommendation-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.recommendation-actions select { flex: 1 1 220px; min-width: 0; max-width: 100%; }
+.recommendation-draft { white-space: pre-wrap; }
+.recommendation-citation { padding: 8px 0; overflow-wrap: anywhere; }
+.action-bar input { min-width: 0; max-width: 100%; height: 40px; padding: 8px 10px; border: 1px solid var(--border, #cbd5d1); border-radius: 6px; background: #fff; color: inherit; font: inherit; }

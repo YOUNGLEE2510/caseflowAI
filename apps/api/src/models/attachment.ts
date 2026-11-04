@@ -11,11 +11,17 @@ const attachmentSchema = new Schema(
     originalName: { type: String, required: true },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true },
+    internal: { type: Boolean, default: false },
     storagePath: { type: String },
-    storageProvider: { type: String, enum: ["local", "s3"], default: "local" },
+    storageProvider: { type: String, enum: ["local", "s3", "cloudinary"], default: "local" },
     objectKey: { type: String },
+    uploadFingerprint: { type: String, select: false },
     scanStatus: { type: String, enum: ["clean", "not_scanned"], default: "not_scanned" },
-    scannedAt: { type: Date, default: null }
+    scannedAt: { type: Date, default: null },
+    deletedAt: { type: Date, default: null },
+    deleting: { type: Boolean, default: false },
+    deletionLease: { type: String, select: false },
+    deletionLeaseUntil: { type: Date, select: false }
   },
   { timestamps: true }
 );

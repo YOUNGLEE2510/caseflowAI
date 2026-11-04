@@ -26,6 +26,7 @@ import { useLocale } from "../i18n";
 import type { CaseRecord, DashboardData } from "../types";
 import { OperationsProgress } from "../components/OperationsProgress";
 import { SystemAlert } from "../components/SystemAlert";
+import { RecommendationPanel } from "../components/RecommendationPanel";
 
 const DashboardCharts = lazy(async () => ({ default: (await import("../components/DashboardCharts")).DashboardCharts }));
 
@@ -169,6 +170,7 @@ export function OverviewPage() {
         }
       />
 
+      {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
       <section className="metric-grid" aria-label={text("Chỉ số tổng quan", "Overview metrics")}>
         {metrics.map((metric) => {
           const Icon = metric.icon;

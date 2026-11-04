@@ -5,6 +5,22 @@ beforeEach(() => { setToken(null); localStorage.clear(); sessionStorage.clear();
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("API session handling", () => {
+  it("reuses an upload key after a network failure and scopes keys to case and visibility", async () => {
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("Network interrupted"))
+      .mockImplementation(async () => new Response("{}", { status: 201 }));
+    vi.stubGlobal("fetch", fetcher);
+    const file = new File(["%PDF-1.4 fixture"], "fixture.pdf");
+    const options = { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: file };
+    await expect(api("/cases/one/attachments", options)).rejects.toThrow("Network interrupted");
+    await api("/cases/one/attachments", options);
+    await api("/cases/two/attachments", options);
+    await api("/cases/one/attachments", { ...options, headers: { ...options.headers, "X-Internal": "true" } });
+    const keys = fetcher.mock.calls.map(call => new Headers(call[1].headers).get("Idempotency-Key"));
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[0]);
+    expect(keys[3]).not.toBe(keys[0]);
+  });
   it("does not restore a cookie session after a local logout", async () => {
     setToken("current");
     setToken(null);

@@ -22,9 +22,14 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1),
   MONGODB_DB: z.string().default("caseflow_ai"),
   JWT_SECRET: z.string().min(24),
+  EMAIL_ENCRYPTION_KEY: z.preprocess(value => value === "" ? undefined : value, z.string().regex(/^[a-f0-9]{64}$/i).optional()),
+  MFA_ENCRYPTION_KEY: z.preprocess(value => value === "" ? undefined : value, z.string().regex(/^[a-f0-9]{64}$/i).optional()),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
   REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),
-  STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+  STORAGE_PROVIDER: z.enum(["local", "s3", "cloudinary"]).default("local"),
+  CLOUDINARY_CLOUD_NAME: z.preprocess(value => value === "" ? undefined : value, z.string().regex(/^[a-zA-Z0-9_-]+$/).optional()),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
   S3_ENDPOINT: z.string().url().optional(),
   S3_REGION: z.string().default("us-east-1"),
   S3_BUCKET: z.string().default("caseflow-files"),
@@ -38,6 +43,7 @@ const envSchema = z.object({
   GOOGLE_OAUTH_CLIENT_ID: z.string().trim().default(""),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().trim().default(""),
   GOOGLE_OAUTH_REDIRECT_URI: z.string().trim().default(""),
+  GOOGLE_OAUTH_HOSTED_DOMAINS: z.string().trim().default(""),
   MICROSOFT_OAUTH_CLIENT_ID: z.string().trim().default(""),
   MICROSOFT_OAUTH_CLIENT_SECRET: z.string().trim().default(""),
   MICROSOFT_OAUTH_REDIRECT_URI: z.string().trim().default(""),
@@ -48,7 +54,7 @@ const envSchema = z.object({
   AI_FALLBACK_KEYWORDS: z.preprocess((value) => {
     if (typeof value !== "string" || !value.trim()) return undefined;
     try { return JSON.parse(value); } catch { return value; }
-  }, z.record(z.array(z.string().trim().min(1).max(100)).min(1).max(100)).optional()),
+  }, z.record(z.string(), z.array(z.string().trim().min(1).max(100)).min(1).max(100)).optional()),
   SLA_CHECK_INTERVAL_MINUTES: z.coerce.number().int().min(1).max(1_440).default(15),
   SLA_CHECK_ON_START: z
     .string()
@@ -67,6 +73,8 @@ const envSchema = z.object({
 }).superRefine((value, ctx) => {
   if (value.DEPLOYMENT_MODE === "pilot") {
     if (!value.WEB_ORIGIN.startsWith("https://")) ctx.addIssue({ code: "custom", path: ["WEB_ORIGIN"], message: "Pilot web origin must use HTTPS" });
+    if (!value.MFA_ENCRYPTION_KEY) ctx.addIssue({ code: "custom", path: ["MFA_ENCRYPTION_KEY"], message: "Pilot MFA encryption key is required" });
+    if (!value.EMAIL_ENCRYPTION_KEY) ctx.addIssue({ code: "custom", path: ["EMAIL_ENCRYPTION_KEY"], message: "Pilot email encryption key is required" });
     if (value.AUTO_SEED) ctx.addIssue({ code: "custom", path: ["AUTO_SEED"], message: "Pilot deployments must not seed demo users" });
     if (!value.AI_INTERNAL_TOKEN) ctx.addIssue({ code: "custom", path: ["AI_INTERNAL_TOKEN"], message: "Pilot AI authentication is required" });
     if (!new URL(value.MONGODB_URI).username) ctx.addIssue({ code: "custom", path: ["MONGODB_URI"], message: "Pilot Mongo authentication is required" });
@@ -74,6 +82,9 @@ const envSchema = z.object({
   }
   if (value.STORAGE_PROVIDER === "s3" && (!value.S3_ACCESS_KEY || !value.S3_SECRET_KEY)) {
     ctx.addIssue({ code: "custom", path: ["STORAGE_PROVIDER"], message: "S3 credentials are required" });
+  }
+  if (value.STORAGE_PROVIDER === "cloudinary" && (!value.CLOUDINARY_CLOUD_NAME || !value.CLOUDINARY_API_KEY || !value.CLOUDINARY_API_SECRET)) {
+    ctx.addIssue({ code: "custom", path: ["STORAGE_PROVIDER"], message: "Cloudinary server credentials are required" });
   }
 });
 

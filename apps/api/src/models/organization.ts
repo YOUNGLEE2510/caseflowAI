@@ -9,6 +9,7 @@ const organizationSchema = new Schema(
     settings: {
       locale: { type: String, default: "vi-VN" },
       timezone: { type: String, default: "Asia/Ho_Chi_Minh" },
+      googleHostedDomains: { type: [String], default: [] },
       holidayDates: { type: [String], default: [] },
       maxFileSizeMB: { type: Number, default: 10 },
       allowedFileTypes: { type: [String], default: [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".xlsx"] }

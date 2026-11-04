@@ -9,6 +9,8 @@ import type { ServiceDefinition } from "../types";
 import { useAuth } from "../auth";
 import { useConfirmation } from "../components/ConfirmationProvider";
 import { categoryLabels } from "../utils/labels";
+import { RecommendationPanel } from "../components/RecommendationPanel";
+import { retainServiceFields } from "../utils/serviceFields";
 
 interface IntakeAnalysis {
   classification: {
@@ -35,8 +37,26 @@ export function NewCasePage() {
   const [serviceKey, setServiceKey] = useState("");
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const selectedService = serviceData?.services.find((service) => service.key === serviceKey);
+  function changeService(key: string) {
+    setServiceKey(key);
+    const allowed = serviceData?.services.find(service => service.key === key)?.requiredFields || [];
+    setCustomFields(current => retainServiceFields(current, allowed));
+  }
   const [priority, setPriority] = useState("normal");
   const [channel, setChannel] = useState("portal");
+  const [requesterId, setRequesterId] = useState("");
+  const [requesterSearch, setRequesterSearch] = useState("");
+  const [requesterOptions, setRequesterOptions] = useState<Array<{ _id: string; name: string }>>([]);
+  useEffect(() => {
+    if (user?.role === "requester" || requesterSearch.trim().length < 2) { setRequesterOptions([]); return; }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void api<{ users: Array<{ _id: string; name: string }> }>(`/cases/requester-options?search=${encodeURIComponent(requesterSearch.trim())}`, { signal: controller.signal })
+        .then(result => { if (!controller.signal.aborted) setRequesterOptions(result.users); })
+        .catch(() => { if (!controller.signal.aborted) setRequesterOptions([]); });
+    }, 400);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [requesterSearch, user?.role]);
   const [files, setFiles] = useState<File[]>([]);
   const submission = useRef<{ body: string; key: string } | null>(null);
   const [analysis, setAnalysis] = useState<IntakeAnalysis | null>(null);
@@ -50,18 +70,6 @@ export function NewCasePage() {
   }, [title, description]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [citations, setCitations] = useState<Array<{ id: string; title: string; excerpt: string; sourceLabel: string }>>([]);
-  useEffect(() => {
-    let current = true;
-    setCitations([]);
-    if (description.trim().length < 30) return;
-    const timer = window.setTimeout(() => {
-      void api<{ citations: typeof citations }>("/knowledge/search", { method: "POST", body: JSON.stringify({ query: description.slice(0, 1000) }) })
-        .then(result => { if (current) setCitations(result.citations.slice(0, 3)); })
-        .catch(() => { if (current) setCitations([]); });
-    }, 700);
-    return () => { current = false; window.clearTimeout(timer); };
-  }, [description]);
 
   async function analyze() {
     if (description.trim().length < 12) {
@@ -81,7 +89,6 @@ export function NewCasePage() {
       });
       if (controller.signal.aborted) return;
       setAnalysis(result);
-      if (!result.needsReview && result.service?.key) setServiceKey(result.service.key);
     } catch (requestError) {
       if (controller.signal.aborted) return;
       setError(requestError instanceof Error ? requestError.message : text("Không thể phân tích yêu cầu.", "We could not analyze this request."));
@@ -97,7 +104,7 @@ export function NewCasePage() {
     setSubmitting(true);
     setError("");
     try {
-      const body = JSON.stringify({ title, description, serviceKey: serviceKey || undefined, priority, channel, customFields });
+      const body = JSON.stringify({ title, description, serviceKey: serviceKey || undefined, priority, channel, customFields, ...(requesterId ? { requesterId } : {}) });
       if (submission.current?.body !== body) submission.current = { body, key: crypto.randomUUID() };
       const response = await api<{ case: { _id: string } }>("/cases", {
         method: "POST",
@@ -203,9 +210,17 @@ export function NewCasePage() {
                 <option value="urgent">{text("Khẩn cấp", "Urgent")}</option>
               </select>
             </label> : null}
+            {user?.role !== "requester" ? <div className="field field-wide">
+              <label htmlFor="requester-search">{text("Tìm người yêu cầu", "Find requester")}</label>
+              <input id="requester-search" maxLength={80} value={requesterSearch} onChange={event => { setRequesterSearch(event.target.value); setRequesterId(""); }} />
+              <select aria-label={text("Người yêu cầu", "Requester")} required={channel !== "portal"} value={requesterId} onChange={event => setRequesterId(event.target.value)}>
+                <option value="">{text("Chính tôi", "Myself")}</option>
+                {requesterOptions.map(person => <option key={person._id} value={person._id}>{person.name}</option>)}
+              </select>
+            </div> : null}
             <label className="field field-wide">
               <span>{text("Dịch vụ", "Service")}</span>
-              <select aria-label={text("Dịch vụ", "Service")} value={serviceKey} onChange={(event) => setServiceKey(event.target.value)}>
+              <select aria-label={text("Dịch vụ", "Service")} value={serviceKey} onChange={(event) => changeService(event.target.value)}>
                 <option value="">{text("Tiếp nhận chung", "General intake")}</option>
                 {serviceData?.services.map((service) => (
                   <option key={service.key} value={service.key}>
@@ -246,11 +261,9 @@ export function NewCasePage() {
           </div>
         </section>
 
-        {analysis || citations.length > 0 ? <aside className="panel ai-preview">
-          {citations.length > 0 && <section className="analysis-content">
-            <h2>{text("Tài liệu liên quan", "Related guidance")}</h2>
-            {citations.map(item => <details key={item.id}><summary>{item.title}</summary><p>{item.excerpt}</p><small>{item.sourceLabel}</small></details>)}
-          </section>}
+        <div className="page-stack" style={{ minWidth: 0 }}>
+        <RecommendationPanel autoSuggest description={description} serviceKey={serviceKey} customFields={customFields} />
+        {analysis ? <aside className="panel ai-preview">
           <div className="panel-heading">
             <div>
               <span className="eyebrow">{text("Gợi ý tiếp nhận", "Intake guidance")}</span>
@@ -266,6 +279,7 @@ export function NewCasePage() {
                 <div>
                   <span>{text("Phân loại đề xuất", "Suggested category")}</span>
                   <strong>{analysis.service?.name || categoryLabels[analysis.classification.label]?.[locale] || analysis.classification.label}</strong>
+                  {analysis.service && analysis.service.key !== serviceKey ? <button type="button" className="text-link" onClick={() => changeService(analysis.service!.key)}>{text("Chọn dịch vụ gợi ý", "Use suggested service")}</button> : null}
                 </div>
                 <span>{Math.round(analysis.classification.confidence * 100)}%</span>
               </div>
@@ -334,6 +348,7 @@ export function NewCasePage() {
             </div>
           )}
         </aside> : null}
+        </div>
       </form>
     </div>
   );

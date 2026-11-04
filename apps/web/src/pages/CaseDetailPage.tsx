@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  Trash2,
   MessageSquareText,
   Paperclip,
   Send,
@@ -18,6 +19,7 @@ import {
 import { Link, useLocation, useParams } from "react-router-dom";
 import { api, apiBlob } from "../api";
 import { useAuth } from "../auth";
+import { CaseMergeButton } from "../components/CaseMergeButton";
 import {
   ErrorState,
   FileUploadArea,
@@ -30,6 +32,7 @@ import {
 } from "../components/ui";
 import { useApiData } from "../hooks/useApiData";
 import { AssignmentSuggestions } from "../components/AssignmentSuggestions";
+import { RecommendationPanel } from "../components/RecommendationPanel";
 import { useLocale } from "../i18n";
 import { timelineLabel } from "../utils/labels";
 import type { Attachment, CaseRecord, CaseStatus, ServiceDefinition, User } from "../types";
@@ -84,6 +87,8 @@ export function CaseDetailPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [comment, setComment] = useState("");
   const [internal, setInternal] = useState(false);
+  const [attachmentInternal, setAttachmentInternal] = useState(true);
+  const [resolutionNote, setResolutionNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [attachmentError, setAttachmentError] = useState("");
@@ -107,8 +112,8 @@ export function CaseDetailPage() {
       });
   }, [canOperate]);
 
-  if (loading) return <LoadingState label={text("Đang tải hồ sơ", "Loading request")} />;
-  if (error || !data) return <ErrorState message={error || text("Không tìm thấy hồ sơ.", "Request not found.")} onRetry={reload} />;
+  if (loading && !data) return <LoadingState label={text("Đang tải hồ sơ", "Loading request")} />;
+  if ((error && !data) || !data) return <ErrorState message={error || text("Không tìm thấy hồ sơ.", "Request not found.")} onRetry={reload} />;
 
   const record = data.case;
   const aiReviewPending = !record.ai.reviewStatus || record.ai.reviewStatus === "pending";
@@ -116,6 +121,10 @@ export function CaseDetailPage() {
 
   async function updateCase(payload: Record<string, unknown>) {
     if (saving) return;
+    if (payload.status === "resolved") {
+      if (resolutionNote.trim().length < 10) { setActionError(text("Nhập kết quả xử lý ít nhất 10 ký tự.", "Enter a resolution of at least 10 characters.")); return; }
+      payload = { ...payload, resolutionNote: resolutionNote.trim() };
+    }
     if (!await confirm({ title: text("Cập nhật hồ sơ?", "Update case?"), message: text(`Áp dụng thay đổi cho ${record.code}.`, `Apply changes to ${record.code}.`) })) return;
     setSaving(true);
     setActionError("");
@@ -183,7 +192,8 @@ export function CaseDetailPage() {
             method: "POST",
             headers: {
               "Content-Type": "application/octet-stream",
-              "X-Filename": encodeURIComponent(file.name)
+              "X-Filename": encodeURIComponent(file.name),
+              "X-Internal": String(canOperate && attachmentInternal)
             },
             body: file
           });
@@ -249,13 +259,21 @@ export function CaseDetailPage() {
           </p>
         </div>
         {canOperate ? <div className="detail-header-actions">
+          {user && ["manager", "org_admin", "platform_admin"].includes(user.role) && !record.mergedIntoId && !["resolved", "closed"].includes(record.status) && <CaseMergeButton caseId={record._id} onMerged={reload} />}
           <PriorityBadge priority={record.priority} />
           <RiskBadge score={record.ai.riskScore} />
         </div> : null}
       </div>
 
-      {canOperate ? (
-        <section className="action-bar">
+      {record.mergedIntoId && <p role="status" className="analysis-review-note">{text("Hồ sơ này đã được gộp. ", "This case has been merged. ")}<Link to={`/cases/${record.mergedIntoId}`}>{text("Mở hồ sơ chính", "Open primary case")}</Link></p>}
+      {record.mergedCases?.length ? <section className="panel"><div className="panel-heading"><h2>{text("Hồ sơ đã gộp", "Merged cases")}</h2></div><ul>{record.mergedCases.map(item => <li key={item._id}><Link to={`/cases/${item._id}`}>{item.code} · {item.title}</Link></li>)}</ul></section> : null}
+
+      {canOperate && !record.mergedIntoId ? (
+        <section className="action-bar" id="case-routing" tabIndex={-1}>
+          {["in_progress", "waiting"].includes(record.status) && <label>
+            <span>{text("Kết quả xử lý", "Resolution")}</span>
+            <input value={resolutionNote} maxLength={2000} onChange={event => setResolutionNote(event.target.value)} />
+          </label>}
           <label>
             <span>{text("Trạng thái", "Status")}</span>
             <select
@@ -326,6 +344,9 @@ export function CaseDetailPage() {
 
       <div className="case-detail-grid">
         <div className="case-main-column">
+          {canOperate && <RecommendationPanel key={record._id} caseId={record._id}
+            onAction={action => { const target = document.getElementById(["assign", "review_routing", "review_sla"].includes(action) ? "case-routing" : "case-conversation"); target?.scrollIntoView({ block: "center" }); target?.focus(); }}
+            onDraft={value => { setComment(value); setInternal(true); }} />}
           <section className="panel case-description">
             <div className="panel-heading">
               <div>
@@ -338,7 +359,7 @@ export function CaseDetailPage() {
             {Object.keys(record.customFields || {}).length ? <dl className="case-custom-fields">{Object.entries(record.customFields || {}).map(([field, value]) => <div key={field}><dt>{field}</dt><dd>{value}</dd></div>)}</dl> : null}
           </section>
 
-          {!canOperate && ["resolved", "closed"].includes(record.status) ? (
+          {!canOperate && !record.mergedIntoId && ["resolved", "closed"].includes(record.status) ? (
             <section className="panel requester-resolution-panel">
               <div className="panel-heading">
                 <div>
@@ -379,6 +400,14 @@ export function CaseDetailPage() {
             </section>
           ) : null}
 
+          {record.cycles?.length ? <section className="panel">
+            <div className="panel-heading"><h2>{text("Lịch sử các lần xử lý", "Previous resolution cycles")}</h2></div>
+            {record.cycles.map(cycle => <details key={cycle.cycleNumber} className="analysis-content">
+              <summary>{text("Lần", "Cycle")} {cycle.cycleNumber} · {cycle.breached ? text("Trễ SLA", "SLA breached") : text("Đúng SLA", "Within SLA")}</summary>
+              <p>{text("Giải quyết", "Resolved")}: {cycle.resolvedAt ? new Date(cycle.resolvedAt).toLocaleString(locale === "vi" ? "vi-VN" : "en-US") : "—"}</p>
+              {cycle.satisfaction ? <p>{text("Đánh giá", "Rating")}: {cycle.satisfaction}/5 · {cycle.satisfactionComment}</p> : null}
+            </details>)}
+          </section> : null}
           <section className="panel attachment-panel">
             <div className="panel-heading">
               <div>
@@ -394,11 +423,12 @@ export function CaseDetailPage() {
                     <span className="attachment-file-icon"><Paperclip size={16} /></span>
                     <div>
                       <strong>{attachment.originalName}</strong>
+                      {attachment.internal && <span>{text("Nội bộ", "Internal")}</span>}
                       <span>
                         {formatFileSize(attachment.size)} · {attachment.uploaderName} · {formatRelative(attachment.createdAt)}
                       </span>
                     </div>
-                    <button
+                    <span className="attachment-actions"><button
                       type="button"
                       className="icon-button"
                       onClick={() => downloadAttachment(attachment)}
@@ -407,6 +437,13 @@ export function CaseDetailPage() {
                     >
                       <Download size={17} />
                     </button>
+                    {(attachment.uploaderId === user?.id || ["org_admin", "platform_admin"].includes(user?.role || "")) && <button type="button" className="icon-button" disabled={saving} title={text("Xóa tệp", "Delete file")} aria-label={`${text("Xóa tệp", "Delete file")}: ${attachment.originalName}`} onClick={async () => {
+                      if (!await confirm({ title: text("Xóa vĩnh viễn tệp đính kèm?", "Permanently delete attachment?"), message: attachment.originalName })) return;
+                      setSaving(true); setAttachmentError("");
+                      try { await api(`/attachments/${attachment._id}`, { method: "DELETE", body: JSON.stringify({ reason: "uploaded_by_mistake" }) }); reloadAttachments(); reload(); }
+                      catch (error) { setAttachmentError(error instanceof Error ? error.message : text("Không thể xóa tệp.", "Unable to delete file.")); reloadAttachments(); }
+                      finally { setSaving(false); }
+                    }}><Trash2 size={17} /></button>}</span>
                   </article>
                 ))}
               </div>
@@ -414,6 +451,7 @@ export function CaseDetailPage() {
               <div className="inline-empty">{text("Chưa có tệp đính kèm.", "No files have been attached.")}</div>
             )}
             <div className="attachment-upload">
+              {canOperate && <label className="checkbox-field"><input type="checkbox" checked={attachmentInternal} onChange={event => setAttachmentInternal(event.target.checked)} />{text("Tệp nội bộ, không hiển thị cho sinh viên", "Internal file, hidden from requesters")}</label>}
               <FileUploadArea
                 files={files}
                 onFilesChange={setFiles}
@@ -429,7 +467,7 @@ export function CaseDetailPage() {
                 type="button"
                 className="button button-secondary button-small"
                 onClick={uploadAttachments}
-                disabled={!files.length || uploading}
+                disabled={!files.length || uploading || record.status === "closed"}
               >
                 {uploading ? <span className="spinner" /> : <Paperclip size={16} />}
                 {uploading ? text("Đang tải lên", "Uploading") : text("Tải tệp lên", "Upload files")}
@@ -440,7 +478,7 @@ export function CaseDetailPage() {
             ) : null}
           </section>
 
-          <section className="panel">
+          <section className="panel" id="case-conversation" tabIndex={-1}>
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">{text("Trao đổi", "Conversation")}</span>
@@ -522,10 +560,12 @@ export function CaseDetailPage() {
         <aside className="case-side-column">
           {canOperate && !["resolved", "closed"].includes(record.status) ? <AssignmentSuggestions caseId={record._id} revision={record.updatedAt} saving={saving} onAssign={(assigneeId) => updateCase({ assigneeId })} /> : null}
           {canOperate && !["resolved", "closed"].includes(record.status) ? <section className="panel ai-insight-panel">
+            {record.ai.routingMismatch && aiReviewPending && <p role="status">{text("Dịch vụ tiếp nhận khác nhóm AI gợi ý. Cần xác minh phân luồng.", "The selected service differs from the AI suggestion. Review routing.")}</p>}
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">{text("Tín hiệu hỗ trợ", "Service signals")}</span>
                 <h2>{text("Phân tích AI", "AI analysis")}</h2>
+                {["queued", "running"].includes(record.ai.processingStatus || "") ? <p role="status">{text("Đang chờ phân tích tự động", "Automated analysis pending")}</p> : null}
                 <small>{text("Ước tính thử nghiệm · Nhân viên xác nhận", "Experimental estimate · Staff review required")}</small>
               </div>
               <span className="ai-label">
@@ -612,8 +652,10 @@ export function CaseDetailPage() {
                 <dd>{formatDate(record.dueAt)}</dd>
               </div>
               <div>
-                <dt><Clock3 size={16} /> {text("Còn lại", "Time remaining")}</dt>
-                <dd>{formatRelative(record.dueAt)}</dd>
+                <dt><Clock3 size={16} /> {record.status === "waiting" ? text("Đồng hồ SLA", "SLA clock") : text("Thời hạn", "Deadline")}</dt>
+                <dd className={!["waiting", "resolved", "closed"].includes(record.status) && new Date(record.dueAt).getTime() < Date.now() ? "overdue-text" : undefined}>
+                  {record.status === "waiting" ? text("Tạm dừng, chờ bổ sung", "Paused, awaiting information") : ["resolved", "closed"].includes(record.status) ? text("Đã kết thúc xử lý", "Processing completed") : `${new Date(record.dueAt).getTime() < Date.now() ? text("Đã quá hạn: ", "Overdue: ") : ""}${formatRelative(record.dueAt)}`}
+                </dd>
               </div>
             </dl>
           </section>

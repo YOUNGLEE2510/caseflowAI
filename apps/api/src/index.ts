@@ -6,12 +6,18 @@ import { runSlaCheck } from "./jobs/slaChecker.js";
 import { createSlaScheduler } from "./jobs/slaScheduler.js";
 import { seedDatabase } from "./seed.js";
 import { initializeObjectStorage } from "./services/objectStorage.js";
-import { processEmailOutbox } from "./services/emailOutbox.js";
+import { processEmailOutbox, migrateLegacyEmailEncryption } from "./services/emailOutbox.js";
+import { ensureCaseSearchIndex } from "./services/caseSearchMigration.js";
+import { processCaseDeliveries } from "./jobs/caseDelivery.js";
+import { processCaseTriage } from "./jobs/caseTriage.js";
+import { recoverAttachmentUploads } from "./services/attachmentUploads.js";
 
 async function bootstrap() {
   await connectDatabase();
+  await migrateLegacyEmailEncryption();
   await initializeObjectStorage();
   if (config.AUTO_SEED) await seedDatabase(false);
+  await ensureCaseSearchIndex();
 
   const server = app.listen(config.PORT, () => {
     console.log(`CaseFlow API listening on http://localhost:${config.PORT}`);
@@ -23,15 +29,31 @@ async function bootstrap() {
   );
   const shutdown = () => {
     clearInterval(emailWorker);
+    clearInterval(triageWorker);
+    clearInterval(uploadWorker);
     slaScheduler.stop();
     server.close(() => { void mongoose.disconnect().then(() => process.exit(0)); });
     setTimeout(() => process.exit(1), 10000).unref();
   };
   let emailRunning = false;
+  let triageRunning = false;
+  let uploadRunning = false;
+  const uploadWorker = setInterval(() => {
+    if (uploadRunning) return;
+    uploadRunning = true;
+    void recoverAttachmentUploads().catch(() => console.warn("[Upload recovery] Worker unavailable")).finally(() => { uploadRunning = false; });
+  }, 60000);
+  uploadWorker.unref();
+  const triageWorker = setInterval(() => {
+    if (triageRunning) return;
+    triageRunning = true;
+    void processCaseTriage().catch(() => console.warn("[Case triage] Worker unavailable")).finally(() => { triageRunning = false; });
+  }, 2000);
+  triageWorker.unref();
   const emailWorker = setInterval(() => {
     if (emailRunning) return;
     emailRunning = true;
-    void processEmailOutbox().catch(() => console.warn("[Email outbox] Worker unavailable")).finally(() => { emailRunning = false; });
+    void processCaseDeliveries().then(() => processEmailOutbox()).catch(() => console.warn("[Delivery worker] Worker unavailable")).finally(() => { emailRunning = false; });
   }, 10_000);
   emailWorker.unref();
   process.once("SIGTERM", shutdown);

@@ -1,4 +1,6 @@
 import { config } from "../config.js";
+import { remainingAiBudget } from "./aiBudget.js";
+import { recordAiResult } from "./aiMetrics.js";
 import { CircuitBreakerState } from "../models.js";
 import { knowledgeTerms, normalizedKnowledgeText } from "./knowledgeQuery.js";
 
@@ -73,16 +75,19 @@ async function isCircuitOpen(): Promise<boolean> {
 /* ── HTTP Helper with Retry ── */
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
+  if (remainingAiBudget(config.AI_REQUEST_TIMEOUT_MS) <= 0) throw new Error("AI request budget exhausted");
   if (await isCircuitOpen()) {
     throw new Error("AI circuit breaker is open");
   }
 
   const attempt = async (): Promise<T> => {
+    const timeout = remainingAiBudget(config.AI_REQUEST_TIMEOUT_MS);
+    if (timeout <= 0) throw new Error("AI request budget exhausted");
     const response = await fetch(`${config.AI_SERVICE_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(config.AI_INTERNAL_TOKEN ? { "X-Internal-Token": config.AI_INTERNAL_TOKEN } : {}) },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(config.AI_REQUEST_TIMEOUT_MS)
+      signal: AbortSignal.timeout(timeout)
     });
     if (!response.ok) {
       throw new Error(`AI service returned ${response.status}`);
@@ -97,6 +102,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   } catch (firstError) {
     // Retry once after 500ms
     try {
+      if (remainingAiBudget(config.AI_REQUEST_TIMEOUT_MS) <= 500) throw firstError;
       await new Promise((resolve) => setTimeout(resolve, 500));
       const result = await attempt();
       await recordSuccess();
@@ -120,7 +126,7 @@ export function fallbackClassify(text: string): ClassificationResult {
   const label = best.score > 0 ? best.label : "general_support";
   // Confidence ở fallback không có ý nghĩa xác suất thật, chỉ là heuristic
   // để UI hiển thị mức tin cậy tương đối. Luôn thấp hơn ML service.
-  const confidence = best.score > 0 ? Math.min(0.55 + best.score * 0.1, 0.88) : 0.35;
+  const confidence = best.score > 0 ? Math.min(0.25 + best.score * 0.05, 0.49) : 0;
 
   return {
     label,
@@ -138,8 +144,10 @@ export function fallbackClassify(text: string): ClassificationResult {
 export async function classifyText(text: string): Promise<ClassificationResult> {
   try {
     const result = await postJson<Omit<ClassificationResult, "provider">>("/classify", { text });
+    recordAiResult("classify", "success");
     return { ...result, provider: "ml-service" };
   } catch {
+    recordAiResult("classify", "fallback");
     return fallbackClassify(text);
   }
 }
@@ -152,8 +160,10 @@ export async function findSimilarCases(text: string, items: SimilarCaseInput[]) 
       "/similarity",
       { text, items, threshold: 0.28 }
     );
+    recordAiResult("similarity", "success");
     return result.matches;
   } catch {
+    recordAiResult("similarity", "fallback");
     const words = new Set(text.toLocaleLowerCase("vi").split(/\W+/).filter((word) => word.length > 3));
     return items
       .map((item) => {
@@ -176,8 +186,11 @@ export async function predictSla(input: {
   priority: string;
 }) {
   try {
-    return await postJson<{ riskScore: number; riskLevel: string; factors: string[] }>("/sla/predict", input);
+    const result = await postJson<{ riskScore: number; riskLevel: string; factors: string[] }>("/sla/predict", input);
+    recordAiResult("sla", "success");
+    return result;
   } catch {
+    recordAiResult("sla", "fallback");
     const timeRatio = input.dueHours <= 0 ? 1 : input.elapsedHours / input.dueHours;
     const score = Math.min(
       0.95,
@@ -200,11 +213,14 @@ export async function retrieveKnowledge(
   articles: Array<{ id: string; title: string; content: string; category: string; sourceLabel: string }>
 ) {
   try {
-    return await postJson<{
+    const result = await postJson<{
       answer: string;
       citations: Array<{ id: string; title: string; sourceLabel: string; excerpt: string; score: number }>;
     }>("/knowledge/retrieve", { query, articles, topK: 4 });
+    recordAiResult("retrieval", "success");
+    return result;
   } catch {
+    recordAiResult("retrieval", "fallback");
     const queryWords = new Set(knowledgeTerms(query).map(normalizedKnowledgeText));
     const chunks = (content: string) => {
       const normalized = content.replace(/\s+/g, " ").trim();

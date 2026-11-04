@@ -12,6 +12,8 @@ GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8080/api/auth/google/callback
 
 Authorized JavaScript origin: `http://localhost:8080`. Authorized redirect URI phải khớp tuyệt đối dòng trên. Tài khoản Google cần email đã xác minh và khớp tài khoản CaseFlow đang hoạt động trong tổ chức đã chọn.
 
+Để chỉ chấp nhận Google Workspace của trường, đặt `GOOGLE_OAUTH_HOSTED_DOMAINS` thành danh sách miền được nhà trường xác nhận, phân cách dấu phẩy, hoặc cấu hình `Organization.settings.googleHostedDomains` theo từng tổ chức. Backend so khớp chính xác claim `hd` trong ID token đã xác minh; không suy luận từ đuôi email và không coi tham số `hd` trên trang đăng nhập là kiểm soát bảo mật. Danh sách riêng của tổ chức được ưu tiên hơn biến môi trường. Để trống giữ chính sách tài khoản cá nhân đã được cấp sẵn, không tự tạo tài khoản. [Tài liệu Google](https://developers.google.com/identity/openid-connect/openid-connect).
+
 ## Outlook / Microsoft
 
 Đăng nhập bằng Microsoft hỗ trợ tài khoản Outlook cá nhân và tài khoản trường/cơ quan Microsoft 365. Không truy cập hộp thư, không yêu cầu quyền gửi email.
@@ -37,7 +39,7 @@ Hệ thống liên kết bằng cặp ID bất biến `tid` + `oid`, không tự
 
 Nếu chưa có credentials, giao diện báo chưa cấu hình. Kiểm thử tự động dùng token ký bằng khóa thử nghiệm và môi trường mock, không chứng minh đăng nhập thật với Microsoft/Google khi chưa có credentials.
 
-Kiểm chứng triển khai ngày 08/10/2026: build thành công; 91 kiểm thử API, 10 kiểm thử web, 7 E2E đều qua. Ca giao diện được chạy lại sau sửa viền cuối cùng và qua ở desktop/mobile. API/web Docker đã cập nhật, 6 dịch vụ healthy; Google/Microsoft hiện vẫn cần credentials thật.
+Chạy `npm run release:check -- --require-oauth` để kiểm tra cấu hình và redirect khởi tạo của cả hai nhà cung cấp. Lệnh không thay thế đăng nhập thật, không xác nhận secret còn hiệu lực ở bước đổi authorization code và không chứng minh consent của tổ chức đã được cấp.
 
 ## Logo
 

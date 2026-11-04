@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { config } from "../config.js";
+import { redactTrainingText } from "./trainingDataset.js";
 
 type Citation = { id: string; title: string; excerpt: string; sourceLabel: string; score: number };
 type Retrieval = { answer: string; citations: Citation[] };
@@ -8,8 +9,7 @@ export function generationEnabled(organizationId: string) {
 }
 
 export function redactCommonIdentifiers(value: string) {
-  return value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[EMAIL]")
-    .replace(/(?:\+?\d[\d .()-]{7,}\d)/g, "[NUMBER]");
+  return redactTrainingText(value).replaceAll("[PHONE]", "[NUMBER]");
 }
 
 const answerSchema = z.object({

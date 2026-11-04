@@ -7,14 +7,20 @@ import { spawn } from "node:child_process";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const envFile = join(root, ".env.docker");
 const commands = { up: ["up", "--build", "-d"], stop: ["stop"], status: ["ps"], logs: ["logs", "-f", "--tail=100"] };
-const args = commands[process.argv[2]];
+let args = commands[process.argv[2]];
 if (!args) throw new Error("Expected up, stop, status or logs");
 if (!existsSync(envFile)) writeFileSync(envFile, `JWT_SECRET=${randomBytes(32).toString("hex")}\n`, { flag: "wx", mode: 0o600 });
 const stored = readFileSync(envFile, "utf8");
+if (process.argv[2] === "up") {
+  const hasExternalMongo = /^MONGODB_URI=\S+/m.test(stored);
+  const usesLegacyS3 = /^STORAGE_PROVIDER=s3\s*$/m.test(stored);
+  args = [...(!hasExternalMongo ? ["--profile", "local-db"] : []), ...(usesLegacyS3 ? ["--profile", "legacy-s3"] : []), ...args];
+}
 for (const [key, value] of Object.entries({
   MONGO_APP_USER: "caseflow", MONGO_APP_PASSWORD: randomBytes(32).toString("hex"),
   MONGO_ROOT_USER: "caseflow_admin", MONGO_ROOT_PASSWORD: randomBytes(32).toString("hex"),
   AI_INTERNAL_TOKEN: randomBytes(32).toString("hex"),
+  EMAIL_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
   S3_ACCESS_KEY: `caseflow-${randomBytes(8).toString("hex")}`, S3_SECRET_KEY: randomBytes(32).toString("hex")
 })) {
   if (!new RegExp(`^${key}=`, "m").test(stored)) appendFileSync(envFile, `\n${key}=${value}\n`);

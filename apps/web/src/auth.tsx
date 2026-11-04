@@ -17,7 +17,7 @@ interface AuthContextValue {
   login: (organizationSlug: string, email: string, password: string, remember?: boolean) => Promise<void>;
   loginWithGoogle: (ticket: string) => Promise<void>;
   loginWithMicrosoft: (ticket: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -76,10 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   }, []);
 
-  const logout = useCallback(() => {
-    void api("/auth/logout", { method: "POST" }).catch(() => undefined);
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await api("/auth/logout", { method: "POST" });
+      setToken(null);
+      setUser(null);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Unable to sign out.");
+    }
   }, []);
 
   const loginWithMicrosoft = useCallback(async (ticket: string) => {

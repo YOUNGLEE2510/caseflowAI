@@ -20,7 +20,12 @@ const knowledgeArticleSchema = new Schema(
     helpfulCount: { type: Number, default: 0 },
     authorId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     authorName: { type: String, default: "" },
-    active: { type: Boolean, default: true }
+    active: { type: Boolean, default: true },
+    revisions: { select: false, type: [{
+      title: String, content: String, category: String, tags: [String], sourceLabel: String,
+      sourceUrl: String, version: String, effectiveAt: Date, expiresAt: Date,
+      reviewedByName: String, reviewedAt: Date, archivedAt: { type: Date, default: Date.now }
+    }] }
   },
   { timestamps: true }
 );

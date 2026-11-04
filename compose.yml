@@ -1,4 +1,46 @@
 services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    profiles: [monitoring]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:9090/-/healthy']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    entrypoint: [sh, /scripts/prometheus-start.sh]
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+    ports:
+      - '127.0.0.1:9090:9090'
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/caseflow.yml:ro
+      - ./docker/prometheus-start.sh:/scripts/prometheus-start.sh:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      api:
+        condition: service_healthy
+  mongo-backup:
+    image: mongo:7
+    restart: unless-stopped
+    profiles: [backup]
+    healthcheck:
+      test: [CMD-SHELL, "find /backups -name '*.archive.gz' -mmin -2160 -print -quit | grep -q ."]
+      interval: 60s
+      timeout: 5s
+      start_period: 120s
+      retries: 3
+    entrypoint: [sh, /scripts/mongo-backup.sh]
+    environment:
+      MONGO_BACKUP_USER: ${MONGO_APP_USER:-}
+      MONGO_BACKUP_PASSWORD: ${MONGO_APP_PASSWORD:-}
+      MONGODB_DB: ${MONGODB_DB:-caseflow_ai}
+    volumes:
+      - ./docker/mongo-backup.sh:/scripts/mongo-backup.sh:ro
+      - mongo-backups:/backups
+    depends_on:
+      mongo:
+        condition: service_healthy
   web:
     restart: unless-stopped
     build:
@@ -10,14 +52,15 @@ services:
       api:
         condition: service_healthy
   mongo:
+    profiles: [local-db]
     restart: unless-stopped
     image: mongo:7
     command: [mongod, --auth]
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?Run node docker/secure-mongo.mjs first}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Mongo recovery credentials required}
-      MONGO_APP_USER: ${MONGO_APP_USER:?Mongo application user required}
-      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?Mongo application password required}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-caseflow_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-}
+      MONGO_APP_USER: ${MONGO_APP_USER:-caseflow}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:-}
     volumes:
       - mongo-data:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/01-caseflow.js:ro
@@ -33,6 +76,7 @@ services:
       dockerfile: Dockerfile.ai
     environment:
       CLASSIFIER_VARIANT: word
+      MODEL_REGISTRY_DIR: /app/model-store/registry
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:?Run npm run docker:up to generate internal credentials}
     volumes:
       - model-data:/app/model-store
@@ -47,8 +91,11 @@ services:
       context: .
       dockerfile: Dockerfile.api
     environment:
-      MONGODB_URI: mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo:27017/?authSource=admin
+      MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo:27017/?authSource=admin}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET before starting compose}
+      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY:-}
+      MONGODB_DB: ${MONGODB_DB:-caseflow_ai}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-}
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-local}
       AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -59,23 +106,32 @@ services:
       AI_SERVICE_URL: http://ai:8001
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:?Internal AI credentials required}
       AI_REQUEST_TIMEOUT_MS: ${AI_REQUEST_TIMEOUT_MS:-10000}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
       AI_FALLBACK_KEYWORDS: ${AI_FALLBACK_KEYWORDS:-}
-      WEB_ORIGIN: http://localhost:8080
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_ALLOWED_ORGANIZATIONS: ${LLM_ALLOWED_ORGANIZATIONS:-}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       TRUST_PROXY_HOPS: '1'
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
       GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
       GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:8080/api/auth/google/callback}
+      GOOGLE_OAUTH_HOSTED_DOMAINS: ${GOOGLE_OAUTH_HOSTED_DOMAINS:-}
       MICROSOFT_OAUTH_CLIENT_ID: ${MICROSOFT_OAUTH_CLIENT_ID:-}
       MICROSOFT_OAUTH_CLIENT_SECRET: ${MICROSOFT_OAUTH_CLIENT_SECRET:-}
       MICROSOFT_OAUTH_REDIRECT_URI: ${MICROSOFT_OAUTH_REDIRECT_URI:-http://localhost:8080/api/auth/microsoft/callback}
       MICROSOFT_OAUTH_TENANT: ${MICROSOFT_OAUTH_TENANT:-common}
       AUTO_SEED: ${AUTO_SEED:-false}
       UPLOAD_DIR: /app/uploads
-      STORAGE_PROVIDER: s3
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-cloudinary}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       S3_ENDPOINT: http://object-storage:8333
       S3_BUCKET: caseflow-files
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Run npm run docker:up to generate credentials}
-      S3_SECRET_KEY: ${S3_SECRET_KEY:?Run npm run docker:up to generate credentials}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
       MALWARE_SCAN_MODE: clamav
       CLAMAV_HOST: clamav
     healthcheck:
@@ -89,18 +145,21 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+        required: false
       ai:
         condition: service_healthy
       object-storage:
         condition: service_healthy
+        required: false
       clamav:
         condition: service_healthy
   object-storage:
+    profiles: [legacy-s3]
     image: chrislusf/seaweedfs:4.38
     restart: unless-stopped
     environment:
-      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?S3_ACCESS_KEY required}
-      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY required}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-}
       S3_BUCKET: caseflow-files
     command: [mini, '-dir=/data']
     volumes:
@@ -122,6 +181,8 @@ services:
       start_period: 180s
       retries: 40
 volumes:
+  prometheus-data:
+  mongo-backups:
   mongo-data:
   upload-data:
   object-data:

@@ -1,10 +1,12 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { generateKeyPair, SignJWT } from "jose";
 import { webcrypto } from "node:crypto";
 
 vi.stubGlobal("crypto", webcrypto);
 vi.mock("../src/config.js", () => ({ config: { MICROSOFT_OAUTH_CLIENT_ID: "test-client", MICROSOFT_OAUTH_TENANT: "common" } }));
 import { verifyMicrosoftIdentity } from "../src/services/microsoftOAuth.js";
+import { config } from "../src/config.js";
+afterEach(() => { config.MICROSOFT_OAUTH_TENANT = "common"; });
 
 const tenant = "11111111-1111-4111-8111-111111111111";
 const objectId = "22222222-2222-4222-8222-222222222222";
@@ -16,6 +18,17 @@ async function token(overrides: Record<string, unknown> = {}, audience = "test-c
     .setIssuedAt().setExpirationTime(expiry).sign(pair.privateKey);
 }
 describe("Microsoft identity validation", () => {
+  it("enforces organization, consumer and specific-tenant restrictions", async () => {
+    config.MICROSOFT_OAUTH_TENANT = "consumers";
+    await expect(verifyMicrosoftIdentity(await token(), "expected-nonce", async () => pair.publicKey)).rejects.toThrow();
+    config.MICROSOFT_OAUTH_TENANT = "33333333-3333-4333-8333-333333333333";
+    await expect(verifyMicrosoftIdentity(await token(), "expected-nonce", async () => pair.publicKey)).rejects.toThrow();
+    const consumer = "9188040d-6c67-4c5b-b112-36a304b66dad";
+    config.MICROSOFT_OAUTH_TENANT = "organizations";
+    await expect(verifyMicrosoftIdentity(await token({ tid: consumer }, "test-client", `https://login.microsoftonline.com/${consumer}/v2.0`), "expected-nonce", async () => pair.publicKey)).rejects.toThrow();
+    config.MICROSOFT_OAUTH_TENANT = tenant;
+    expect(await verifyMicrosoftIdentity(await token(), "expected-nonce", async () => pair.publicKey)).toEqual({ objectId, tenantId: tenant });
+  });
   it("validates signature, audience, issuer and nonce and returns immutable identifiers", async () => {
     expect(await verifyMicrosoftIdentity(await token(), "expected-nonce", async () => pair.publicKey))
       .toEqual({ objectId, tenantId: tenant });

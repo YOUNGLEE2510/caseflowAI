@@ -1,75 +1,83 @@
-# Môi trường container local
+# Chạy và triển khai
 
-Các lệnh tiện dụng: `npm run docker:up`, `npm run docker:stop`, `npm run docker:status`, `npm run docker:logs`. Sau lần cài Docker Desktop đầu tiên, mở lại terminal nếu chưa nhận lệnh `docker`.
+## Cấu hình chính: Atlas + Cloudinary
 
-Cần Docker Desktop đang chạy. Tại thư mục dự án:
-
-```powershell
-npm run docker:up
-```
-
-Lệnh tự tạo `.env.docker` với JWT secret và thông tin S3 ngẫu nhiên còn thiếu. File bị Git bỏ qua và secret hiện có được giữ nguyên. Compose dựng Web/Nginx, API, AI, MongoDB, ClamAV và SeaweedFS. Mở `http://localhost:8080`; API được proxy qua `/api`, các dịch vụ còn lại không publish cổng ra máy chủ. Named volumes giữ MongoDB, tệp, chữ ký antivirus và model. ClamAV có thể cần vài phút tải chữ ký trong lần đầu. `AUTO_SEED=true` chỉ phục vụ demo.
-
-```powershell
-docker compose --env-file .env.docker logs -f api ai
-docker compose --env-file .env.docker down
-```
-
-`down` giữ volumes. Chỉ xóa volumes khi chủ động muốn xóa dữ liệu demo.
-
-## Trước khi pilot
-
-- Đổi thành HTTPS qua reverse proxy, cấu hình WEB_ORIGIN và OAuth callback đúng domain.
-- Tắt AUTO_SEED, dùng MongoDB có xác thực và mạng riêng, secret do nền tảng triển khai quản lý.
-- Sao lưu MongoDB và upload cùng thời điểm; thực hiện thử phục hồi sang môi trường khác và xác minh metadata/tệp khớp nhau.
-- Docker đã bật ClamAV và kho S3-compatible. Cấu hình danh tính bucket quyền tối thiểu và theo dõi cập nhật chữ ký khi pilot; chi tiết thiết kế tại [ARCHITECTURE.md](ARCHITECTURE.md).
-- Giữ AI chỉ trong mạng riêng. Không publish cổng AI trực tiếp lên Internet.
-- Chốt chính sách lưu trữ hồ sơ/audit theo yêu cầu đơn vị và quyền xóa dữ liệu.
-
-CI chỉ xác minh mã nguồn, không tự deploy khi merge. Đích triển khai và quyền truy cập hạ tầng phải được cấu hình riêng.
-
-## HTTPS Cho Máy Chủ Pilot
-
-`compose.https.yml` bổ sung Caddy làm ingress, tự xin chứng chỉ và chuyển HTTP sang HTTPS. Chỉ chạy khi domain đã trỏ đúng IP máy chủ, cổng 80/443 được mở và không có ingress khác chiếm cổng. Không cần bật cho localhost.
-
-Đặt trong file môi trường riêng tư:
+Điền vào `.env.docker` (được Git ignore), không gửi secrets vào chat:
 
 ```dotenv
-PUBLIC_DOMAIN=caseflow.example.edu.vn
-WEB_ORIGIN=https://caseflow.example.edu.vn
-DEPLOYMENT_MODE=pilot
+MONGODB_URI=mongodb+srv://USER:PASSWORD@HOST/?appName=CaseFlow
+MONGODB_DB=caseflow_ai
+STORAGE_PROVIDER=cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud
+CLOUDINARY_API_KEY=your-key
+CLOUDINARY_API_SECRET=your-secret
+WEB_ORIGIN=http://localhost:8080
 AUTO_SEED=false
 ```
 
-Overlay tự đặt WEB_ORIGIN, callback Google/Microsoft theo PUBLIC_DOMAIN và TRUST_PROXY_HOPS=2 cho chuỗi Caddy -> Nginx -> API. Đăng ký các callback HTTPS này tại nhà cung cấp theo `OAUTH_SETUP.md`; không mở API trực tiếp ra Internet. Cổng web 8080 vẫn chỉ bind localhost và không được dùng làm lối vào công khai khi pilot. Kiểm tra tài khoản demo đã bị vô hiệu hóa, rồi chạy:
+Tạo Atlas database user riêng với quyền tối thiểu trên database dự án, giới hạn IP nguồn kết nối, không dùng credential quản trị cloud. Mật khẩu có ký tự đặc biệt phải URL-encode trong URI. Cloudinary credentials chỉ ở API, không đưa vào Vite/browser.
 
 ```powershell
-docker compose --env-file .env.docker -f compose.yml -f compose.https.yml up -d --build
+npm run docker:up
+npm run docker:status
 ```
 
-Lưu volume `caddy-data` để không xin lại chứng chỉ sau mỗi lần triển khai. HSTS chỉ được đặt ở ingress HTTPS. Các dịch vụ nội bộ vẫn ở Docker private network; cấu hình này chưa bật TLS giữa MongoDB, AI và API. Khi triển khai đa máy hoặc qua mạng không tin cậy, cần bổ sung TLS/mTLS riêng cho các kết nối này. Hiện chưa có domain được cấu hình nên chưa xác minh chứng chỉ ngoài Internet.
+Wrapper tự bật `local-db` khi không có MONGODB_URI và chỉ bật `legacy-s3` khi STORAGE_PROVIDER=s3. Với Atlas/Cloudinary, mặc định không cần Mongo cục bộ, SeaweedFS, Prometheus, OCR hoặc backup S3. Web mở tại http://localhost:8080.
 
-## Kiểm Soát Bảo Mật
+Yêu cầu Docker Compose có hỗ trợ optional depends_on (`required: false`). Xác minh cú pháp mà không in secrets:
 
-| Ranh giới | Hiện trạng và phạm vi |
-| --- | --- |
-| Xác thực | JWT có hạn dùng; refresh cookie rotation; ticket OAuth dùng một lần. |
-| Phân quyền | Vai trò, tổ chức, quyền theo hồ sơ và đơn vị được kiểm tra phía API. |
-| Rate limit | API theo IP; đăng nhập theo IP + tổ chức + email; giới hạn OAuth/reset riêng. Store hiện ở bộ nhớ từng replica, chưa phải limiter phân tán. |
-| Kiểm chứng đầu vào | Zod, giới hạn kích thước và từ chối trường JSON dạng operator/prototype, độ sâu trên 30; intake từ chối trường lạ. |
-| Mã hóa đầu ra theo ngữ cảnh | React hiển thị text, email escape HTML/URL riêng; CSP ở Nginx. Không coi câu trả lời AI là HTML đáng tin. `style-src` vẫn cho phép inline do chart/style React. |
-| TLS | Có ingress HTTPS tùy chọn và guard bắt buộc WEB_ORIGIN HTTPS khi pilot; phải cấu hình domain để sử dụng. |
-| Xoay vòng bí mật | Refresh token xoay mỗi lần dùng. API key, DB và SMTP phải đổi tại nhà cung cấp rồi cập nhật môi trường; không tự động đổi trong lúc hệ thống đang chạy. |
-| Quyền tối thiểu | Mongo application user riêng; kho tệp riêng tư; AI có internal token và không publish cổng. Quyền bucket của nhà cung cấp phải được kiểm tra riêng. |
-| Idempotency | POST /api/cases hỗ trợ Idempotency-Key, được client gửi khi tạo hồ sơ. Ràng buộc unique MongoDB chống hai request đồng thời tạo trùng. Không áp dụng tự động cho mọi endpoint. |
-| Audit | Ghi ai làm gì, thời điểm, request ID; bảo vệ log theo quyền. Không ghi mật khẩu/token vào audit. |
-| Dependencies | CI audit npm và Python; Dependabot kiểm tra npm, pip, GitHub Actions hàng tuần sau khi cấu hình được push. |
-| Lỗi an toàn | Lỗi bất ngờ trả thông báo chung và request ID, không trả stack hoặc nội dung exception. 404 không phản chiếu URL/query của request. |
+```powershell
+docker compose --env-file .env.docker config --quiet
+```
 
-### Hợp Đồng Idempotency
+## Chuyển dữ liệu cũ
 
-`Idempotency-Key` là chuỗi 16–128 ký tự gồm chữ, số, `_`, `-`; UUID do trình duyệt tạo là phù hợp. Khóa được hash và scope theo tổ chức + người tạo. Cùng khóa/cùng nội dung trả hồ sơ cũ (HTTP 200, `Idempotency-Replayed: true`); khóa cũ/nội dung khác trả 409. Khóa tùy chọn để giữ tương thích client cũ; client không gửi khóa không có đảm bảo chống tạo trùng. Khóa tồn tại theo vòng đời hồ sơ, không có TTL. Không dùng nó thay cho xác thực, quyền truy cập hoặc CSRF. Audit/thông báo không gửi lại khi replay; vẫn còn giới hạn có sẵn: crash sau khi ghi hồ sơ nhưng trước khi gửi thông báo cần cơ chế outbox riêng để phục hồi side effect.
+Thêm URI Atlas không phải migration: không tự sao chép database Docker lên Atlas. Kiểm kê database và attachment.storageProvider trước khi chuyển. Giữ nguồn cũ cho đến khi đối chiếu document count, ID, quyền truy cập, metadata và tải lại tệp thành công. Không chạy `down -v`, prune volume hoặc seed để chuyển dữ liệu.
 
-### Xoay Vòng Bí Mật
+Nếu vẫn có tệp S3 cũ, giữ dịch vụ legacy trong thời gian chuyển:
 
-Không commit file `.env`, không đưa secret vào frontend hay skill. Khi đổi JWT_SECRET, phiên đăng nhập đang có bị vô hiệu và email outbox mã hóa bằng secret cũ không đọc được; cần xử lý hàng đợi trước khi đổi. Với Mongo/S3/API key, tạo credential mới có quyền tối thiểu, cập nhật ứng dụng và xác minh hoạt động trước khi thu hồi credential cũ. Mật khẩu SMTP/app-password đổi tại nhà cung cấp. Chưa có bộ quản lý secret hay quy trình rotation tự động.
+```powershell
+docker compose --env-file .env.docker --profile legacy-s3 up -d object-storage
+```
+
+Adapter S3 được giữ chỉ để đọc/xóa tệp cũ; không xóa volume tự động. Cloudinary cần dùng authenticated/private, không public URL cho hồ sơ cá nhân. `npm run docker:verify-cloudinary` kiểm tra synthetic upload/download/private/delete, không thay cho chứng nhận bảo mật toàn hệ thống.
+
+### Công cụ đối soát trước khi đổi API sang Atlas
+
+`node docker/reconcile-atlas.mjs` đọc database mà API Docker cũ đang dùng và Atlas đích, tạo inventory cùng snapshot mã hóa ở `artifacts/atlas-migration`. Chỉ dùng khi API nguồn vẫn trỏ Mongo local; công cụ từ chối lấy nguồn sau khi API đã dùng Atlas. `--apply` nhập bổ sung, giữ tài khoản/cấu hình Atlas theo slug/email/key, giữ hai hồ sơ trùng mã bằng hậu tố MIG, chuyển tệp S3/local sang Cloudinary sau khi đối chiếu byte. Không di chuyển refresh/reset/OAuth sessions và không xóa nguồn.
+
+Phải dừng giao diện và kiểm soát mọi writer trong cửa sổ chuyển dữ liệu; đây không phải migration online/PITR. Snapshot AES-256-GCM dùng khóa dẫn xuất từ EMAIL_ENCRYPTION_KEY; tệp gồm nonce 12 byte, authentication tag 16 byte rồi ciphertext EJSON. Giữ khóa riêng tư để còn khôi phục snapshot, không commit snapshot hoặc .env. Công cụ có thể tiếp tục khi bị gián đoạn, nhưng luôn đọc báo cáo lỗi/đối chiếu trước khi cho người dùng vào lại.
+
+`node docker/verify-atlas-migration.mjs` kiểm tra tham chiếu, đọc tệp private, dung lượng và truy cập ẩn danh sau chuyển. Không tự ghi đè hoặc xóa database thật để “thử restore”.
+
+`npm run docker:verify-snapshot` giải mã hai snapshot chuyển dữ liệu gần nhất vào Mongo tạm, đối chiếu số lượng/nội dung và kiểm tra bản mã bị sửa phải bị từ chối. Không kết nối Atlas và không gửi email. Đây là kiểm thử snapshot metadata tại thời điểm chuyển, không thay cho backup Atlas định kỳ, index/TTL hoặc khôi phục byte tệp Cloudinary. Cần giữ chính sách phục hồi của nhà cung cấp trước khi chạy pilot.
+
+Thêm `-- --live` để đọc metadata hiện tại từ Atlas, lưu snapshot AES-GCM cục bộ rồi khôi phục vào Mongo tạm. Phạm vi gồm 9 collection nghiệp vụ, không gồm refresh/reset/OAuth tickets, outbox hoặc indexes. Giữ EMAIL_ENCRYPTION_KEY riêng để giải mã và không commit file .enc. Không chạy worker thu hồi upload trên một bản restore thử đang dùng chung namespace Cloudinary với hệ thống thật. Khôi phục tệp gốc và backup ngoài máy vẫn là bước riêng.
+
+`npm run release:check -- --smtp` kiểm tra API, ping Mongo, seed, cấu hình storage, redirect bắt đầu Google/Microsoft và kết nối SMTP mà không gửi thư. OAuth chưa cấu hình được báo là mục tùy chọn chưa đạt, không bị che bởi kết quả tổng; luồng đăng nhập/consent thực tế vẫn phải thử bằng tài khoản hợp lệ. Callback, state và secret không được in ra kết quả.
+
+## Local demo
+
+Không có Atlas thì `npm run docker:up` dùng Mongo local qua profile `local-db`. Chỉ bật AUTO_SEED=true trên database demo mới, sau đó tắt lại. `seed:force` bị vô hiệu hóa để tránh xóa nhầm dữ liệu. Muốn làm mới demo dùng database dùng một lần, không dùng database thật.
+
+## Pilot
+
+Đặt DEPLOYMENT_MODE=pilot, WEB_ORIGIN và OAuth callbacks là HTTPS, cấu hình JWT/MFA/email encryption keys, scanner và internal AI token. Giữ ClamAV và kiểm tra quyền tải tệp; không tắt bảo mật để giảm RAM. OAuth/SMTP: [OAUTH_SETUP.md](OAUTH_SETUP.md).
+
+Không bật seed ở pilot. Không đổi secret hoặc encryption key khi chưa hiểu ảnh hưởng đến phiên và dữ liệu đã mã hóa. Backup S3/offsite đã loại khỏi dự án. Trước lưu dữ liệu thật, chọn khả năng phục hồi phù hợp gói Atlas và chính sách tệp Cloudinary; không giả định metadata backup sẽ khôi phục được tệp gốc.
+
+## Xác minh
+
+```powershell
+npm run build
+npm test
+npm run test:audit
+```
+
+Các test dùng database tạm, không seed Atlas. Kiểm thử thực tế OAuth, SMTP, scanner, Cloudinary và phục hồi là các bước riêng có xác nhận; báo đúng ngày/version đã chạy. Huấn luyện nghiệp vụ vẫn để chờ dữ liệu được duyệt, xem [AI_AND_DATA.md](AI_AND_DATA.md).
+
+E2E tắt SMTP/LLM và dùng kho tệp local cô lập. Server test có kênh đóng riêng trên localhost với token ngẫu nhiên; không nằm trong API sản phẩm. Teardown chờ xác nhận đã đóng Vite/API, Mongo tạm và dọn upload, tối đa 12 giây; thiếu xác nhận làm suite thất bại. Không dựa vào SIGTERM trên Windows. Bài manager-stability kiểm tra nạp lại trang nhiều lần; lỗi render được đính kèm trong artifacts để phân tích, không coi một lần chạy lại xanh là bằng chứng đã tìm được nguyên nhân gốc.
+
+## Dung lượng
+
+`artifacts`, uploads, node_modules và .env đã bị loại khỏi Docker context. Không cần tải thêm model nặng hoặc bật OCR/monitoring mặc định. Dọn output test lặp theo đợt sau khi giữ một bộ bằng chứng; không xóa corpus, backup hoặc tệp gốc duy nhất. Database/volumes cũ giữ nguyên cho đến khi hoàn tất migration.

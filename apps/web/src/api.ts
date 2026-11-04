@@ -1,6 +1,7 @@
 import { getStoredLocale } from "./i18n";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
+const uploadKeys = new WeakMap<Blob, Map<string, string>>();
 const TOKEN_KEY = "caseflow_token";
 const LOGGED_OUT_KEY = "caseflow_logged_out";
 let sessionGeneration = 0;
@@ -80,6 +81,13 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   const token = getToken();
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (options.method?.toUpperCase() === "POST" && options.body instanceof Blob && headers.get("Content-Type")?.startsWith("application/octet-stream") && !headers.has("Idempotency-Key")) {
+    let keys = uploadKeys.get(options.body);
+    if (!keys) { keys = new Map(); uploadKeys.set(options.body, keys); }
+    const scope = `${path}:${headers.get("X-Internal") || "default"}`;
+    if (!keys.has(scope)) keys.set(scope, crypto.randomUUID());
+    headers.set("Idempotency-Key", keys.get(scope)!);
+  }
   if (token) headers.set("Authorization", `Bearer ${token}`);
   const timeout = AbortSignal.timeout(30000);
     const response = await authenticatedFetch(path, {

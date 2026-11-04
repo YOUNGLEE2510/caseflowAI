@@ -8,6 +8,7 @@ import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import { Modal } from "../components/Modal";
 import { useConfirmation } from "../components/ConfirmationProvider";
+import { SecuritySettings } from "../components/SecuritySettings";
 
 interface ProfileData {
   id: string;
@@ -39,7 +40,7 @@ const roleLabels: Record<string, { vi: string; en: string }> = {
 export function ProfilePage() {
   const { text, locale } = useLocale();
   const confirm = useConfirmation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const toast = useToast();
   const { data, loading, error, reload } = useApiData<{ profile: ProfileData }>("/profile");
   const activity = useApiData<{ activity: Array<{ _id: string; action: string; resource: string; createdAt: string }> }>("/profile/activity");
@@ -143,6 +144,11 @@ export function ProfilePage() {
         title={text("Hồ sơ cá nhân", "My Profile")}
         description={text("Quản lý thông tin cá nhân và bảo mật tài khoản.", "Manage your personal information and account security.")}
       />
+
+      {user?.securityRequired && <p role="alert" className="form-error">
+        {user.mustChangePassword ? text("Cần đổi mật khẩu được cấp để tiếp tục. ", "Change your temporary password to continue. ") : text("Cần hoàn tất xác thực hai bước để tiếp tục. ", "Complete two-factor authentication to continue. ")}
+        <a href={user.mustChangePassword ? "#account-password" : "#account-security"}>{text("Mở biểu mẫu", "Open form")}</a>
+      </p>}
 
       {/* ── Profile Info ── */}
       <section className="panel profile-panel">
@@ -294,8 +300,8 @@ export function ProfilePage() {
         )}
       </section>
 
-      {/* ── Change Password ── */}
-      <section className="panel profile-panel">
+      <SecuritySettings />
+      <section className="panel profile-panel" id="account-password">
         <div className="profile-section-header">
           <Shield size={20} />
           <h2>{text("Đổi mật khẩu", "Change password")}</h2>
@@ -317,7 +323,7 @@ export function ProfilePage() {
                 type="button"
                 className="icon-button"
                 onClick={() => setShowPasswords((v) => !v)}
-                aria-label={showPasswords ? "Hide" : "Show"}
+                aria-label={showPasswords ? text("Ẩn mật khẩu", "Hide password") : text("Hiện mật khẩu", "Show password")}
               >
                 {showPasswords ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>

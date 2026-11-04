@@ -3,7 +3,7 @@ import { RefreshCw, UserPlus } from "lucide-react";
 import { api } from "../api";
 import { useLocale } from "../i18n";
 
-interface Option { id: string; name: string; open: number; overdue: number; capacity: number; atCapacity: boolean; skillMatch: boolean }
+interface Option { id: string; name: string; open: number; overdue: number; capacity: number; atCapacity: boolean; skillMatch: boolean; scheduledNow?: boolean }
 export function AssignmentSuggestions({ caseId, revision, saving, onAssign }: {
   caseId: string; revision: string; saving: boolean; onAssign: (id: string) => void;
 }) {
@@ -30,6 +30,7 @@ export function AssignmentSuggestions({ caseId, revision, saving, onAssign }: {
       {options.map((option) => <li key={option.id}><div><strong>{option.name}</strong><p>{text(`${option.open}/${option.capacity} hồ sơ · ${option.overdue} quá hạn`, `${option.open}/${option.capacity} cases · ${option.overdue} overdue`)}</p>
         {option.skillMatch ? <small>{text("Khớp kỹ năng dịch vụ", "Service skill match")}</small> : null}
         {option.atCapacity ? <small>{text("Đã đạt giới hạn tải", "At workload capacity")}</small> : null}
+        {option.scheduledNow === false ? <small>{text("Ngoài lịch làm việc", "Outside working hours")}</small> : null}
       </div><button type="button" className="button button-small" disabled={saving || option.atCapacity} onClick={() => onAssign(option.id)} aria-label={text(`Giao cho ${option.name}`, `Assign to ${option.name}`)} title={text(`Giao cho ${option.name}`, `Assign to ${option.name}`)}><UserPlus size={16} /></button></li>)}
       {!options.length ? <li>{text("Chưa có nhân viên phù hợp trong đơn vị.", "No eligible agents in this team.")}</li> : null}
     </ul>}

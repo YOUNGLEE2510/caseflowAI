@@ -28,6 +28,9 @@ export function presentCase(record: any, role: AuthUser["role"]) {
   const value = typeof record.toObject === "function" ? record.toObject({ flattenMaps: true }) : { ...record };
   delete value.idempotencyKeyHash;
   delete value.requestFingerprint;
+  delete value.searchTokens;
+  delete value.searchVersion;
+    delete value.deliveryEvents;
   if (role !== "requester") return value;
   return {
     ...value,

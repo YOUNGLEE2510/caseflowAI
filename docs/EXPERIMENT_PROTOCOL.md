@@ -1,5 +1,7 @@
 # Quy trình thực nghiệm
 
+Trạng thái hiện tại: **kế hoạch, chưa dùng dữ liệu PTIT/raw để huấn luyện**. Chỉ thực hiện sau khi nguồn, quyền sử dụng, dữ liệu cá nhân, nhãn và cách chia nhóm được duyệt. Không diễn giải các ngưỡng/mục tiêu trong tài liệu thành kết quả đã đạt.
+
 Tài liệu này định nghĩa cách đánh giá các thành phần AI của CaseFlow AI cho đồ án tốt nghiệp. Bộ dữ liệu demo trong repository chỉ dùng để kiểm tra pipeline; kết quả từ dữ liệu này không đại diện cho chất lượng triển khai thực tế.
 
 ## Câu hỏi nghiên cứu

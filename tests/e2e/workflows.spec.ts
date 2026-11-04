@@ -10,7 +10,7 @@ async function confirmAction(page: Page, title: string) {
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByLabel("Mã tổ chức").fill("minh-khai-university");
+  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
   await page.getByLabel("Email tổ chức").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
@@ -135,6 +135,7 @@ test("admin creates, edits and disables catalog/member records and publishes kno
   await dialog.getByRole("button", { name: "Lưu thành viên" }).click();
   await confirmAction(page, "Lưu thành viên?");
   await expect(dialog).not.toBeVisible();
+  await page.getByRole("textbox", { name: "Tìm thành viên", exact: true }).fill("e2e-member@caseflow.local");
   await page.getByRole("button").filter({ hasText: "e2e-member@caseflow.local" }).click();
   await page.getByRole("button", { name: "Sửa thành viên" }).click();
   await dialog.getByLabel("Đang hoạt động").uncheck();

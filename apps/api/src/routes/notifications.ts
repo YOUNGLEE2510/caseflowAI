@@ -1,21 +1,26 @@
 import { Router } from "express";
 import { Notification } from "../models.js";
+import { z } from "zod";
+import { validateObjectId } from "../middleware/validateId.js";
 
 export const notificationRouter = Router();
 
 /* Lấy danh sách thông báo của user hiện tại */
 notificationRouter.get("/", async (req, res) => {
-  const limit = Math.min(50, Number(req.query.limit) || 20);
-  const skip = Math.max(0, Number(req.query.skip) || 0);
+  const { limit, skip, unread } = z.object({
+    limit: z.coerce.number().finite().int().min(1).max(50).default(20),
+    skip: z.coerce.number().finite().int().min(0).max(1_000_000).default(0),
+    unread: z.enum(["true", "false"]).optional()
+  }).parse(req.query);
   const filter: Record<string, unknown> = {
     organizationId: req.auth!.organizationId,
     userId: req.auth!.id
   };
-  if (req.query.unread === "true") filter.read = false;
+  if (unread === "true") filter.read = false;
 
   const [notifications, total, unreadCount] = await Promise.all([
     Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-    Notification.countDocuments({ organizationId: req.auth!.organizationId, userId: req.auth!.id }),
+    Notification.countDocuments(filter),
     Notification.countDocuments({ organizationId: req.auth!.organizationId, userId: req.auth!.id, read: false })
   ]);
 
@@ -33,7 +38,7 @@ notificationRouter.get("/unread-count", async (req, res) => {
 });
 
 /* Đánh dấu đã đọc 1 thông báo */
-notificationRouter.patch("/:id/read", async (req, res) => {
+notificationRouter.patch("/:id/read", validateObjectId("id"), async (req, res) => {
   const notification = await Notification.findOneAndUpdate(
     { _id: req.params.id, organizationId: req.auth!.organizationId, userId: req.auth!.id },
     { $set: { read: true, readAt: new Date() } },

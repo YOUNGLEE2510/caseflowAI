@@ -15,12 +15,32 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-          cache-dependency-path: apps/ai/requirements.txt
+          cache-dependency-path: apps/ai/requirements-research.txt
       - run: npm ci
       - run: npm audit --audit-level=high
-      - run: pip install -r apps/ai/requirements.txt
+      - run: pip install -r apps/ai/requirements-research.txt
       - run: pip install pip-audit==2.10.0
-      - run: pip-audit -r apps/ai/requirements.txt
+      - run: pip-audit -r apps/ai/requirements-research.txt
       - run: npm run build
       - run: npm test
+      - run: npm run test:audit --workspace=@caseflow/api
+      - run: python -m pytest apps/ai/audits -q
       - run: npm run evaluate:retrieval
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          E2E_BROWSER_CHANNEL: chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failures
+          path: artifacts/e2e-results

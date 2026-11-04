@@ -1,1 +1,4 @@
 -r requirements.txt
+beautifulsoup4>=4.13,<5
+truststore>=0.10,<1
+pypdf>=6.12,<7

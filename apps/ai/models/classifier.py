@@ -1,6 +1,8 @@
 """Versioned small-data classifier; only load artifacts from trusted server storage."""
 import json
 import os
+import logging
+from threading import RLock
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
@@ -76,8 +78,37 @@ def load_or_train(variant: str, directory: Path) -> tuple[Pipeline, dict]:
 classifier, MODEL_METADATA = load_or_train(os.getenv("CLASSIFIER_VARIANT", "word"),
     Path(os.getenv("MODEL_DIR", str(Path(__file__).resolve().parents[3] / "artifacts" / "models"))))
 
+_registry = Path(os.getenv("MODEL_REGISTRY_DIR", str(Path(os.getenv("MODEL_DIR", "artifacts/models")) / "registry")))
+_model_lock = RLock()
+_pointer_stamp = None
+
+
+def refresh_active_model():
+    global classifier, _pointer_stamp
+    pointer = _registry / "active_model.json"
+    if not pointer.exists():
+        return
+    stamp = pointer.stat().st_mtime_ns
+    if stamp == _pointer_stamp:
+        return
+    try:
+        from ..model_registry import load_active
+        model, metadata = load_active(_registry)
+        classifier = model
+        MODEL_METADATA.clear()
+        MODEL_METADATA.update(metadata)
+        _pointer_stamp = stamp
+    except Exception:
+        logging.getLogger(__name__).warning("Active model rejected; retaining last validated model")
+
 
 def classify_text(text: str) -> dict:
+    with _model_lock:
+        refresh_active_model()
+        return _classify_text(text)
+
+
+def _classify_text(text: str) -> dict:
     ranking = sorted(zip(classifier.classes_, classifier.predict_proba([text])[0], strict=True), key=lambda item: item[1], reverse=True)
     best_label, best_score = ranking[0]
     if classifier.named_steps["features"].transform([text]).nnz == 0:

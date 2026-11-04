@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { config } from "./config.js";
 import { connectDatabase } from "./db.js";
 import {
   CaseRecord,
@@ -13,20 +14,11 @@ const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000);
 
 export async function seedDatabase(force = false) {
+  if (config.DEPLOYMENT_MODE !== "local") throw new Error("Demo seeding is disabled outside local environments.");
+  if (force) throw new Error("Destructive seed reset is disabled. Use a separate disposable demo database.");
+  if (config.MONGODB_URI.startsWith("mongodb+srv://")) throw new Error("Demo seeding is disabled for Atlas. Use a disposable local database.");
   let existing = await Organization.findOne({ slug: "minh-khai-university" });
   if (existing && !force) return existing;
-
-  if (force) {
-    await Promise.all([
-      Organization.deleteMany({}),
-      User.deleteMany({}),
-      ServiceDefinition.deleteMany({}),
-      CaseRecord.deleteMany({}),
-      Incident.deleteMany({}),
-      KnowledgeArticle.deleteMany({})
-    ]);
-    existing = null;
-  }
 
   const organization =
     existing ||

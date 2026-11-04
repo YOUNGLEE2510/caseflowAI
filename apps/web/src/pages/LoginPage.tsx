@@ -17,6 +17,18 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [organizationSlug, setOrganizationSlug] = useState(demoOrganizationSlug);
+  const [organizations, setOrganizations] = useState<Array<{ name: string; slug: string }>>([]);
+  useEffect(() => {
+    let active = true;
+    void api<{ organizations: Array<{ name: string; slug: string }> }>("/auth/organizations").then(response => {
+      if (!active) return;
+      setOrganizations(response.organizations);
+      const requested = searchParams.get("organization");
+      const selected = response.organizations.find(item => item.slug === requested) || response.organizations.find(item => item.slug === demoOrganizationSlug) || response.organizations[0];
+      if (selected) setOrganizationSlug(selected.slug);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [searchParams]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -142,14 +154,16 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="form-stack">
             <label className="field">
               <span>{text("Mã tổ chức", "Organization code")}</span>
-              <input
+              {organizations.length ? <select value={organizationSlug} onChange={event => setOrganizationSlug(event.target.value)} required aria-label={text("Tổ chức", "Organization")}>
+                {organizations.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}
+              </select> : <input
                 value={organizationSlug}
                 onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())}
                 autoComplete="organization"
                 placeholder="minh-khai-university"
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 required
-              />
+              />}
             </label>
             <label className="field">
               <span>{text("Email tổ chức", "Organization email")}</span>

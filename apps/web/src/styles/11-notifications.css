@@ -278,7 +278,7 @@
   padding: 9px 16px;
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 34px;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
 }
@@ -292,6 +292,9 @@
   color: var(--brand);
   background: #e7f2ee;
 }
+
+.attachment-actions { display: inline-flex; align-items: center; gap: 4px; }
+.attachment-actions .icon-button { width: 34px; height: 34px; flex: 0 0 34px; }
 
 .attachment-list article > div {
   min-width: 0;

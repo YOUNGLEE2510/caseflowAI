@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { emailCrypto } from "./emailCrypto.js";
 import { config } from "../config.js";
 import { Organization, User, PasswordResetToken } from "../models.js";
 import { emailPasswordReset, sendEmail } from "./emailService.js";
 
 const schema = new mongoose.Schema({
   payload: { type: String, required: true },
+  deliveryKey: { type: String },
   kind: { type: String, enum: ["reset-request", "email"], required: true },
   attempts: { type: Number, default: 0 },
   nextAt: { type: Date, default: Date.now },
@@ -15,29 +17,39 @@ const schema = new mongoose.Schema({
 }, { timestamps: true });
 schema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 schema.index({ completedAt: 1, nextAt: 1, lockedUntil: 1 });
+schema.index({ deliveryKey: 1 }, { unique: true, partialFilterExpression: { deliveryKey: { $type: "string" } } });
 export const EmailOutbox = mongoose.models.EmailOutbox || mongoose.model("EmailOutbox", schema);
-const key = createHash("sha256").update(`caseflow-email-outbox:${config.JWT_SECRET}`).digest();
-function encrypt(value: unknown) {
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, iv);
-  const body = Buffer.concat([cipher.update(JSON.stringify(value)), cipher.final()]);
-  return Buffer.concat([iv, cipher.getAuthTag(), body]).toString("base64");
-}
-function decrypt<T>(value: string): T {
-  const buffer = Buffer.from(value, "base64");
-  const cipher = createDecipheriv("aes-256-gcm", key, buffer.subarray(0, 12));
-  cipher.setAuthTag(buffer.subarray(12, 28));
-  return JSON.parse(Buffer.concat([cipher.update(buffer.subarray(28)), cipher.final()]).toString());
+const { encrypt, decrypt } = emailCrypto(config.JWT_SECRET, config.EMAIL_ENCRYPTION_KEY);
+
+export async function migrateLegacyEmailEncryption() {
+  if (!config.EMAIL_ENCRYPTION_KEY) return;
+  while (true) {
+    const jobs = await EmailOutbox.find({ completedAt: null, payload: { $not: /^[a-f0-9]{16}:/ } }).limit(100).lean<Array<{ _id: mongoose.Types.ObjectId; payload: string }>>();
+    if (!jobs.length) return;
+    for (const job of jobs) await EmailOutbox.updateOne({ _id: job._id, payload: job.payload }, { $set: { payload: encrypt(decrypt(job.payload)) } });
+  }
 }
 export async function enqueuePasswordReset(organizationSlug: string, email: string) {
   await EmailOutbox.create({ kind: "reset-request", payload: encrypt({ organizationSlug, email }), expiresAt: new Date(Date.now() + 30 * 60_000) });
 }
+export async function enqueueEmail(payload: Parameters<typeof sendEmail>[0], deliveryKey?: string) {
+  const job = { kind: "email", payload: encrypt(payload), expiresAt: new Date(Date.now() + 86400_000), ...(deliveryKey ? { deliveryKey } : {}) };
+  if (deliveryKey) await EmailOutbox.updateOne({ deliveryKey }, { $setOnInsert: job }, { upsert: true });
+  else await EmailOutbox.create(job);
+}
 export async function processEmailOutbox() {
+  // Bound both work per tick and concurrent SMTP connections.
+  for (let batch = 0; batch < 4; batch++) {
+    const processed = await Promise.all(Array.from({ length: 3 }, () => processEmailJob()));
+    if (processed.every(value => !value)) break;
+  }
+}
+async function processEmailJob() {
   const now = new Date();
   const job = await EmailOutbox.findOneAndUpdate({ completedAt: null, attempts: { $lt: 5 }, nextAt: { $lte: now }, expiresAt: { $gt: now },
     $or: [{ lockedUntil: null }, { lockedUntil: { $lte: now } }] },
   { $set: { lockedUntil: new Date(Date.now() + 120_000) }, $inc: { attempts: 1 } }, { new: true });
-  if (!job) return;
+  if (!job) return false;
   try {
     let payload: Parameters<typeof sendEmail>[0];
     if (job.kind === "reset-request") {
@@ -49,7 +61,7 @@ export async function processEmailOutbox() {
       const url = new URL("/reset-password", config.WEB_ORIGIN);
       url.searchParams.set("organization", organization.slug); url.searchParams.set("token", token);
       await PasswordResetToken.updateMany({ organizationId: organization._id, userId: user._id, usedAt: null }, { $set: { usedAt: new Date() } });
-      await PasswordResetToken.create({ organizationId: organization._id, userId: user._id, tokenHash: createHash("sha256").update(token).digest("hex"), expiresAt: job.expiresAt });
+      await PasswordResetToken.create({ organizationId: organization._id, userId: user._id, tokenHash: createHash("sha256").update(token).digest("hex"), expiresAt: new Date(Date.now() + 30 * 60_000) });
       payload = { to: user.email, ...emailPasswordReset(user.name, url.toString()) };
       await EmailOutbox.updateOne({ _id: job._id }, { $set: { kind: "email", payload: encrypt(payload) } });
     } else payload = decrypt<Parameters<typeof sendEmail>[0]>(job.payload);
@@ -60,4 +72,5 @@ export async function processEmailOutbox() {
     await EmailOutbox.updateOne({ _id: job._id }, { $set: { lockedUntil: null, nextAt: new Date(Date.now() + Math.min(600_000, 30_000 * 2 ** job.attempts)) } });
     console.warn("[Email outbox] Delivery deferred; encrypted job retained for retry.");
   }
+  return true;
 }

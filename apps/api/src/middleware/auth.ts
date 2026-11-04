@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { config } from "../config.js";
-import { Organization, User, type UserRole } from "../models.js";
+import { Organization, User, RefreshSession, type UserRole } from "../models.js";
 import type { PublicUserSource } from "../services/publicUser.js";
 
 export interface AuthUser {
@@ -12,6 +12,9 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   team: string;
+  sessionId?: string;
+  mfaVerified?: boolean;
+  personnelManager?: boolean;
 }
 
 declare global {
@@ -46,7 +49,23 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       res.status(401).json({ message: "Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại." });
       return;
     }
-    req.auth = { id: String(user._id), organizationId: String(user.organizationId), name: user.name, email: user.email, role: user.role, team: user.team || "" };
+    const session = typeof claims.sid === "string" ? await RefreshSession.findOne({ familyId: claims.sid, userId: user._id,
+      organizationId: user.organizationId, tokenVersion: user.tokenVersion || 0, revokedAt: null, expiresAt: { $gt: new Date() } }).lean<{ mfaVerified?: boolean }>() : null;
+    if (claims.sid !== undefined && !session) {
+      res.status(401).json({ message: "Phiên đăng nhập đã bị thu hồi." });
+      return;
+    }
+    req.auth = { id: String(user._id), organizationId: String(user.organizationId), name: user.name, email: user.email, role: user.role, team: user.team || "", sessionId: typeof claims.sid === "string" ? claims.sid : undefined, mfaVerified: Boolean(session?.mfaVerified) };
+    req.auth.personnelManager = Boolean(user.personnelManager);
+    const securityPath = /^\/api\/(auth\/(me|logout|logout-all)|profile(?:\/.*)?)$/.test(req.originalUrl.split("?")[0]);
+    if (!securityPath && user.mustChangePassword) {
+      res.status(403).json({ message: "Bạn cần đổi mật khẩu được cấp trước khi tiếp tục.", code: "PASSWORD_CHANGE_REQUIRED" });
+      return;
+    }
+    if (!securityPath && ((user.mfaEnabled && !session?.mfaVerified) || (config.DEPLOYMENT_MODE === "pilot" && ["org_admin", "platform_admin"].includes(user.role) && !user.mfaEnabled))) {
+      res.status(403).json({ message: "Cần hoàn tất xác thực hai bước trong Hồ sơ cá nhân.", code: "MFA_REQUIRED" });
+      return;
+    }
     next();
   } catch (error) {
     next(error);

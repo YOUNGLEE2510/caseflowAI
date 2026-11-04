@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import { config } from "../config.js";
-import { AuditLog, Notification } from "../models.js";
+import { AuditLog, Notification, CaseRecord } from "../models.js";
 import type { UserRole } from "../models.js";
 
 /* ── Audit Log Helper ── */
@@ -53,7 +53,12 @@ interface NotifyParams {
 
 export async function notify(params: NotifyParams) {
   try {
-    await Notification.create(params);
+    const record = params.relatedCaseId ? await CaseRecord.findOne({ _id: params.relatedCaseId, organizationId: params.organizationId }).select("deliveryEvents").lean<{ deliveryEvents?: Array<{ _id: unknown }> }>() : null;
+    const event = record?.deliveryEvents?.at(-1);
+    if (event) {
+      const deliveryKey = `${params.organizationId}:${event._id}:${params.userId}:${params.type}`;
+      await Notification.updateOne({ deliveryKey }, { $setOnInsert: { ...params, deliveryKey } }, { upsert: true });
+    } else await Notification.create(params);
   } catch (error) {
     console.error("Notification create failed:", error);
   }
@@ -62,9 +67,7 @@ export async function notify(params: NotifyParams) {
 export async function notifyMany(userIds: string[], base: Omit<NotifyParams, "userId">) {
   if (userIds.length === 0) return;
   try {
-    await Notification.insertMany(
-      userIds.map((userId) => ({ ...base, userId }))
-    );
+    for (const userId of userIds) await notify({ ...base, userId });
   } catch (error) {
     console.error("Bulk notification failed:", error);
   }

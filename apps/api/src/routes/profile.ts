@@ -1,9 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { consumeAuthAttempt } from "../services/authThrottle.js";
 import { z } from "zod";
 import { HttpError } from "../middleware/error.js";
 import { User, AuditLog } from "../models.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
+import { currentPasswordSchema, newPasswordSchema } from "../services/passwordPolicy.js";
 
 export const profileRouter = Router();
 
@@ -20,8 +22,8 @@ const updateProfileSchema = z.object({
 });
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(6).max(128),
-  newPassword: z.string().min(10).max(128).refine(value => Buffer.byteLength(value, "utf8") <= 72, "Mật khẩu không được vượt quá 72 byte.")
+  currentPassword: currentPasswordSchema,
+  newPassword: newPasswordSchema
 });
 
 /* ── Get own profile ── */
@@ -90,6 +92,7 @@ profileRouter.patch("/profile", async (req, res) => {
 
 profileRouter.post("/profile/change-password", async (req, res) => {
   const input = changePasswordSchema.parse(req.body);
+  await consumeAuthAttempt(`${req.auth!.organizationId}:${req.auth!.id}`, "password-step-up");
   const user = await User.findOne({
     _id: req.auth!.id,
     organizationId: req.auth!.organizationId,
@@ -107,7 +110,7 @@ profileRouter.post("/profile/change-password", async (req, res) => {
   const passwordHash = await bcrypt.hash(input.newPassword, 12);
   const updated = await User.updateOne(
     { _id: req.auth!.id, organizationId: req.auth!.organizationId, active: true, passwordHash: user.passwordHash },
-    { $set: { passwordHash }, $inc: { tokenVersion: 1 } }
+    { $set: { passwordHash, mustChangePassword: false }, $inc: { tokenVersion: 1 } }
   );
 
   if (updated.modifiedCount !== 1) throw new HttpError(409, "Tài khoản đã thay đổi. Vui lòng thử lại.");

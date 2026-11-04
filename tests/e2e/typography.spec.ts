@@ -11,9 +11,12 @@ const roles = [
 for (const role of roles) {
   test(`consistent text and layout for ${role.name}`, async ({ page }) => {
     test.setTimeout(300000);
+    const pageErrors: string[] = [];
+    page.on("pageerror", error => pageErrors.push(error.message));
+    page.on("console", message => { if (message.type() === "error" && message.text().startsWith("Uncaught error in component tree:")) pageErrors.push(message.text()); });
     await mkdir("artifacts/typography", { recursive: true });
     await page.goto("/login");
-    await page.getByLabel("Mã tổ chức").fill("minh-khai-university");
+    await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
     await page.getByLabel("Email tổ chức").fill(role.email);
     await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
@@ -22,7 +25,9 @@ for (const role of roles) {
       await page.setViewportSize({ width, height: 1000 });
       for (const route of role.routes) {
         await page.goto(`/${route}`);
-        await expect(page.locator(".content")).toBeVisible();
+        try { await expect(page.locator(".content")).toBeVisible(); }
+        catch { throw new Error(`${role.name} /${route} at ${width}px; JavaScript errors: ${pageErrors.join("; ")}`); }
+        expect(pageErrors, `${role.name} /${route} at ${width}px`).toEqual([]);
         await expect(page.locator(".content .spinner")).toHaveCount(0);
         await expect(page.locator(".content .state-error")).toHaveCount(0);
         if (route === "overview" && role.name !== "requester") {

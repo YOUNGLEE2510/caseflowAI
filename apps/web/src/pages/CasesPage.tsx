@@ -56,6 +56,7 @@ export function CasesPage() {
     params.set("page", page);
     params.set("queue", queue);
     params.set("limit", viewMode === "board" ? "50" : "8");
+    if (viewMode === "board") params.set("includeCounts", "true");
     if (search) params.set("search", search);
     if (user?.role === "requester") params.set("mine", "true");
     return `/cases?${params.toString()}`;
@@ -67,7 +68,7 @@ export function CasesPage() {
     next.delete("page");
     setSearchParams(next);
   }
-  const { data, loading, error, reload } = useApiData<{ cases: CaseRecord[]; page: number; total: number; limit: number; totalPages: number }>(path);
+  const { data, loading, error, reload } = useApiData<{ cases: CaseRecord[]; page: number; total: number; limit: number; totalPages: number; statusCounts?: Record<string, number> }>(path);
 
   function updateFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
@@ -175,7 +176,7 @@ export function CasesPage() {
       {loading ? <LoadingState label={text("Đang tải hàng đợi hồ sơ", "Loading case queue")} /> : null}
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
       {!loading && !error && data && viewMode === "board" ? (
-        data.cases.length ? <CaseKanbanBoard cases={data.cases} /> : (
+        data.cases.length ? <CaseKanbanBoard cases={data.cases} counts={data.statusCounts} onChanged={reload} /> : (
           <EmptyState title={text("Không có hồ sơ phù hợp", "No matching cases")} detail={text("Thay đổi bộ lọc để xem hàng đợi khác.", "Adjust the filters to view another queue.")} />
         )
       ) : null}
