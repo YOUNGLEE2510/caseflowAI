@@ -7,6 +7,7 @@ import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { Modal } from "../components/Modal";
 import { useLocale } from "../i18n";
 import { useConfirmation } from "../components/ConfirmationProvider";
+import { institutionName, institutionEnglishName, organizationDisplayName } from "../utils/organizationBranding";
 
 const demoOrganizationSlug = "minh-khai-university";
 
@@ -146,7 +147,7 @@ export function LoginPage() {
         <div className="login-locale"><LocaleSwitcher /></div>
         <section className="login-panel">
           <div className="login-heading">
-            <span className="eyebrow">{text("Đại học Minh Khai", "Minh Khai University")}</span>
+            <span className="eyebrow">{text(institutionName, institutionEnglishName)}</span>
             <h1>{text("Chào mừng trở lại", "Welcome back")}</h1>
             <p>{text("Đăng nhập để tiếp tục công việc đang dang dở.", "Sign in to pick up where you left off.")}</p>
           </div>
@@ -155,7 +156,7 @@ export function LoginPage() {
             <label className="field">
               <span>{text("Mã tổ chức", "Organization code")}</span>
               {organizations.length ? <select value={organizationSlug} onChange={event => setOrganizationSlug(event.target.value)} required aria-label={text("Tổ chức", "Organization")}>
-                {organizations.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}
+                {organizations.map(item => <option key={item.slug} value={item.slug}>{organizationDisplayName(item.name, item.slug)}</option>)}
               </select> : <input
                 value={organizationSlug}
                 onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())}

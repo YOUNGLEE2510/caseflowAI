@@ -26,6 +26,7 @@ import type { NotificationRecord, Role } from "../types";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Avatar, formatRelative } from "./ui";
 import { useConfirmation } from "./ConfirmationProvider";
+import { organizationDisplayName } from "../utils/organizationBranding";
 
 interface NavItem {
   to: string;
@@ -140,7 +141,7 @@ export function AppShell() {
   const meta = routeMeta.find((item) => location.pathname.startsWith(item.prefix)) || routeMeta.at(-1)!;
   const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role));
   const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role));
-  const organizationName = user?.organizationName || text("Tổ chức của bạn", "Your organization");
+  const organizationName = organizationDisplayName(user?.organizationName || text("Tổ chức của bạn", "Your organization"), user?.organizationSlug);
   function toggleSidebar() {
     setCollapsed(current => {
       try { localStorage.setItem("caseflow.sidebar.collapsed", String(!current)); } catch { /* The toggle still works when browser storage is unavailable. */ }
