@@ -123,6 +123,35 @@ describe("QR code management", () => {
 });
 
 describe("public QR intake", () => {
+  it("rejects QR lookups and reports when the organization is suspended", async () => {
+    const token = await issue("A305");
+    const before = await models.CaseRecord.countDocuments({ organizationId: orgA._id });
+    await models.Organization.updateOne({ _id: orgA._id }, { $set: { status: "suspended" } });
+    try {
+      expect((await call(`/public/qr/${token}`, null)).status).toBe(404);
+      expect((await report(token, { ...valid, phone: "0948211111" })).status).toBe(404);
+      expect(await models.CaseRecord.countDocuments({ organizationId: orgA._id })).toBe(before);
+    } finally { await models.Organization.updateOne({ _id: orgA._id }, { $set: { status: "active" } }); }
+  });
+
+  it("does not deduplicate reports across properties with the same unit code", async () => {
+    await rental.RentalProperty.create({ organizationId: orgA._id, code: "TOWER-B", name: "Tower B", active: true });
+    const tokens: string[] = [];
+    for (const propertyCode of ["TOWER-A", "TOWER-B"]) {
+      const unit = await rental.RentalUnit.create({ organizationId: orgA._id, propertyCode, code: "SAME301", qrEnabled: true, qrVersion: 1 });
+      tokens.push(qr.signQrToken(String(orgA._id), String(unit._id), 1));
+    }
+    const payload = { ...valid, phone: "0948222222" };
+    const first = await report(tokens[0], payload);
+    const second = await report(tokens[1], payload);
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(second.body.code).not.toBe(first.body.code);
+    const replay = await report(tokens[1], payload);
+    expect(replay.status).toBe(200);
+    expect(replay.body).toMatchObject({ code: second.body.code, duplicate: true });
+  });
+
   it("shows the unit without resident details and rejects forged codes", async () => {
     const token = await issue("A301");
     const info = await call(`/public/qr/${token}`, null);
