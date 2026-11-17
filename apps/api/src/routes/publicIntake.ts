@@ -44,7 +44,7 @@ async function resolveUnit(token: string) {
     throw new HttpError(404, "Mã QR không hợp lệ hoặc đã được thay mới. Vui lòng liên hệ ban quản lý.");
   }
   const [organization, property] = await Promise.all([
-    Organization.findById(unit.organizationId).select("name settings.serviceDomain settings.holidayDates")
+    Organization.findOne({ _id: unit.organizationId, status: "active" }).select("name settings.serviceDomain settings.holidayDates")
       .lean<{ name: string; settings?: { serviceDomain?: string; holidayDates?: string[] } }>(),
     RentalProperty.findOne({ organizationId: unit.organizationId, code: unit.propertyCode, active: true }).select("name").lean<{ name: string }>()
   ]);
@@ -87,9 +87,9 @@ publicIntakeRouter.post("/public/qr/:token/reports", async (req, res) => {
   const organizationId = unit.organizationId;
   const since = new Date(Date.now() - 24 * 3_600_000);
   const recent = await CaseRecord.find({ organizationId, "intakeVerification.reporterPhone": input.phone, createdAt: { $gte: since } })
-    .select("code unitCode description createdAt").sort({ createdAt: -1 }).limit(PHONE_DAILY_LIMIT + 1)
-    .lean<Array<{ code: string; unitCode?: string; description: string; createdAt: Date }>>();
-  const duplicate = recent.find(item => item.unitCode === unit.code && item.description === input.description
+    .select("code propertyCode unitCode description createdAt").sort({ createdAt: -1 }).limit(PHONE_DAILY_LIMIT + 1)
+    .lean<Array<{ code: string; propertyCode?: string; unitCode?: string; description: string; createdAt: Date }>>();
+  const duplicate = recent.find(item => item.propertyCode === unit.propertyCode && item.unitCode === unit.code && item.description === input.description
     && Date.now() - item.createdAt.getTime() < DUPLICATE_WINDOW_MS);
   if (duplicate) {
     res.status(200).json({ code: duplicate.code, duplicate: true, message: "Phản ánh này đã được ghi nhận trước đó." });
