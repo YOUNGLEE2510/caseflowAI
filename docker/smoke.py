@@ -36,7 +36,7 @@ def main():
     status, _, _ = request("/health")
     assert status == 200, "API health"
     status, body, headers = request("/auth/login", "POST", {
-        "organizationSlug": "minh-khai-university", "email": "student@caseflow.local",
+        "organizationSlug": "caseflow-rental-local", "email": "nguyen.anh@cudan.canho-demo.local",
         "password": "Demo123!", "remember": False
     })
     assert status == 200, "Demo login"
@@ -99,7 +99,7 @@ def main():
     assert status == 401, "Replacement family should be revoked"
     print("PASS replay revokes refresh family")
 
-    request("/auth/login", "POST", {"organizationSlug": "minh-khai-university", "email": "student@caseflow.local", "password": "Demo123!"})
+    request("/auth/login", "POST", {"organizationSlug": "caseflow-rental-local", "email": "nguyen.anh@cudan.canho-demo.local", "password": "Demo123!"})
     status, _, _ = request("/auth/logout", "POST", token="expired-access-token")
     assert status == 200, "Cookie logout with expired access"
     status, _, _ = request("/auth/refresh", "POST")

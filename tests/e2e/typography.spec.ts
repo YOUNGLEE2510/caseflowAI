@@ -2,10 +2,10 @@ import { test, expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
 const roles = [
-  { name: "requester", email: "student@caseflow.local", routes: ["overview", "cases", "cases/new", "knowledge", "profile"] },
-  { name: "agent", email: "agent@caseflow.local", routes: ["overview", "cases", "knowledge", "incidents", "profile"] },
-  { name: "manager", email: "manager@caseflow.local", routes: ["overview", "cases", "knowledge", "incidents", "services", "users", "profile"] },
-  { name: "admin", email: "admin@caseflow.local", routes: ["overview", "system", "services", "users"] }
+  { name: "requester", email: "nguyen.anh@cudan.canho-demo.local", routes: ["overview", "cases", "cases/new", "knowledge", "profile"] },
+  { name: "agent", email: "tran.khoi@canho-demo.local", routes: ["overview", "cases", "knowledge", "incidents", "profile"] },
+  { name: "manager", email: "pham.ha@canho-demo.local", routes: ["overview", "cases", "knowledge", "incidents", "services", "users", "profile"] },
+  { name: "admin", email: "tran.khoa@canho-demo.local", routes: ["overview", "system", "services", "users"] }
 ];
 
 for (const role of roles) {
@@ -16,7 +16,7 @@ for (const role of roles) {
     page.on("console", message => { if (message.type() === "error" && message.text().startsWith("Uncaught error in component tree:")) pageErrors.push(message.text()); });
     await mkdir("artifacts/typography", { recursive: true });
     await page.goto("/login");
-    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
     await page.getByLabel("Email tài khoản").fill(role.email);
     await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

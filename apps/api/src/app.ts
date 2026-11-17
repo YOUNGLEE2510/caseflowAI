@@ -77,6 +77,21 @@ app.use("/api/auth/password-reset/confirm", rateLimit({
   windowMs: 15 * 60_000, limit: 10, keyGenerator: req => `reset-confirm:${req.ip || "unknown"}`,
   standardHeaders: "draft-7", legacyHeaders: false, message: passwordResetLimitMessage
 }));
+// Public QR intake: per-code limits stop flooding one unit; per-IP limits are loose
+// because many residents may share one building or carrier NAT address.
+const qrLimitMessage = { message: "Bạn gửi quá nhiều lần. Vui lòng thử lại sau hoặc gọi trực tiếp ban quản lý." };
+const qrCodeKey = (req: express.Request) => createHash("sha256").update(String(req.params.token || "")).digest("hex");
+app.use("/api/public/qr", rateLimit({
+  windowMs: 15 * 60_000, limit: 300, keyGenerator: req => `qr-ip:${req.ip || "unknown"}`,
+  standardHeaders: "draft-7", legacyHeaders: false, message: qrLimitMessage
+}));
+app.post("/api/public/qr/:token/reports", rateLimit({
+  windowMs: 60 * 60_000, limit: 6, keyGenerator: req => `qr-code:${qrCodeKey(req)}`,
+  standardHeaders: "draft-7", legacyHeaders: false, message: qrLimitMessage
+}), rateLimit({
+  windowMs: 60 * 60_000, limit: 40, keyGenerator: req => `qr-report-ip:${req.ip || "unknown"}`,
+  standardHeaders: "draft-7", legacyHeaders: false, message: qrLimitMessage
+}), (_req, _res, next) => next());
 app.use("/api", apiRouter);
 app.use(notFound);
 app.use(errorHandler);

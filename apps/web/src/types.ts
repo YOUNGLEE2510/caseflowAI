@@ -68,6 +68,14 @@ export interface CaseRecord {
   propertyCode?: string;
   unitCode?: string;
   assetCode?: string;
+  intakeVerification?: {
+    status: "pending" | "verified" | "rejected";
+    reporterName?: string;
+    reporterPhone?: string;
+    verifiedAt?: string | null;
+    verifiedByName?: string;
+    note?: string;
+  };
   ai: {
     processingStatus?: "queued" | "running" | "complete" | "failed" | "cancelled";
     classification: string;

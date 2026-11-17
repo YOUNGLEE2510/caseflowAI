@@ -5,9 +5,8 @@ import { withAiBudget } from "../services/aiBudget.js";
 import { suggestPriority } from "../services/prioritySuggestion.js";
 
 export async function processCaseTriage(target?: { caseId: string; organizationId: string }) {
-  const organizations = config.DOMAIN_PROFILE === "rental"
-    ? await Organization.find({ status: "active", "settings.serviceDomain": "rental" }).select("_id").lean() : null;
-  const record = await CaseRecord.findOneAndUpdate({ ...(organizations ? { organizationId: { $in: organizations.map(item => item._id) } } : {}),
+  const organizations = await Organization.find({ status: "active" }).select("_id").lean();
+  const record = await CaseRecord.findOneAndUpdate({ organizationId: { $in: organizations.map(item => item._id) },
     ...(target ? { _id: target.caseId, organizationId: target.organizationId } : {}),
     "ai.reviewStatus": "pending", $or: [
     { "ai.processingStatus": "queued" },

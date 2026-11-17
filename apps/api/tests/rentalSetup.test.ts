@@ -12,7 +12,7 @@ const run = promisify(execFile);
 let database: MongoMemoryServer;
 let directory: string;
 beforeAll(async () => {
-  database = await MongoMemoryServer.create();
+  database = await MongoMemoryServer.create({ instance: { launchTimeout: 120000 } });
   directory = await mkdtemp(join(tmpdir(), "caseflow-seed-test-"));
   await mongoose.connect(database.getUri(), { dbName: "rental_seed_test" });
 }, 120000);
@@ -37,7 +37,11 @@ it("seeds portable credentials, an admin and chronological cases without overwri
     if (item.closedAt) expect(item.resolvedAt.getTime()).toBeLessThanOrEqual(item.closedAt.getTime());
   }
   const credentials = JSON.parse(await readFile(credentialsFile, "utf8"));
-  expect(credentials.credentials.some((item: { email: string }) => item.email === "admin@rental.caseflow.local")).toBe(true);
+  expect(credentials.credentials.some((item: { email: string }) => item.email === "tran.khoa@canho-demo.local")).toBe(true);
+  // Staff are split into departments, each service routed to one of them.
+  expect(await db.collection("users").countDocuments({ organizationId: org!._id, role: { $ne: "requester" } })).toBe(19);
+  expect(new Set((await db.collection("servicedefinitions").find({ organizationId: org!._id }).toArray()).map(item => item.team)).size).toBe(5);
+  expect(await db.collection("rentalunits").countDocuments({ organizationId: org!._id, occupancyStatus: "vacant", readinessStatus: "ready", residentIds: { $size: 0 } })).toBe(1);
   await db.collection("caserecords").updateOne({ _id: cases[0]._id }, { $set: { title: "Preserve existing edits" } });
   await run(process.execPath, ["--import", "tsx", script], { env, timeout: 60000 });
   expect(await db.collection("caserecords").countDocuments({ organizationId: org!._id })).toBe(10);

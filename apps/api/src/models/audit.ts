@@ -17,6 +17,7 @@ const auditLogSchema = new Schema(
         "user.create", "user.update", "user.deactivate",
         "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.draft",
         "incident.create", "incident.update", "incident.resolve", "incident.link", "incident.unlink", "rental.catalog.update",
+        "rental.qr.issue", "rental.unit.status", "rental.qr.disable", "case.qr_intake", "case.qr_intake.review",
         "maintenance.create", "maintenance.update",
         "auth.login", "auth.logout", "auth.logout_all", "auth.mfa_enable", "auth.mfa_verify", "auth.microsoft_link", "attachment.download", "attachment.upload", "attachment.delete",
         "ai.classify", "ai.retrain", "case.export", "ai.training_export",

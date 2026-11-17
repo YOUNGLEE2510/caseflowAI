@@ -21,7 +21,7 @@ const createServiceSchema = z.object({
   key: z.string().trim().min(2).max(50).regex(/^[a-z][a-z0-9_]*$/),
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().max(500).default(""),
-  category: z.enum(["it_access", "academic_records", "student_services", "facilities", "finance", "general_support"]),
+  category: z.enum(["water", "electrical", "internet", "appliances", "access_security", "general_support"]),
   team: z.string().trim().min(2).max(60),
   slaHours: z.number().int().min(1).max(720),
   escalationHours: z.number().int().min(1).max(720).nullable().default(null),

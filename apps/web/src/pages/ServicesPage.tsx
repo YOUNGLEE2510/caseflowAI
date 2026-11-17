@@ -13,11 +13,6 @@ const classificationHints: Record<string, { vi: string; en: string }> = {
   internet: { vi: "mất mạng, Wi-Fi yếu, kết nối chập chờn, bộ định tuyến", en: "internet outage, weak Wi-Fi, unstable connection, router" },
   appliances: { vi: "điều hòa, bình nóng lạnh, tủ lạnh, máy giặt, thiết bị hỏng", en: "air conditioner, water heater, refrigerator, washing machine, faulty appliance" },
   access_security: { vi: "khóa cửa, thẻ ra vào, cửa chung, an ninh, người lạ", en: "door lock, access card, entrance, security, unauthorized visitor" },
-  it_access: { vi: "đăng nhập, mật khẩu, email xác thực, tài khoản, Wi-Fi, cổng sinh viên", en: "sign in, password, verification email, account, Wi-Fi, student portal" },
-  academic_records: { vi: "học phần, lịch học, đăng ký môn, bảng điểm, điều kiện tốt nghiệp", en: "course, class schedule, enrollment, transcript, graduation requirements" },
-  student_services: { vi: "thẻ sinh viên, giấy xác nhận, hỗ trợ đời sống, thủ tục", en: "student card, confirmation letter, wellbeing support, procedure" },
-  facilities: { vi: "phòng học, thiết bị, cơ sở vật chất, điện, mạng", en: "classroom, equipment, facilities, electricity, network" },
-  finance: { vi: "học phí, công nợ, giao dịch, hóa đơn, miễn giảm", en: "tuition, balance, transaction, invoice, fee waiver" },
   general_support: { vi: "hỗ trợ chung, phản ánh, tư vấn, chưa xác định đơn vị phụ trách", en: "general support, feedback, guidance, unassigned service request" }
 };
 

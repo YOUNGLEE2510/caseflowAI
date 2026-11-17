@@ -1,8 +1,8 @@
 # CaseFlow AI
 
-Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI hỗ trợ. Hướng ứng dụng hiện tại là tiếp nhận phản ánh và điều phối sửa chữa cho chuỗi căn hộ cho thuê: quản lý cơ sở/căn/thiết bị, quyền gửi theo căn, liên kết phản ánh vào sự cố chung, giao kỹ thuật và lịch hẹn. Dữ liệu trường cũ được giữ riêng; fixture giáo dục vẫn dùng cho kiểm thử hồi quy.
+Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI hỗ trợ. Hướng ứng dụng hiện tại là tiếp nhận phản ánh và điều phối sửa chữa cho chuỗi căn hộ cho thuê: quản lý cơ sở/căn/thiết bị, quyền gửi theo căn, liên kết phản ánh vào sự cố chung, giao kỹ thuật và lịch hẹn. Sản phẩm chỉ còn một miền nghiệp vụ là căn hộ cho thuê; chế độ trường học đã được gỡ khỏi mã, dữ liệu và test.
 
-Profile `DOMAIN_PROFILE=rental` dùng TF-IDF + Logistic Regression huấn luyện từ 60 câu mô phỏng viết tay, không phải dữ liệu khách thuê thật. Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
+Bộ phân loại dùng TF-IDF + Logistic Regression huấn luyện từ 60 câu mô phỏng viết tay, không phải dữ liệu khách thuê thật. Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
 
 ## Giá trị chính
 
@@ -87,15 +87,25 @@ Mã đơn vị căn hộ: `caseflow-rental-demo`. Tổ chức `caseflow-rental-i
 
 Mật khẩu ngẫu nhiên được giữ trong tệp cục bộ `artifacts/rental-setup/credentials.json`, không được commit hay công khai. Xem [luồng căn hộ](docs/QUICKSTART.md#5-thử-luồng-sự-cố-chung-cho-căn-hộ). Không dùng tài khoản demo khi pilot.
 
-| Vai trò | Email |
-|---|---|
-| Người thuê A301 | `resident@rental.caseflow.local` |
-| Người thuê A302 | `resident2@rental.caseflow.local` |
-| Người thuê A303 | `resident4@rental.caseflow.local` |
-| Kỹ thuật viên | `technician@rental.caseflow.local` |
-| Quản lý vận hành | `manager@rental.caseflow.local` |
+Nhân sự chia theo 7 bộ phận; email dạng `ho.ten@canho-demo.local` (đuôi `.local` không nhận thư thật), chức vụ và bộ phận nằm trong hồ sơ nhân sự. Danh sách đầy đủ ở `apps/api/src/demo/rentalOrg.ts`.
 
-Fixture trường đại học chỉ còn phục vụ kiểm thử tương thích trong database cô lập; không phải luồng demo căn hộ và không cần chạy seed trường trên Atlas.
+| Bộ phận | Người đại diện | Email | Phụ trách |
+|---|---|---|---|
+| Ban điều hành | Trần Minh Khoa – Giám đốc vận hành (quản trị) | `tran.khoa@canho-demo.local` | Toàn bộ tổ chức |
+| Ban điều hành | Nguyễn Gia Trang – Trưởng phòng vận hành | `nguyen.trang@canho-demo.local` | Điều phối, quản lý nhân sự |
+| Chăm sóc cư dân | Phạm Thu Hà – Trưởng bộ phận | `pham.ha@canho-demo.local` | Hỗ trợ chung, lễ tân |
+| Kỹ thuật điện nước | Vũ Đức Thắng – Tổ trưởng | `vu.thang@canho-demo.local` | Cấp thoát nước, điện |
+| Kỹ thuật điện lạnh | Trần Hữu Linh – Tổ trưởng | `tran.linh@canho-demo.local` | Thiết bị căn hộ |
+| Công nghệ thông tin | Trần Văn Khôi – Kỹ thuật viên mạng | `tran.khoi@canho-demo.local` | Internet |
+| An ninh | Ngô Đình Phúc – Đội trưởng | `ngo.phuc@canho-demo.local` | Ra vào và an ninh |
+| Buồng phòng | Trần Thị Trinh – Tổ trưởng | `tran.trinh@canho-demo.local` | Dọn căn, sẵn sàng cho thuê |
+| Người thuê A301 | Đặng Minh Quân | `dang.quan@cudan.canho-demo.local` | — |
+
+Trang **Căn hộ** theo dõi mỗi căn trên hai trục: tình trạng thuê (Trống / Đã đặt cọc / Đang cho thuê / Sắp trả căn) và tình trạng sẵn sàng (Chờ dọn / Đã dọn / Đang tu sửa / Sẵn sàng). Căn **cho thuê được** khi trống, sẵn sàng và không còn người thuê. Nhân viên chỉ cập nhật dọn dẹp/sửa chữa; quản lý đổi tình trạng thuê và làm thủ tục trả căn (gỡ người thuê, chuyển sang chờ dọn). Mỗi thay đổi có ghi chú và lịch sử.
+
+Để có dữ liệu vận hành đủ lớn khi demo (3 cơ sở, 120 căn, khoảng 900 phản ánh trong 6 tháng), chạy `npm run rental:dataset` sau bước setup căn hộ; xem [dữ liệu mô phỏng](docs/QUICKSTART.md#dữ-liệu-vận-hành-mô-phỏng-quy-mô-vừa). Toàn bộ là dữ liệu giả lập, không dùng để đánh giá AI.
+
+`npm run seed` chỉ dùng cho database local/E2E: tạo tổ chức `caseflow-rental-local` với cùng cơ cấu nhân sự, mật khẩu thử nghiệm `Demo123!`, và từ chối chạy trên Atlas hoặc chế độ pilot.
 
 ## Kiểm thử
 

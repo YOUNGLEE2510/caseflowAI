@@ -12,6 +12,7 @@ import { enqueueEmail } from "../services/emailOutbox.js";
 import { emailCaseResolved } from "../services/emailService.js";
 import { config } from "../config.js";
 import { resolveAiReviewStatus } from "../services/routing.js";
+import { RentalUnit } from "../models/rental.js";
 import { caseScope, presentCase, validateStatusTransition } from "../services/casePolicy.js";
 import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 export const caseActionsRouter = Router();
@@ -111,6 +112,10 @@ caseActionsRouter.patch(
     }
 
     if (["resolved", "closed"].includes(record.status) && (input.serviceKey || input.assigneeId !== undefined || input.team)) throw new HttpError(422, "Hãy mở lại hồ sơ trước khi đổi phân công hoặc dịch vụ.");
+    // Unverified QR submissions may be triaged and prioritised, but not assigned or worked on.
+    if (record.intakeVerification?.status === "pending" && (input.assigneeId || (input.status && !["new", "triaged"].includes(input.status)))) {
+      throw new HttpError(422, "Cần xác minh người gửi qua mã QR trước khi giao việc hoặc xử lý.");
+    }
 
     const events: any[] = [];
     const markAiReviewed = (selectedCategory: string) => {
@@ -298,6 +303,58 @@ async function requesterCase(req: Request) {
   if (record.mergedIntoId) throw new HttpError(409, "Hồ sơ đã gộp. Vui lòng thao tác trên hồ sơ chính.");
   return record;
 }
+
+const intakeDecisionSchema = z.object({
+  decision: z.enum(["verified", "rejected"]),
+  residentId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  note: z.string().trim().min(5).max(500)
+}).strict();
+
+// Residents of the case's unit, so staff can link a verified QR submission to an existing account.
+caseActionsRouter.get("/cases/:id/intake-verification/residents", validateObjectId("id"), requireRoles("agent", "manager", "org_admin", "platform_admin"), async (req, res) => {
+  const record = await CaseRecord.findOne({ _id: req.params.id, ...caseScope(req.auth!) }).select("propertyCode unitCode intakeVerification.status")
+    .lean<{ propertyCode?: string; unitCode?: string; intakeVerification?: { status: string } }>();
+  if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
+  if (!record.intakeVerification) throw new HttpError(409, "Hồ sơ không được gửi qua mã QR.");
+  const unit = await RentalUnit.findOne({ organizationId: req.auth!.organizationId, propertyCode: record.propertyCode, code: record.unitCode })
+    .select("residentIds").lean<{ residentIds: mongoose.Types.ObjectId[] }>();
+  const residents = unit ? await User.find({ _id: { $in: unit.residentIds }, organizationId: req.auth!.organizationId, role: "requester", active: true })
+    .select("name").sort({ name: 1 }).limit(10).lean() : [];
+  res.json({ residents: residents.map(item => ({ _id: String(item._id), name: item.name })) });
+});
+
+// Staff confirm (usually by calling back) who sent a QR submission, or reject it as spam/mistake.
+caseActionsRouter.post("/cases/:id/intake-verification", validateObjectId("id"), requireRoles("agent", "manager", "org_admin", "platform_admin"), async (req, res) => {
+  const input = intakeDecisionSchema.parse(req.body);
+  const record = await CaseRecord.findOne({ _id: req.params.id, ...caseScope(req.auth!) });
+  if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
+  if (record.intakeVerification?.status !== "pending") throw new HttpError(409, "Hồ sơ không ở trạng thái chờ xác minh.");
+  if (input.decision === "rejected" && input.residentId) throw new HttpError(422, "Không chọn người thuê khi từ chối.");
+  const now = new Date();
+  if (input.residentId) {
+    // The resident must be allowed to report for this exact unit.
+    const unit = await RentalUnit.exists({ organizationId: req.auth!.organizationId, propertyCode: record.propertyCode, code: record.unitCode, residentIds: input.residentId });
+    const resident = unit ? await User.findOne({ _id: input.residentId, organizationId: req.auth!.organizationId, role: "requester", active: true })
+      .select("name").lean<{ _id: mongoose.Types.ObjectId; name: string }>() : null;
+    if (!resident) throw new HttpError(422, "Người thuê không thuộc căn của hồ sơ.");
+    record.requesterId = resident._id;
+    record.requesterName = resident.name;
+  }
+  Object.assign(record.intakeVerification, { status: input.decision, verifiedAt: now, verifiedById: req.auth!.id, verifiedByName: req.auth!.name, note: input.note });
+  if (input.decision === "verified") {
+    record.events.push({ type: "intake_verified", label: input.residentId ? `Đã xác minh người gửi: ${record.requesterName}` : "Đã xác minh phản ánh qua mã QR (người gửi chưa có tài khoản)",
+      actorId: req.auth!.id, actorName: req.auth!.name, metadata: { note: input.note } });
+  } else {
+    record.status = "closed";
+    record.closedAt = now;
+    record.ai.processingStatus = "cancelled";
+    record.events.push({ type: "intake_rejected", label: "Từ chối phản ánh qua mã QR", actorId: req.auth!.id, actorName: req.auth!.name, internal: true, metadata: { note: input.note } });
+  }
+  await record.save();
+  await logAudit({ ...auditFromReq(req), action: "case.qr_intake.review", resource: "case", resourceId: String(record._id),
+    changes: { decision: input.decision, linkedResident: Boolean(input.residentId) } }, req);
+  res.json({ case: presentCase(record, req.auth!.role) });
+});
 
 caseActionsRouter.post("/cases/:id/satisfaction", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
   const input = satisfactionSchema.parse(req.body);

@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
@@ -10,11 +10,11 @@ async function login(page: Page, email: string) {
 }
 
 test("requester rating, close and reopen persist", async ({ page }) => {
-  const credentials = { organizationSlug: "minh-khai-university", password: "Demo123!" };
-  const studentLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "student@caseflow.local" } });
+  const credentials = { organizationSlug: "caseflow-rental-local", password: "Demo123!" };
+  const studentLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "nguyen.anh@cudan.canho-demo.local" } });
   expect(studentLogin.ok()).toBeTruthy();
   const student = await studentLogin.json();
-  const managerLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "manager@caseflow.local" } });
+  const managerLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "pham.ha@canho-demo.local" } });
   expect(managerLogin.ok()).toBeTruthy();
   const manager = await managerLogin.json();
   const staffHeaders = { Authorization: `Bearer ${manager.token}` };
@@ -31,7 +31,7 @@ test("requester rating, close and reopen persist", async ({ page }) => {
   expect((await page.request.patch(`/api/cases/${fixture._id}`, { headers: staffHeaders, data: { confirmAi: true, assigneeId: assignee.id, status: "in_progress" } })).ok()).toBeTruthy();
   expect((await page.request.patch(`/api/cases/${fixture._id}`, { headers: staffHeaders, data: { status: "resolved", resolutionNote: "Completed deterministic lifecycle fixture." } })).ok()).toBeTruthy();
   await page.context().clearCookies();
-  await login(page, "student@caseflow.local");
+  await login(page, "nguyen.anh@cudan.canho-demo.local");
   await page.goto(`/cases/${fixture._id}`);
   await page.getByRole("button", { name: "5/5", exact: true }).click();
   await page.getByRole("dialog", { name: "Xác nhận thao tác" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
@@ -48,7 +48,7 @@ test("requester rating, close and reopen persist", async ({ page }) => {
 });
 
 test("profile change survives reload", async ({ page }) => {
-  await login(page, "student2@caseflow.local");
+  await login(page, "tran.minh@cudan.canho-demo.local");
   await page.goto("/profile");
   await page.getByRole("button", { name: "Chỉnh sửa", exact: true }).click();
   await page.getByLabel("Họ tên", { exact: true }).fill("Người dùng kiểm thử QA");
@@ -59,7 +59,7 @@ test("profile change survives reload", async ({ page }) => {
 });
 
 test("review safeguards fit desktop and mobile", async ({ page }) => {
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   await page.goto("/cases");
   await page.locator(".case-link").first().click();
   await expect(page.getByText("Tệp nội bộ, không hiển thị cho người gửi phản ánh", { exact: true })).toBeVisible();
@@ -74,12 +74,13 @@ test("review safeguards fit desktop and mobile", async ({ page }) => {
 });
 
 test("incident modal lists every linked case on mobile", async ({ page }) => {
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/incidents");
-  await page.locator(".incident-card").filter({ hasText: "Gián đoạn cổng thông tin sinh viên" }).getByRole("button", { name: "Chi tiết", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Gián đoạn cổng thông tin sinh viên", exact: true });
-  await expect(dialog.getByRole("link")).toHaveCount(3);
+  await page.locator(".incident-card").filter({ hasText: "Mất Wi-Fi tầng 3 tòa A" }).getByRole("button", { name: "Điều phối", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Mất Wi-Fi tầng 3 tòa A", exact: true });
+  // The first list holds the linked requests; the coordination editor below adds its own actions.
+  await expect(dialog.locator(".incident-case-list").first().getByRole("link")).toHaveCount(3);
   expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   const titleWidth = await dialog.locator(".incident-case-list strong").first().evaluate(node => node.getBoundingClientRect().width);
   expect(titleWidth).toBeGreaterThan(200);
@@ -89,7 +90,7 @@ test("incident modal lists every linked case on mobile", async ({ page }) => {
 });
 
 test("mobile drawer traps focus, closes with Escape and excludes hidden links", async ({ page }) => {
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".sidebar")).toHaveAttribute("inert", "");
   const open = page.getByRole("button", { name: "Mở menu", exact: true }).filter({ visible: true });
@@ -109,7 +110,7 @@ test("operational KPIs and priority queue distinguish missing data from complete
   await page.route("**/api/analytics/csat", route => route.fulfill({ status: 200, json: {
     eligible: 0, responses: 0, responseRate: null, averageScore: null, distribution: []
   } }));
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   await expect(page.locator(".operations-progress")).toContainText("Chưa có dữ liệu");
   await expect(page.locator(".priority-table .badge-resolved, .priority-table .badge-closed")).toHaveCount(0);
   await page.route("**/api/analytics/csat", route => route.fulfill({ status: 503, json: { message: "Service unavailable" } }));

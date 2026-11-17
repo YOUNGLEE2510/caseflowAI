@@ -43,19 +43,13 @@ export async function findRelatedCases(source: RelatedCaseInput, items: RelatedC
 }
 
 // Explicit conservative defaults; deployments may supply validated JSON overrides.
-const keywordGroups: Record<string, string[]> = config.AI_FALLBACK_KEYWORDS || (config.DOMAIN_PROFILE === "rental" ? {
+const keywordGroups: Record<string, string[]> = config.AI_FALLBACK_KEYWORDS || {
   water: ["nước yếu", "mất nước", "rò nước", "ống nước", "tắc", "thoát nước", "bồn cầu"],
   electrical: ["mất điện", "rò điện", "tia lửa", "mùi khét", "aptomat", "ổ điện", "ổ cắm"],
   internet: ["wifi", "internet", "đường truyền", "modem", "mất mạng"],
   appliances: ["điều hòa", "máy lạnh", "máy giặt", "tủ lạnh", "bình nóng", "tivi", "bếp từ"],
   access_security: ["thẻ từ", "khóa", "chìa", "người lạ", "thoát hiểm", "cổng"]
-} : {
-  it_access: ["đăng nhập", "mật khẩu", "tài khoản", "wifi", "website", "phần mềm", "email"],
-  academic_records: ["bảng điểm", "điểm", "học phần", "đăng ký môn", "tiên quyết", "đồ án"],
-  student_services: ["xác nhận sinh viên", "giấy chứng nhận", "học bổng", "rèn luyện", "thẻ sinh viên"],
-  facilities: ["điện", "nước", "điều hòa", "phòng học", "thiết bị", "cơ sở vật chất"],
-  finance: ["học phí", "biên lai", "hoàn tiền", "thanh toán", "công nợ"]
-});
+};
 
 const CIRCUIT_THRESHOLD = 3;        // open after N consecutive failures
 const CIRCUIT_COOLDOWN_MS = 30_000; // try again after 30s

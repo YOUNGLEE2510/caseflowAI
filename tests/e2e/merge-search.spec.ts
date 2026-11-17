@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("indexed search finds unaccented prefixes and managers merge duplicates without losing history", async ({ page, request }, testInfo) => {
-  const login = await request.post("/api/auth/login", { data: { organizationSlug: "minh-khai-university", email: "student@caseflow.local", password: "Demo123!" } });
+  const login = await request.post("/api/auth/login", { data: { organizationSlug: "caseflow-rental-local", email: "nguyen.anh@cudan.canho-demo.local", password: "Demo123!" } });
   const { token } = await login.json();
   const marker = String(Date.now());
   const create = async (suffix: string) => {
@@ -13,8 +13,8 @@ test("indexed search finds unaccented prefixes and managers merge duplicates wit
   };
   const target = await create("hồ sơ chính"), source = await create("bản trùng");
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tài khoản").fill("manager@caseflow.local");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
+  await page.getByLabel("Email tài khoản").fill("pham.ha@canho-demo.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);

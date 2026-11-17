@@ -61,7 +61,8 @@ const channelLabels: Record<string, { vi: string; en: string }> = {
   phone: { vi: "Điện thoại", en: "Phone" },
   email: { vi: "Email", en: "Email" },
   walk_in: { vi: "Tiếp nhận trực tiếp", en: "Walk-in" },
-  api: { vi: "Hệ thống tích hợp", en: "Integrated system" }
+  api: { vi: "Hệ thống tích hợp", en: "Integrated system" },
+  qr: { vi: "Mã QR căn hộ", en: "Unit QR code" }
 };
 
 function formatFileSize(bytes: number) {
@@ -71,6 +72,7 @@ function formatFileSize(bytes: number) {
 }
 
 import { RelatedIncidentPanel } from "../components/RelatedIncidentPanel";
+import { IntakeVerificationPanel } from "../components/IntakeVerificationPanel";
 
 export function CaseDetailPage() {
   const { id } = useParams();
@@ -344,6 +346,8 @@ export function CaseDetailPage() {
       {uploadWarning ? <ErrorState message={uploadWarning} /> : null}
       {(location.state as { created?: boolean } | null)?.created ? <div role="status" className="analysis-review-note">{text("Đã tiếp nhận hồ sơ. Bạn có thể theo dõi tiến độ và bổ sung thông tin tại đây.", "Request received. Track progress and add information here.")}</div> : null}
 
+      {canOperate && record.intakeVerification ?
+        <IntakeVerificationPanel caseId={record._id} unitCode={record.unitCode} intake={record.intakeVerification} onChanged={reload} /> : null}
       {data?.case.propertyCode && ["manager", "org_admin", "platform_admin"].includes(user?.role || "") ?
         <RelatedIncidentPanel id={data.case._id} code={data.case.code} title={data.case.title} /> : null}
       <div className="case-detail-grid">

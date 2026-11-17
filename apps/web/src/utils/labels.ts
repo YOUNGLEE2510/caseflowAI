@@ -4,11 +4,6 @@ export const categoryLabels: Record<string, { vi: string; en: string }> = {
   internet: { vi: "Internet", en: "Internet" },
   appliances: { vi: "Thiết bị căn hộ", en: "Apartment appliances" },
   access_security: { vi: "Ra vào và an ninh", en: "Access and security" },
-  it_access: { vi: "Tài khoản và CNTT", en: "Accounts and IT" },
-  academic_records: { vi: "Học vụ", en: "Academic records" },
-  student_services: { vi: "Dịch vụ sinh viên", en: "Student services" },
-  facilities: { vi: "Cơ sở vật chất", en: "Facilities" },
-  finance: { vi: "Tài chính", en: "Finance" },
   general_support: { vi: "Hỗ trợ chung", en: "General support" }
 };
 
@@ -25,13 +20,19 @@ export function timelineLabel(event: { type: string; label: string }, locale: "v
     const to = statusLabels[transition[2]]?.[locale] || transition[2];
     return `${from} → ${to}`;
   }
-  const label = event.label.replace(/\b(water|electrical|internet|appliances|access_security|it_access|academic_records|student_services|facilities|finance|general_support)\b/g, key => categoryLabels[key][locale]);
+  const label = event.label.replace(/\b(water|electrical|internet|appliances|access_security|general_support)\b/g, key => categoryLabels[key][locale]);
   const channel = /^Tiếp nhận từ kênh (\w+)$/.exec(event.label);
   if (channel) {
-    const channels: Record<string, { vi: string; en: string }> = { portal: { vi: "Cổng trực tuyến", en: "Online portal" }, email: { vi: "Email", en: "Email" }, phone: { vi: "Điện thoại", en: "Phone" }, walk_in: { vi: "Tiếp nhận trực tiếp", en: "Walk-in" } };
+    const channels: Record<string, { vi: string; en: string }> = { portal: { vi: "Cổng trực tuyến", en: "Online portal" }, email: { vi: "Email", en: "Email" }, phone: { vi: "Điện thoại", en: "Phone" }, walk_in: { vi: "Tiếp nhận trực tiếp", en: "Walk-in" }, qr: { vi: "Mã QR căn hộ", en: "Unit QR code" } };
     return `${locale === "vi" ? "Tiếp nhận qua" : "Received via"} ${channels[channel[1]]?.[locale] || channel[1]}`;
   }
   if (locale === "vi") return label;
+  const qrIntake = /^Tiếp nhận qua mã QR căn (\S+)/.exec(event.label);
+  if (qrIntake) return `Received via QR code for unit ${qrIntake[1]} — sender not verified`;
+  const verified = /^Đã xác minh người gửi: (.+)$/.exec(event.label);
+  if (verified) return `Sender verified: ${verified[1]}`;
+  if (event.type === "intake_verified") return "QR submission verified (sender has no account)";
+  if (event.type === "intake_rejected") return "QR submission rejected";
   const assigned = /^Đã giao cho (.+)$/.exec(event.label);
   if (assigned) return `Assigned to ${assigned[1]}`;
   const rating = /^Người yêu cầu đánh giá (\d\/5)$/.exec(event.label);

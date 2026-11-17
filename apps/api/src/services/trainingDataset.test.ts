@@ -12,14 +12,14 @@ describe("reviewed training dataset export", () => {
       {
         title: "Khong vao duoc",
         description: "Tai khoan SV12345678 bi khoa",
-        category: "it_access",
+        category: "internet",
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
-        ai: { classification: "finance", confidence: 0.62, reviewStatus: "corrected", humanCorrectedLabel: "it_access", reviewedAt: new Date("2026-01-02T00:00:00.000Z") }
+        ai: { classification: "water", confidence: 0.62, reviewStatus: "corrected", humanCorrectedLabel: "internet", reviewedAt: new Date("2026-01-02T00:00:00.000Z") }
       },
-      { title: "Unreviewed", description: "Do not include", category: "finance", ai: { reviewStatus: undefined } }
+      { title: "Unreviewed", description: "Do not include", category: "water", ai: { reviewStatus: undefined } }
     ]);
 
-    expect(csv).toContain("Tai khoan [STUDENT_ID] bi khoa,it_access,finance,0.62");
+    expect(csv).toContain("Tai khoan [STUDENT_ID] bi khoa,internet,water,0.62");
     expect(csv).not.toContain("Unreviewed");
   });
 });

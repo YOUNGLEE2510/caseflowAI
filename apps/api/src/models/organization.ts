@@ -7,7 +7,7 @@ const organizationSchema = new Schema(
     slug: { type: String, required: true, unique: true, trim: true },
     status: { type: String, enum: ["active", "suspended"], default: "active" },
     settings: {
-      serviceDomain: { type: String, enum: ["education", "rental"], default: "education" },
+      serviceDomain: { type: String, enum: ["rental"], default: "rental" },
       locale: { type: String, default: "vi-VN" },
       timezone: { type: String, default: "Asia/Ho_Chi_Minh" },
       googleHostedDomains: { type: [String], default: [] },

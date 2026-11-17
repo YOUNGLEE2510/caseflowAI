@@ -6,11 +6,11 @@ Profile căn hộ `DOMAIN_PROFILE=rental` dùng `apps/ai/data/rental_demo.json`:
 
 Kiểm tra nhanh bằng `DOMAIN_PROFILE=rental python -m apps.ai.evaluate_rental_demo` (PowerShell: đặt `$env:DOMAIN_PROFILE="rental"` trước). Báo cáo tại `artifacts/ai-evaluation/rental-demo.json` có confusion matrix, precision/recall/F1 và dự đoán sai trên 12 câu kiểm tra mô phỏng riêng. Bộ này chỉ kiểm tra pipeline, không phải benchmark độc lập.
 
-Các ghi chú tạm hoãn bên dưới áp dụng cho dữ liệu nghiệp vụ thật và corpus trường cũ, không cấm huấn luyện profile demo căn hộ theo yêu cầu. Không thu thập tệp riêng tư hay tự sinh thêm dữ liệu qua API.
+Các ghi chú tạm hoãn bên dưới áp dụng cho dữ liệu nghiệp vụ thật, không cấm huấn luyện profile demo căn hộ theo yêu cầu. Không thu thập tệp riêng tư hay tự sinh thêm dữ liệu qua API.
 
 **Huấn luyện dữ liệu nghiệp vụ đang tạm hoãn.** Corpus PTIT đã bị loại khỏi phạm vi dữ liệu được sử dụng; công cụ crawl/OCR riêng đã được gỡ khỏi mã nguồn sau đợt kiểm tra ngày 01/11/2026: 282 mục gồm 268 mục cần duyệt, 11 trùng và 3 mục cách ly do dấu hiệu định danh; không có yêu cầu đã gán nhãn đủ điều kiện huấn luyện. Kiểm tra ngày 03/11/2026 xác nhận hai thư mục `artifacts/ptit-source` và `artifacts/ocr-build` không còn trên ổ đĩa. Không tự retrain và không gọi API để sinh thêm dữ liệu. Không thay đổi tài liệu nghiệp vụ trên Atlas hoặc Cloudinary.
 
-Model phân loại kèm theo chỉ là baseline demo 60 mẫu/6 nhãn, không phải bằng chứng chất lượng triển khai tại trường. SLA học từ dữ liệu mô phỏng chỉ là thử nghiệm; hạn xử lý thực tế do lịch phục vụ và quy tắc nghiệp vụ quyết định. Không công bố độ chính xác ngoài miền thành kết quả CaseFlow.
+Model phân loại kèm theo chỉ là baseline demo 60 mẫu/6 nhãn, không phải bằng chứng chất lượng triển khai thực tế. SLA học từ dữ liệu mô phỏng chỉ là thử nghiệm; hạn xử lý thực tế do lịch phục vụ và quy tắc nghiệp vụ quyết định. Không công bố độ chính xác ngoài miền thành kết quả CaseFlow.
 
 ## Thành phần hiện có
 
@@ -26,7 +26,7 @@ Model phân loại kèm theo chỉ là baseline demo 60 mẫu/6 nhãn, không ph
 
 ## Quyền riêng tư
 
-MongoDB Atlas giữ metadata. PDF/ảnh gốc ở Cloudinary dưới dạng authenticated/private, không công khai CCCD hay hồ sơ sinh viên. Tệp đính kèm **không tự động trở thành dữ liệu training**.
+MongoDB Atlas giữ metadata. PDF/ảnh gốc ở Cloudinary dưới dạng authenticated/private, không công khai CCCD hay hồ sơ người thuê. Tệp đính kèm **không tự động trở thành dữ liệu training**.
 
 Export phục vụ nghiên cứu và payload LLM dùng chung bước che định danh phổ biến. Regex không phải ẩn danh hoàn toàn: họ tên, địa chỉ, thông tin sức khỏe và nội dung tự do vẫn cần kiểm tra. Chỉ dùng dữ liệu đã có căn cứ cho phép và người phụ trách duyệt; không đưa dữ liệu cá nhân hoặc secrets vào Git.
 

@@ -5,42 +5,41 @@ from apps.ai.models.text_utils import extract_entities
 from apps.ai.routers.knowledge import retrieve_knowledge
 
 
-def test_training_taxonomy_matches_education_service_catalog():
+def test_training_taxonomy_matches_rental_service_catalog():
     assert set(TRAINING_EXAMPLES) == {
-        "it_access",
-        "academic_records",
-        "student_services",
-        "facilities",
-        "finance",
+        "water",
+        "electrical",
+        "internet",
+        "appliances",
+        "access_security",
         "general_support",
     }
     assert sum(len(samples) for samples in TRAINING_EXAMPLES.values()) == 60
 
 
-def test_classifies_login_request():
-    result = classify_text("Em không đăng nhập được tài khoản SIS và đã thử đặt lại mật khẩu")
-    assert result["label"] == "it_access"
+def test_classifies_internet_request():
+    result = classify_text("Wifi trong căn mất kết nối liên tục từ tối qua")
+    assert result["label"] == "internet"
     assert result["confidence"] > 0.2
 
 
-def test_entity_extraction_requires_a_student_id_prefix():
-    assert "studentId" not in extract_entities("Số điện thoại của em là 0912345678")
-    assert extract_entities("MSSV: 2020123456 cần được cập nhật") ["studentId"] == "MSSV: 2020123456"
+def test_entity_extraction_requires_an_identifier_prefix():
+    assert "studentId" not in extract_entities("Số điện thoại của tôi là 0912345678")
 
 
-def test_classifies_facilities_request():
-    result = classify_text("Điều hòa phòng D5-301 bị hỏng và lớp học rất nóng")
-    assert result["label"] == "facilities"
-    assert result["confidence"] > 0.5
+def test_classifies_appliance_request_with_location():
+    result = classify_text("Điều hòa phòng D5-301 bị hỏng")
+    assert result["label"] == "appliances"
+    assert result["confidence"] > 0.2
     assert result["extracted"]["location"] == "D5-301"
 
 
 def test_classifies_representative_requests():
     samples = {
-        "academic_records": "Điểm học phần cấu trúc dữ liệu chưa xuất hiện trong bảng điểm",
-        "student_services": "Em cần cấp giấy xác nhận sinh viên để vay vốn",
-        "finance": "Đã đóng học phí nhưng cổng thông tin vẫn báo còn công nợ",
-        "general_support": "Tôi cần gặp cán bộ để được hướng dẫn một thủ tục chung",
+        "water": "Ống nước dưới bồn rửa bị rò ra sàn",
+        "electrical": "Aptomat tổng tự ngắt khi bật bếp từ",
+        "access_security": "Thẻ từ không mở được cửa căn",
+        "general_support": "Tôi cần ban quản lý hướng dẫn thủ tục gia hạn hợp đồng",
     }
     for expected, text in samples.items():
         assert classify_text(text)["label"] == expected

@@ -6,14 +6,14 @@ const OTPAuth = createRequire(resolve(process.cwd(), "apps/api/package.json"))("
 
 async function login(page: Page, email: string, password = "Demo123!") {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
 }
 
 test("temporary password, MFA enrollment and recovery work across desktop and mobile", async ({ page, request }, testInfo) => {
-  const admin = await request.post("/api/auth/login", { data: { organizationSlug: "minh-khai-university", email: "admin@caseflow.local", password: "Demo123!" } });
+  const admin = await request.post("/api/auth/login", { data: { organizationSlug: "caseflow-rental-local", email: "tran.khoa@canho-demo.local", password: "Demo123!" } });
   expect(admin.ok()).toBe(true);
   const { token } = await admin.json();
   const email = `security-${Date.now()}@caseflow.local`;
@@ -60,13 +60,13 @@ test("temporary password, MFA enrollment and recovery work across desktop and mo
 });
 
 test("owner can cancel or confirm deletion of a mistaken upload", async ({ page, request }, testInfo) => {
-  const loginRes = await request.post("/api/auth/login", { data: { organizationSlug: "minh-khai-university", email: "student@caseflow.local", password: "Demo123!" } });
+  const loginRes = await request.post("/api/auth/login", { data: { organizationSlug: "caseflow-rental-local", email: "nguyen.anh@cudan.canho-demo.local", password: "Demo123!" } });
   const { token } = await loginRes.json();
   const create = await request.post("/api/cases", { headers: { Authorization: `Bearer ${token}` }, data: {
     title: `Xóa tệp nhầm ${Date.now()}`, description: "Hồ sơ kiểm thử xóa tệp.", serviceKey: "general_support", propertyCode: "TOWER-A", unitCode: "A301"
   } });
   const testCase = (await create.json()).case;
-  await login(page, "student@caseflow.local");
+  await login(page, "nguyen.anh@cudan.canho-demo.local");
   await expect(page).toHaveURL(/\/overview$/);
   await page.goto(`/cases/${testCase._id}`);
   await page.locator('input[type="file"]').setInputFiles({ name: "mistaken-private-file.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nSynthetic privacy test\n%%EOF") });

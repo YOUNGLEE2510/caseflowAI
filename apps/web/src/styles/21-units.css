@@ -1,0 +1,224 @@
+/* Unit board: letting status (border colour) and readiness (tag) per unit. */
+
+.units-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) minmax(180px, 260px);
+  gap: 12px;
+  align-items: end;
+}
+
+.units-search-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.units-search-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding-inline: 0;
+  background: transparent;
+}
+
+.unit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.unit-chip strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.unit-chip[aria-pressed="true"] {
+  border-color: var(--brand);
+  color: var(--brand-text);
+  background: var(--selected);
+}
+
+.unit-chip-success strong { color: var(--success); }
+.unit-chip-occ-notice strong,
+.unit-chip-ready-needs_cleaning strong { color: var(--warning); }
+.unit-chip-ready-under_repair strong { color: var(--danger); }
+
+.unit-floor {
+  display: grid;
+  gap: 10px;
+}
+
+.unit-floor h2 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.unit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.unit-tile {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.unit-tile:hover,
+.unit-tile:focus-visible {
+  border-color: var(--brand);
+}
+
+.unit-occ-vacant { border-left-color: var(--success-border); }
+.unit-occ-reserved { border-left-color: var(--info-border); }
+.unit-occ-occupied { border-left-color: var(--border-strong); }
+.unit-occ-notice { border-left-color: var(--warning-border); }
+
+.unit-tile-head {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: center;
+}
+
+.unit-rentable {
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.unit-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--surface-muted);
+}
+
+.unit-occ-vacant .unit-tag-occ { color: var(--success); background: var(--success-bg); }
+.unit-occ-reserved .unit-tag-occ { color: var(--info); background: var(--info-bg); }
+.unit-occ-notice .unit-tag-occ { color: var(--warning); background: var(--warning-bg); }
+.unit-ready-needs_cleaning .unit-tag-ready { color: var(--warning); background: var(--warning-bg); }
+.unit-ready-under_repair .unit-tag-ready { color: var(--danger); background: var(--danger-bg); }
+.unit-ready-cleaned .unit-tag-ready { color: var(--info); background: var(--info-bg); }
+
+.unit-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.unit-tile-meta span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.unit-open-cases {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.unit-dialog {
+  display: grid;
+  gap: 14px;
+  padding: 0 20px 20px;
+}
+
+.unit-dialog h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.unit-dialog-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+
+.unit-dialog-meta {
+  margin: 0;
+  color: var(--subtle);
+  font-size: 12px;
+}
+
+.unit-residents,
+.unit-history {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unit-residents li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.unit-residents small,
+.unit-history small {
+  color: var(--subtle);
+  overflow-wrap: anywhere;
+}
+
+.unit-history li {
+  display: grid;
+  gap: 2px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .units-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .unit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

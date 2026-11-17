@@ -211,6 +211,8 @@ export function CasesPage() {
                           <strong title={item.title}>{item.title}</strong>
                           {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && item.ai.sharedIncidentCandidate && !["closed", "resolved"].includes(item.status) ?
                             <span>{text("Có phản ánh liên quan — kiểm tra sự cố chung", "Related requests — review shared incident")}</span> : null}
+                          {canUseBoard && item.intakeVerification?.status === "pending" ?
+                            <span className="intake-flag">{text("Gửi qua QR — chờ xác minh", "QR submission — needs verification")}</span> : null}
                           <small>{categoryLabels[item.category]?.[locale] || item.category}</small>
                         </Link>
                       </td>

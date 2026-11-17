@@ -9,8 +9,8 @@ test("incomplete uploads require confirmation before scheduling recovery", async
     retries++; pending = false; await route.fulfill({ json: { queued: true } });
   });
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tài khoản").fill("admin@caseflow.local");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
+  await page.getByLabel("Email tài khoản").fill("tran.khoa@canho-demo.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
@@ -36,8 +36,8 @@ test("operations names Cloudinary storage correctly on desktop and mobile", asyn
     await route.fulfill({ response, json: { ...value, storage: { ...value.storage, provider: "cloudinary" } } });
   });
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tài khoản").fill("admin@caseflow.local");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
+  await page.getByLabel("Email tài khoản").fill("tran.khoa@canho-demo.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);

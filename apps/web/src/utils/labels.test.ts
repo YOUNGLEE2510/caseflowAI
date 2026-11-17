@@ -17,6 +17,6 @@ describe("timeline labels", () => {
   });
   it("localizes channels and classification keys", () => {
     expect(timelineLabel({ type: "created", label: "Tiếp nhận từ kênh portal" }, "vi")).toBe("Tiếp nhận qua Cổng trực tuyến");
-    expect(timelineLabel({ type: "ai_reviewed", label: "Đã xác nhận phân loại AI: it_access" }, "vi")).not.toContain("it_access");
+    expect(timelineLabel({ type: "ai_reviewed", label: "Đã xác nhận phân loại AI: appliances" }, "vi")).toContain("Thiết bị căn hộ");
   });
 });

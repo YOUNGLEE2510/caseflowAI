@@ -34,6 +34,8 @@ export function presentCase(record: any, role: AuthUser["role"]) {
   if (role !== "requester") return value;
   return {
     ...value,
+    // Requesters see whether a QR submission was verified, not staff notes or the callback number.
+    ...(value.intakeVerification ? { intakeVerification: { status: value.intakeVerification.status } } : {}),
     // NOTE: lọc comment/event internal ở tầng present, không phải tầng query.
     // Nghĩa là DB vẫn trả hết, chỉ ẩn khi serialize cho requester.
     comments: (value.comments || []).filter((comment: any) => !comment.internal),

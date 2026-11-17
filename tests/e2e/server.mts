@@ -25,20 +25,16 @@ const { app } = await import("../../apps/api/src/app.js");
 const { seedDatabase } = await import("../../apps/api/src/seed.js");
 await mongoose.connect(database.getUri(), { dbName: process.env.MONGODB_DB });
 await seedDatabase(false);
-// Approved fixture only in this disposable database; never publish production drafts.
 const { KnowledgeArticle, Organization, User } = await import("../../apps/api/src/models.js");
-const organization = await Organization.findOne({ slug: "minh-khai-university" });
-await Organization.updateOne({ _id: organization!._id }, { $set: { "settings.serviceDomain": "rental" } });
-const { RentalProperty, RentalUnit, RentalAsset } = await import("../../apps/api/src/models/rental.js");
-const residents = await User.find({ organizationId: organization!._id, role: "requester" });
-await RentalProperty.create({ organizationId: organization!._id, code: "TOWER-A", name: "Cơ sở kiểm thử A", active: true });
-await RentalUnit.create({ organizationId: organization!._id, propertyCode: "TOWER-A", code: "A301", residentIds: residents.map(user => user._id) });
-await RentalAsset.create({ organizationId: organization!._id, propertyCode: "TOWER-A", code: "PUMP-A", name: "Bơm kiểm thử", category: "water", active: true });
+// Approved fixture only in this disposable database; never publish production drafts.
+const { LOCAL_ORGANIZATION_SLUG } = await import("../../apps/api/src/seed.js");
+const organization = await Organization.findOne({ slug: LOCAL_ORGANIZATION_SLUG });
 const adminFixture = await User.findOne({ organizationId: organization!._id, role: "org_admin" }).select("+passwordHash");
 await User.create({ organizationId: organization!._id, name: "Platform test admin", email: "platform@caseflow.local", passwordHash: adminFixture!.passwordHash, role: "platform_admin", active: true });
-await KnowledgeArticle.create({ organizationId: organization!._id, title: "Kiểm thử khôi phục mật khẩu sinh viên",
-  content: "Tài liệu kiểm thử: sinh viên quên mật khẩu liên hệ đơn vị hỗ trợ tài khoản để xác minh danh tính.",
-  category: "it_access", sourceLabel: "Fixture E2E, không phải quy trình thực tế", status: "published", effectiveAt: new Date(), reviewedByName: "E2E reviewer", reviewedAt: new Date() });
+// Approved fixture only in this disposable database; never publish production drafts.
+await KnowledgeArticle.create({ organizationId: organization!._id, title: "Kiểm thử cấp lại thẻ ra vào",
+  content: "Tài liệu kiểm thử: người thuê mất thẻ ra vào liên hệ lễ tân để khóa thẻ cũ và xác minh trước khi cấp thẻ mới.",
+  category: "access_security", sourceLabel: "Fixture E2E, không phải quy trình thực tế", status: "published", effectiveAt: new Date(), reviewedByName: "E2E reviewer", reviewedAt: new Date() });
 const api = app.listen(0, "127.0.0.1");
 await new Promise<void>((done) => api.once("listening", done));
 const address = api.address();

@@ -7,6 +7,7 @@ import { ErrorState, LoadingState, PageHeader } from "../components/ui";
 import { useConfirmation } from "../components/ConfirmationProvider";
 import { categoryLabels } from "../utils/labels";
 import { MaintenancePanel } from "../components/MaintenancePanel";
+import { UnitQrPanel } from "../components/UnitQrPanel";
 import { useAuth } from "../auth";
 
 type Catalog = {
@@ -51,6 +52,7 @@ export function RentalPage() {
     {error ? <ErrorState message={error} onRetry={reload} /> : null}
     {data ? <>
       <MaintenancePanel assets={data.assets} />
+      {canManage ? <UnitQrPanel properties={data.properties} units={data.units} /> : null}
       {canManage ? <form className="page-stack" onSubmit={save}>
         <label className="field"><span>{text("Loại", "Type")}</span><select value={kind} onChange={event => setKind(event.target.value)}>
           <option value="property">{text("Cơ sở", "Property")}</option><option value="unit">{text("Căn hộ", "Unit")}</option><option value="asset">{text("Thiết bị", "Asset")}</option>
