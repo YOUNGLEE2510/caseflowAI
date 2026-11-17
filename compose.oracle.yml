@@ -1,0 +1,33 @@
+# Use after compose.yml and compose.https.yml on an OCI Ampere A1 VM.
+# Atlas and Cloudinary stay external; do not enable local-db/legacy-s3 profiles.
+services:
+  api:
+    platform: linux/arm64
+    mem_limit: 1536m
+    environment:
+      DEPLOYMENT_MODE: pilot
+      DOMAIN_PROFILE: rental
+      AUTO_SEED: 'false'
+      MONGODB_URI: ${MONGODB_URI:?Set the existing Atlas application connection}
+      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY:?Preserve the existing email encryption key}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?Configure an MFA key without replacing an existing key}
+      STORAGE_PROVIDER: cloudinary
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:?Set the existing private storage account}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:?Set the server-only storage key}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:?Set the server-only storage secret}
+  ai:
+    platform: linux/arm64
+    mem_limit: 2g
+    environment:
+      DOMAIN_PROFILE: rental
+  web:
+    platform: linux/arm64
+    mem_limit: 128m
+    volumes:
+      - ./nginx/oracle.conf:/etc/nginx/conf.d/default.conf:ro
+  clamav:
+    platform: linux/arm64
+    mem_limit: 4g
+  edge:
+    platform: linux/arm64
+    mem_limit: 128m

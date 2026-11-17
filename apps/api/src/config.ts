@@ -10,6 +10,9 @@ dotenv.config({ path: resolve(moduleDirectory, "../.env") });
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
+  DOMAIN_PROFILE: z.enum(["education", "rental"]).default("education"),
+  CASE_TRIAGE_MODE: z.enum(["background", "inline"]).default(process.env.VERCEL === "1" ? "inline" : "background"),
+  RELATED_CASE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.5),
   DEPLOYMENT_MODE: z.enum(["local", "pilot"]).default("local"),
   AUDIT_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(365),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),

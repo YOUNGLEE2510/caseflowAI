@@ -1,12 +1,15 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { CASE_STATUSES, CaseRecord, Incident } from "../models.js";
+import { CASE_STATUSES, CaseRecord, Incident, Organization } from "../models.js";
 import { caseScope, presentCase } from "../services/casePolicy.js";
 export const dashboardRouter = Router();
 dashboardRouter.get("/dashboard", async (req, res) => {
   const organizationId = new mongoose.Types.ObjectId(req.auth!.organizationId);
   const canViewOperations = req.auth!.role !== "requester";
   const scope: any = caseScope(req.auth!);
+  const org = await Organization.findById(organizationId).select("settings.serviceDomain").lean<{ settings?: { serviceDomain?: string } }>();
+  const isRental = org?.settings?.serviceDomain === "rental";
+  const workloadGroupKey = isRental ? { $ifNull: ["$propertyCode", "Chưa gắn cơ sở"] } : "$team";
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3_600_000);
@@ -43,7 +46,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
           { $match: { ...aggregateScope, status: { $nin: ["resolved", "closed"] } } },
           {
             $group: {
-              _id: "$team",
+              _id: workloadGroupKey,
               open: { $sum: 1 },
               risk: {
                 $sum: { $cond: [{ $and: [{ $ne: ["$status", "waiting"] }, { $or: [{ $gte: ["$ai.riskScore", 0.65] }, { $lt: ["$dueAt", now] }] }] }, 1, 0] }
@@ -104,8 +107,9 @@ dashboardRouter.get("/dashboard", async (req, res) => {
       averageResolutionHours: Number((resolutionStats[0]?.averageHours || 0).toFixed(1))
     },
     statusDistribution: CASE_STATUSES.map((name) => ({ name, value: statusMap.get(name) || 0 })),
+    workloadBy: isRental ? "property" : "team",
     teamWorkload: teamWorkloadRows.map((item) => ({
-      team: item._id || "Chưa phân đội",
+      team: item._id || (isRental ? "Chưa gắn cơ sở" : "Chưa phân đội"),
       open: item.open,
       risk: item.risk
     })),

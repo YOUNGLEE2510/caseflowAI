@@ -54,3 +54,30 @@ export async function recoverAttachmentUploads(now = new Date()) {
     }
   } finally { await releaseJobLease("attachment-upload-recovery", lease.ownerId); }
 }
+
+/**
+ * One-time rebuild of quota counters for cases created before counters existed.
+ * The write only applies if the case version is unchanged since it was read, so a concurrent
+ * delete, reservation or settlement (all of which bump __v) forces a re-read instead of
+ * restoring a stale count. Committed-but-unsettled uploads are de-duplicated against their
+ * reservation, and attachments whose deletion was already counted are excluded.
+ */
+export async function reconcileLegacyAttachmentCounters(caseId: Types.ObjectId, attempts = 5) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const record = await CaseRecord.findOne({ _id: caseId, attachmentCountersReconciled: { $ne: true } })
+      .select("__v events._id events.type +attachmentReservations").lean<{
+        __v: number; events?: Array<{ _id: Types.ObjectId; type?: string }>; attachmentReservations?: Array<{ _id: Types.ObjectId; size: number }>
+      }>();
+    if (!record) return true;
+    const counted = new Set((record.events || []).filter(event => event.type === "attachment_deleted").map(event => String(event._id)));
+    const active = await Attachment.find({ caseId, deletedAt: null }).select("_id size").lean<Array<{ _id: Types.ObjectId; size: number }>>();
+    const sizes = new Map<string, number>();
+    for (const file of active) if (!counted.has(String(file._id))) sizes.set(String(file._id), file.size || 0);
+    for (const reservation of record.attachmentReservations || []) sizes.set(String(reservation._id), reservation.size || 0);
+    const bytes = [...sizes.values()].reduce((sum, size) => sum + size, 0);
+    const updated = await CaseRecord.updateOne({ _id: caseId, __v: record.__v, attachmentCountersReconciled: { $ne: true } },
+      { $set: { attachmentCount: sizes.size, attachmentBytes: bytes, attachmentCountersReconciled: true }, $inc: { __v: 1 } });
+    if (updated.modifiedCount) return true;
+  }
+  return false;
+}

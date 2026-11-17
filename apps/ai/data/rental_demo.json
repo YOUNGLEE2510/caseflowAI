@@ -1,0 +1,74 @@
+{
+  "water": [
+    "Nước ở tất cả vòi trong căn chảy rất yếu từ sáng",
+    "Bồn cầu bị tắc và nước trào ra sàn nhà vệ sinh",
+    "Ống cấp nước dưới chậu rửa bị rò liên tục",
+    "Cả tầng không có nước sinh hoạt trong khi tầng dưới vẫn có",
+    "Nước từ trần phòng tắm nhỏ xuống sàn",
+    "Thoát nước nhà bếp bị nghẹt và có mùi hôi",
+    "Bồn rửa không thoát nước sau khi sử dụng",
+    "Vòi sen chỉ có một ít nước dù đã mở hết",
+    "Đường nước chung bị vỡ làm hành lang bị ngập",
+    "Van nước phòng tôi không khóa được"
+  ],
+  "electrical": [
+    "Ổ cắm phát ra tia lửa khi sử dụng",
+    "Căn hộ bị mất điện hoàn toàn nhưng hành lang vẫn sáng",
+    "Aptomat tự nhảy nhiều lần trong buổi tối",
+    "Công tắc đèn có mùi khét và nóng bất thường",
+    "Đèn phòng ngủ không sáng dù đã thay bóng",
+    "Dây điện ở hành lang bị hở cần kỹ thuật kiểm tra",
+    "Tủ điện tầng phát ra tiếng rè bất thường",
+    "Có cảm giác tê khi chạm vào vỏ thiết bị điện",
+    "Nước tràn đến gần ổ điện trong bếp",
+    "Điện cả tòa chập chờn liên tục"
+  ],
+  "internet": [
+    "Wifi kết nối được nhưng không mở được trang web",
+    "Mạng internet cả tầng bị mất cùng lúc",
+    "Modem báo đèn LOS màu đỏ từ sáng",
+    "Tín hiệu wifi trong phòng ngủ rất yếu",
+    "Mạng bị ngắt liên tục khi họp trực tuyến",
+    "Không tìm thấy tên wifi của căn hộ",
+    "Điện thoại và máy tính đều không truy cập internet",
+    "Bộ phát mạng không lên đèn dù vẫn có điện",
+    "Tốc độ mạng quá chậm vào buổi tối",
+    "Cần kiểm tra đường truyền internet dùng chung"
+  ],
+  "appliances": [
+    "Điều hòa chạy nhưng không làm lạnh căn phòng",
+    "Máy lạnh nhỏ nước xuống giường ngủ",
+    "Máy giặt không vắt và báo lỗi trên màn hình",
+    "Tủ lạnh không còn làm mát thực phẩm",
+    "Bình nước nóng vẫn có nước nhưng không nóng",
+    "Quạt hút phòng tắm kêu rất lớn",
+    "Bếp từ không nhận nồi và liên tục báo lỗi",
+    "Máy giặt rung mạnh trong khi hoạt động",
+    "Remote điều hòa không điều khiển được",
+    "Tivi trong phòng không lên hình"
+  ],
+  "access_security": [
+    "Thẻ từ không mở được cửa chính tòa nhà",
+    "Tôi làm mất chìa khóa phòng cần hỗ trợ xác minh",
+    "Khóa cửa điện tử báo pin yếu và không mở",
+    "Cổng ra vào không đóng lại sau khi đi qua",
+    "Cửa căn hộ bị kẹt không thể khóa được",
+    "Đầu đọc thẻ ở sảnh không nhận thẻ của cư dân",
+    "Có người lạ cố mở cửa căn hộ",
+    "Tôi bị khóa ngoài phòng và không có chìa dự phòng",
+    "Mã ra vào cũ cần được thu hồi sau khi mất thẻ",
+    "Cửa thoát hiểm bị chặn không đi qua được"
+  ],
+  "general_support": [
+    "Tôi muốn hỏi cách liên hệ ban quản lý",
+    "Cần đổi lịch hẹn vì tôi không có mặt tại căn hộ",
+    "Tôi chưa biết gửi phản ánh đến bộ phận nào",
+    "Tôi cần phản hồi về thái độ phục vụ",
+    "Xin cập nhật tiến độ hồ sơ đã gửi tuần trước",
+    "Tôi muốn hủy yêu cầu do không còn nhu cầu",
+    "Cần được giải thích nội quy sử dụng khu sinh hoạt chung",
+    "Tôi cần trao đổi một vấn đề khác với quản lý",
+    "Tôi muốn hỏi về giờ làm việc của lễ tân",
+    "Xin hướng dẫn gửi góp ý cho đơn vị vận hành"
+  ]
+}

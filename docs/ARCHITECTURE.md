@@ -1,6 +1,6 @@
 # Kiến trúc CaseFlow
 
-CaseFlow tập trung quản lý yêu cầu hỗ trợ sinh viên có AI đề xuất. Không phải HRM đầy đủ hoặc hệ sinh thái quản trị toàn trường.
+CaseFlow tập trung quản lý tiếp nhận yêu cầu, điều phối bảo trì và xử lý sự cố cho chuỗi căn hộ cho thuê có AI đề xuất. Không phải ERP bất động sản, phần mềm kế toán hợp đồng hoặc HRM đầy đủ.
 
 ## Thành phần
 
@@ -40,7 +40,7 @@ Tài liệu công bố có phiên bản và thời gian hiệu lực. Các route
 
 ## Phạm vi đóng băng
 
-Incident tự phát hiện, SLA predictive trên dữ liệu thật, HRM đầy đủ và tự retrain chưa là cam kết sản phẩm. Crawler/OCR PTIT đã gỡ; benchmark vẫn là công cụ nghiên cứu thủ công. Không thêm service queue/vector database nếu chưa có nhu cầu được đo.
+SLA predictive trên dữ liệu vận hành dài hạn, ERP tài chính, HRM đầy đủ và tự retrain tự động chưa là cam kết sản phẩm. Crawler/OCR cũ đã gỡ; benchmark vẫn là công cụ đánh giá thủ công. Không thêm service queue/vector database nếu chưa có nhu cầu được đo.
 
 Nhân sự và nghỉ phép được phân trang phía server. Thống kê nhân sự dùng người phụ trách hiện tại và lần giải quyết hiện tại trong 30 ngày; không dùng làm bảng xếp hạng hiệu suất. Báo cáo SLA theo đơn vị dùng từng chu kỳ giải quyết, bao gồm lịch sử mở lại. Đúng hạn so với dueAt đã lưu, không tính lại theo danh mục dịch vụ mới.
 

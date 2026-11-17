@@ -16,6 +16,7 @@ const CaseDetailPage = lazy(async () => ({ default: (await import("./pages/CaseD
 const IncidentsPage = lazy(async () => ({ default: (await import("./pages/IncidentsPage")).IncidentsPage }));
 const KnowledgePage = lazy(async () => ({ default: (await import("./pages/KnowledgePage")).KnowledgePage }));
 const ServicesPage = lazy(async () => ({ default: (await import("./pages/ServicesPage")).ServicesPage }));
+const RentalPage = lazy(async () => ({ default: (await import("./pages/RentalPage")).RentalPage }));
 const UsersPage = lazy(async () => ({ default: (await import("./pages/UsersPage")).UsersPage }));
 const PersonnelPage = lazy(async () => ({ default: (await import("./pages/PersonnelPage")).PersonnelPage }));
 const SystemPage = lazy(async () => ({ default: (await import("./pages/SystemPage")).SystemPage }));
@@ -69,6 +70,7 @@ export default function App() {
             <Route index element={<Navigate to="/overview" replace />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/rental" element={<IncidentRoute><RentalPage /></IncidentRoute>} />
             <Route path="/personnel" element={<IncidentRoute><PersonnelPage /></IncidentRoute>} />
             <Route path="/cases" element={<CasesPage />} />
             <Route path="/cases/new" element={<NewCasePage />} />

@@ -6,7 +6,6 @@ import {
 import { useLocale } from "../i18n";
 import type { DashboardData } from "../types";
 
-// Màu cho từng trạng thái — đồng bộ với badge CSS
 const STATUS_COLORS: Record<string, string> = {
   new: "#4d8fb8",
   triaged: "#6a7fc1",
@@ -28,7 +27,6 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
     closed: text("Đã đóng", "Closed")
   };
 
-  // Donut data — chỉ hiện status có hồ sơ
   const donutData = data.statusDistribution
     .filter(item => item.value > 0)
     .map(item => ({
@@ -39,7 +37,6 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
 
   const totalCases = donutData.reduce((sum, d) => sum + d.value, 0);
 
-  // Bar data
   const barData = data.teamWorkload.map(item => ({
     name: item.team,
     open: item.open,
@@ -90,7 +87,7 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
       </figure>
 
       <figure>
-        <figcaption>{text("Hồ sơ đang mở theo bộ phận", "Open cases by team")}</figcaption>
+        <figcaption>{data.workloadBy === "property" ? text("Hồ sơ đang mở theo cơ sở", "Open cases by property") : text("Hồ sơ đang mở theo bộ phận", "Open cases by team")}</figcaption>
         <div className="workload-legend"><span><i style={{ background: "#28705c" }} />{text("Đang mở", "Open")}</span><span><i style={{ background: "#c2522a" }} />{text("Nguy cơ SLA", "At SLA risk")}</span></div>
         <div className="dashboard-chart workload-chart" style={{ height: Math.max(100, Math.min(380, barData.length * 52 + 40)) }} role="img" aria-label={barData.map(d => `${d.name}: ${d.open} ${text("đang mở", "open")}, ${d.risk} ${text("rủi ro", "at risk")}`).join(", ")}>
           <ResponsiveContainer width="100%" height="100%">

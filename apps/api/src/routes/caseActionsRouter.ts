@@ -167,7 +167,17 @@ caseActionsRouter.patch(
       markAiReviewed(record.category);
     }
 
-    if (input.priority) record.priority = input.priority;
+    if (input.priority && input.priority !== record.priority) {
+      const labels = { low: "Thấp", normal: "Bình thường", high: "Cao", urgent: "Khẩn cấp" } as const;
+      const followsAi = record.ai.suggestedPriority === input.priority;
+      events.push({
+        type: "priority_changed",
+        label: `Đổi mức ưu tiên: ${labels[record.priority as keyof typeof labels] || record.priority} → ${labels[input.priority]}${followsAi ? " (theo gợi ý AI)" : ""}`,
+        actorId: req.auth!.id,
+        actorName: req.auth!.name
+      });
+      record.priority = input.priority;
+    }
     if (input.team && input.team !== record.team) {
       throw new HttpError(422, "Đổi dịch vụ để chuyển hồ sơ sang đơn vị phụ trách tương ứng.");
     }

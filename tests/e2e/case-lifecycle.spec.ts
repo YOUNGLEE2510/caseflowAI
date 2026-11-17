@@ -2,8 +2,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tổ chức").fill(email);
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
@@ -24,7 +24,7 @@ test("requester rating, close and reopen persist", async ({ page }) => {
   expect(service).toBeTruthy();
   const assignee = users.users.find((user: { role: string; team: string }) => user.role === "agent" && user.team === service.team);
   const created = await page.request.post("/api/cases", { headers: { Authorization: `Bearer ${student.token}` }, data: {
-    title: "Lifecycle fixture", description: "A deterministic request for lifecycle verification.", serviceKey: service.key,
+    title: "Lifecycle fixture", description: "A deterministic request for lifecycle verification.", serviceKey: service.key, propertyCode: "TOWER-A", unitCode: "A301",
     customFields: Object.fromEntries((service.requiredFields || []).map((key: string) => [key, "E2E fixture"])) } });
   expect(created.ok()).toBeTruthy();
   const fixture = (await created.json()).case;
@@ -62,7 +62,7 @@ test("review safeguards fit desktop and mobile", async ({ page }) => {
   await login(page, "manager@caseflow.local");
   await page.goto("/cases");
   await page.locator(".case-link").first().click();
-  await expect(page.getByText("Tệp nội bộ, không hiển thị cho sinh viên", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tệp nội bộ, không hiển thị cho người gửi phản ánh", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Lấy gợi ý", exact: true }).click();
   await expect(page.getByRole("button", { name: "Chấp nhận", exact: true }).first()).toBeVisible();
   for (const viewport of [{ width: 1536, height: 960 }, { width: 390, height: 844 }]) {
@@ -77,7 +77,7 @@ test("incident modal lists every linked case on mobile", async ({ page }) => {
   await login(page, "manager@caseflow.local");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/incidents");
-  await page.getByRole("button", { name: "Xem 3 hồ sơ liên kết", exact: true }).click();
+  await page.locator(".incident-card").filter({ hasText: "Gián đoạn cổng thông tin sinh viên" }).getByRole("button", { name: "Chi tiết", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Gián đoạn cổng thông tin sinh viên", exact: true });
   await expect(dialog.getByRole("link")).toHaveCount(3);
   expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);

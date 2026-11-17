@@ -16,8 +16,8 @@ for (const role of roles) {
     page.on("console", message => { if (message.type() === "error" && message.text().startsWith("Uncaught error in component tree:")) pageErrors.push(message.text()); });
     await mkdir("artifacts/typography", { recursive: true });
     await page.goto("/login");
-    await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
-    await page.getByLabel("Email tổ chức").fill(role.email);
+    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+    await page.getByLabel("Email tài khoản").fill(role.email);
     await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
     await expect(page).toHaveURL(/\/overview$/);

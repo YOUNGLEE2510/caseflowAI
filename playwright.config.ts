@@ -9,6 +9,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 120000,
+  globalTimeout: 360000,
   expect: { timeout: 15000 },
   reporter: "list",
   outputDir: "artifacts/e2e-results",

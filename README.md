@@ -1,6 +1,8 @@
 # CaseFlow AI
 
-Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI hỗ trợ. Bản hiện tại tập trung vào dịch vụ sinh viên và IT helpdesk trong trường đại học. Danh mục, đơn vị và SLA có thể cấu hình; mở sang ngành khác vẫn cần dữ liệu, taxonomy và quy trình đánh giá riêng.
+Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI hỗ trợ. Hướng ứng dụng hiện tại là tiếp nhận phản ánh và điều phối sửa chữa cho chuỗi căn hộ cho thuê: quản lý cơ sở/căn/thiết bị, quyền gửi theo căn, liên kết phản ánh vào sự cố chung, giao kỹ thuật và lịch hẹn. Dữ liệu trường cũ được giữ riêng; fixture giáo dục vẫn dùng cho kiểm thử hồi quy.
+
+Profile `DOMAIN_PROFILE=rental` dùng TF-IDF + Logistic Regression huấn luyện từ 60 câu mô phỏng viết tay, không phải dữ liệu khách thuê thật. Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
 
 ## Giá trị chính
 
@@ -9,7 +11,7 @@ Hệ thống dùng refresh token HttpOnly, quét tệp với ClamAV, MongoDB Atl
 - Một hồ sơ xuyên suốt từ tiếp nhận, phân loại, giao việc, phản hồi đến đóng yêu cầu.
 - Cổng làm việc theo vai trò: người yêu cầu, nhân viên, quản lý và quản trị tổ chức.
 - AI tiếng Việt hỗ trợ phân loại, trích xuất thông tin, phát hiện hồ sơ tương tự, truy xuất kho tri thức và dự báo nguy cơ trễ SLA.
-- Dashboard vận hành, danh sách sự cố demo, nhật ký xử lý và nguồn trích dẫn phục vụ kiểm soát trách nhiệm. Chưa có phát hiện cụm sự cố tự động hay đầy đủ CRUD incident.
+- Quản lý tạo sự cố, liên kết/gỡ phản ánh, giao người phụ trách, đặt lịch và cập nhật kết quả; có audit và thông báo. AI chỉ gợi ý các phản ánh có thể liên quan, không tự xác nhận nguyên nhân chung hoặc đóng hồ sơ riêng.
 - MongoDB Atlas lưu dữ liệu nghiệp vụ và metadata; Cloudinary lưu PDF/ảnh gốc riêng tư. Dịch vụ AI tách riêng khỏi hệ thống lõi.
 
 ## Kiến trúc thư mục
@@ -81,17 +83,19 @@ Khi chưa có `SMTP_PASS`, email service chủ động chạy log-only và khôn
 
 ## Tài khoản demo
 
-Mã đơn vị: `minh-khai-university`
+Mã đơn vị căn hộ: `caseflow-rental-demo`. Tổ chức `caseflow-rental-isolation-demo` dùng kiểm tra cách ly, không phải khách hàng thật.
 
-Thông tin đăng nhập demo dành riêng cho môi trường cục bộ: [QUICKSTART.md](docs/QUICKSTART.md). Không sử dụng tài khoản seed khi pilot.
+Mật khẩu ngẫu nhiên được giữ trong tệp cục bộ `artifacts/rental-setup/credentials.json`, không được commit hay công khai. Xem [luồng căn hộ](docs/QUICKSTART.md#5-thử-luồng-sự-cố-chung-cho-căn-hộ). Không dùng tài khoản demo khi pilot.
 
 | Vai trò | Email |
 |---|---|
-| Sinh viên | `student@caseflow.local` |
-| Nhân viên CNTT | `agent@caseflow.local` |
-| Nhân viên đào tạo | `training@caseflow.local` |
-| Quản lý | `manager@caseflow.local` |
-| Quản trị tổ chức | `admin@caseflow.local` |
+| Người thuê A301 | `resident@rental.caseflow.local` |
+| Người thuê A302 | `resident2@rental.caseflow.local` |
+| Người thuê A303 | `resident4@rental.caseflow.local` |
+| Kỹ thuật viên | `technician@rental.caseflow.local` |
+| Quản lý vận hành | `manager@rental.caseflow.local` |
+
+Fixture trường đại học chỉ còn phục vụ kiểm thử tương thích trong database cô lập; không phải luồng demo căn hộ và không cần chạy seed trường trên Atlas.
 
 ## Kiểm thử
 
@@ -120,13 +124,13 @@ Chuẩn bị dữ liệu phân loại đã được phép sử dụng: `python -
 
 `npm run seed` chỉ tạo dữ liệu demo ở local. `seed:force` bị vô hiệu hóa; khi cần làm mới hãy dùng database demo dùng một lần, không dùng database thật.
 
-Integration test và E2E dùng MongoDB tạm, không sử dụng Atlas trong `.env`. E2E dùng Chrome cài sẵn, cổng riêng 5188. `AUTO_SEED` mặc định false. Tài liệu cần được quản lý phê duyệt trong Kho tri thức trước khi xuất hiện với sinh viên hoặc được dùng trong truy xuất AI.
+Integration test và E2E dùng MongoDB tạm, không sử dụng Atlas trong `.env`. E2E dùng Chrome cài sẵn, cổng riêng 5188. `AUTO_SEED` mặc định false. Tài liệu cần được quản lý phê duyệt trong Kho tri thức trước khi xuất hiện với người gửi yêu cầu hoặc được dùng trong truy xuất AI.
 
 Trang **Vận hành** hiển thị kết nối, hồ sơ quá hạn và nhật ký. Atlas giữ metadata, Cloudinary giữ PDF/ảnh authenticated. S3 chỉ còn adapter tương thích với tệp cũ và không cần chạy mặc định.
 
 Tải tệp đính kèm có kiểm tra kích thước, phần mở rộng và chữ ký định dạng. Docker bật quét ClamAV trước khi cho phép sử dụng tệp; nếu scanner lỗi thì từ chối upload. Chế độ local có thể tắt scanner nên cần kiểm tra `MALWARE_SCAN_MODE` trước pilot. Quét malware không bảo đảm phát hiện mọi mã độc.
 
-Docker không tự tạo tài khoản demo mặc định. Với cơ sở dữ liệu mới chỉ phục vụ demo, đặt `AUTO_SEED=true` trong `.env.docker`; không bật ở môi trường pilot/production. `TRUST_PROXY_HOPS=1` chỉ dành cho API nằm sau một nginx không có cổng công khai; nginx ghi đè IP chuyển tiếp để không tin header do khách gửi.
+Docker không tự tạo tài khoản demo mặc định. Giữ `AUTO_SEED=false`; dữ liệu căn hộ được thêm riêng bằng công cụ quản trị có bước xác nhận mô tả trong QUICKSTART, không bật seed trường trên Atlas. `TRUST_PROXY_HOPS=1` chỉ dành cho API nằm sau một nginx không có cổng công khai; nginx ghi đè IP chuyển tiếp để không tin header do khách gửi.
 
 Access token ở bộ nhớ trình duyệt; refresh cookie HttpOnly khôi phục phiên. Hồ sơ ghi phiên bản AI và quyết định con người. Mở lại hồ sơ tạo chu kỳ SLA mới; analytics có tổng hợp lịch sử chu kỳ. Không dùng KPI này để tự động xếp loại nhân viên.
 
@@ -137,13 +141,13 @@ Requester có thể xác nhận đóng, mở lại hồ sơ đã giải quyết 
 
 ## Luồng demo đề xuất
 
-Huấn luyện nghiệp vụ đang chờ dữ liệu được duyệt. Model 60 mẫu và SLA synthetic chỉ là demo/pipeline, không chứng minh chất lượng thực tế. Không tự nhập corpus đã cào hoặc tự retrain; xem [AI_AND_DATA.md](docs/AI_AND_DATA.md).
+Model căn hộ 60 mẫu và bộ kịch bản liên kết đều là dữ liệu mô phỏng, không chứng minh chất lượng thực tế. Huấn luyện bằng dữ liệu vận hành thật vẫn chờ nguồn phù hợp được duyệt; xem [AI_AND_DATA.md](docs/AI_AND_DATA.md).
 
-1. Đăng nhập vai trò sinh viên và tạo một yêu cầu bằng tiếng Việt tự nhiên.
-2. Chạy phân tích AI để xem nhãn, độ tin cậy, dữ liệu trích xuất và hồ sơ tương tự.
-3. Đăng nhập vai trò nhân viên hoặc quản lý, mở thông báo mới và xác nhận hoặc sửa phân loại AI trước khi giao việc.
-4. Tải tệp đính kèm, đổi trạng thái và thêm ghi chú nội bộ để kiểm tra timeline và audit.
-5. Mở dashboard để xem hàng đợi có nguy cơ trễ SLA và danh sách sự cố demo.
-6. Tìm câu trả lời trong kho tri thức và kiểm tra nguồn trích dẫn trước khi phản hồi.
+1. Dùng phản ánh ở A301/A302/A303 cùng cơ sở TOWER-A; giữ ca TOWER-B làm đối chứng. Người thuê chỉ gửi cho căn được gán.
+2. Chạy phân loại; quản lý xác nhận hoặc sửa nhãn, xem gợi ý liên quan ở chi tiết hồ sơ.
+3. Sau khi kiểm tra, liên kết ba phản ánh vào một Incident; không gộp/xóa các hồ sơ riêng và không liên kết ca ở cơ sở B.
+4. Giao kỹ thuật, đặt lịch, tạo phiếu sửa theo PUMP-A; kỹ thuật ghi kết quả và hoàn thành phiếu.
+5. Quản lý cập nhật sự cố để gửi thông báo cho người liên quan. Hoàn thành sự cố không tự đóng từng phản ánh.
+6. Trên hồ sơ riêng, đi qua phân loại/phân công/xử lý trước khi giải quyết; người thuê xác nhận đóng hoặc phản hồi/mở lại nếu vẫn còn lỗi. Kiểm tra lịch sử thiết bị và audit.
 
 Để chạy bản demo theo luồng ngắn, xem [docs/QUICKSTART.md](docs/QUICKSTART.md). Chi tiết thiết kế nằm trong [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/AI_AND_DATA.md](docs/AI_AND_DATA.md) và [docs/DIAGRAMS.md](docs/DIAGRAMS.md). Quy trình thu thập dữ liệu, so sánh baseline và tiêu chí đánh giá luận văn nằm trong [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md); nguồn dữ liệu AI được kiểm soát tại [apps/ai/data/SOURCES.md](apps/ai/data/SOURCES.md).

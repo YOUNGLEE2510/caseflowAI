@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, CheckCircle2, FileText, SearchCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Gauge, SearchCheck, Sparkles, TriangleAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { ErrorState, FileUploadArea, PageHeader } from "../components/ui";
@@ -22,6 +22,7 @@ interface IntakeAnalysis {
     provider: string;
   };
   similar: Array<{ id: string; title: string; score: number }>;
+  prioritySuggestion?: { priority: "low" | "normal" | "high" | "urgent"; reasons: string[] };
   service?: ServiceDefinition;
   needsReview: boolean;
 }
@@ -36,6 +37,14 @@ export function NewCasePage() {
   const [description, setDescription] = useState("");
   const [serviceKey, setServiceKey] = useState("");
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
+  const [propertyCode, setPropertyCode] = useState("");
+  const [unitCode, setUnitCode] = useState("");
+  const [assetCode, setAssetCode] = useState("");
+  const { data: catalog } = useApiData<{
+    properties: { code: string; name: string }[];
+    units: { propertyCode: string; code: string }[];
+    assets: { propertyCode: string; unitCode: string; code: string; name: string }[];
+  }>("/rental/catalog");
   const selectedService = serviceData?.services.find((service) => service.key === serviceKey);
   function changeService(key: string) {
     setServiceKey(key);
@@ -104,7 +113,10 @@ export function NewCasePage() {
     setSubmitting(true);
     setError("");
     try {
-      const body = JSON.stringify({ title, description, serviceKey: serviceKey || undefined, priority, channel, customFields, ...(requesterId ? { requesterId } : {}) });
+      const body = JSON.stringify({ title, description, serviceKey: serviceKey || undefined, priority, channel, customFields,
+        propertyCode: propertyCode.trim() || undefined, unitCode: unitCode.trim() || undefined,
+        assetCode: assetCode || undefined,
+        ...(requesterId ? { requesterId } : {}) });
       if (submission.current?.body !== body) submission.current = { body, key: crypto.randomUUID() };
       const response = await api<{ case: { _id: string } }>("/cases", {
         method: "POST",
@@ -168,7 +180,7 @@ export function NewCasePage() {
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder={text("Ví dụ: Không đăng nhập được cổng sinh viên", "Example: I cannot sign in to the student portal")}
+                placeholder={text("Ví dụ: Nước yếu tại căn A301 từ sáng nay", "Example: Low water pressure in unit A301 since this morning")}
                 maxLength={160}
               />
             </label>
@@ -229,6 +241,20 @@ export function NewCasePage() {
                 ))}
               </select>
             </label>
+            <label className="field"><span>{text("Cơ sở", "Property")}</span>{catalog?.properties.length ?
+              <select aria-label={text("Cơ sở", "Property")} required value={propertyCode} onChange={event => { setPropertyCode(event.target.value); setUnitCode(""); setAssetCode(""); }}>
+                <option value="">{text("Chọn cơ sở", "Select property")}</option>{catalog.properties.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
+              </select> : <input required={Boolean(unitCode)} maxLength={32} pattern="[A-Za-z0-9\-]{1,32}" value={propertyCode} onChange={event => setPropertyCode(event.target.value)} />}</label>
+            <label className="field"><span>{text("Căn hộ", "Unit")}</span>{catalog?.properties.length ?
+              <select aria-label={text("Căn hộ", "Unit")} required={user?.role === "requester"} value={unitCode} onChange={event => { setUnitCode(event.target.value); setAssetCode(""); }}>
+                <option value="">{text("Khu vực chung / Chọn căn", "Common area / Select unit")}</option>
+                {catalog.units.filter(item => item.propertyCode === propertyCode).map(item => <option key={item.code} value={item.code}>{item.code}</option>)}
+              </select> : <input maxLength={32} pattern="[A-Za-z0-9\-]{1,32}" value={unitCode} onChange={event => setUnitCode(event.target.value)} />}</label>
+            {catalog?.properties.length ? <p className="field-wide" role="note">{text("Có nguy hiểm trực tiếp: liên hệ đầu mối khẩn cấp của cơ sở; không chờ phản hồi trên web. Có cháy: gọi 114 từ nơi an toàn.", "Immediate danger: contact the property's emergency contact; do not wait for a web response. In a fire, call 114 from a safe location.")}</p> : null}
+            {catalog?.properties.length ? <label className="field field-wide"><span>{text("Thiết bị liên quan", "Related asset")}</span>
+              <select value={assetCode} onChange={event => setAssetCode(event.target.value)}><option value="">{text("Không rõ / Không áp dụng", "Unknown / Not applicable")}</option>
+                {catalog.assets.filter(item => item.propertyCode === propertyCode && (!item.unitCode || item.unitCode === unitCode))
+                  .map(item => <option key={item.code} value={item.code}>{item.name} · {item.code}</option>)}</select></label> : null}
             {selectedService?.requiredFields.map((field) => <label className="field" key={field}><span>{field}</span><input required maxLength={2000} value={customFields[field] || ""} onChange={(event) => setCustomFields({ ...customFields, [field]: event.target.value })} /></label>)}
           </div>
           <FileUploadArea
@@ -293,6 +319,22 @@ export function NewCasePage() {
                   <span>{analysis.service?.team || text("Trung tâm Dịch vụ", "Service Center")}</span>
                 </div>
               </div>
+              {analysis.prioritySuggestion ? (
+                <div className="analysis-item">
+                  <Gauge size={17} />
+                  <div>
+                    <strong>{text("Mức ưu tiên gợi ý", "Suggested priority")}: {{
+                      low: text("Thấp", "Low"), normal: text("Bình thường", "Normal"), high: text("Cao", "High"), urgent: text("Khẩn cấp", "Urgent")
+                    }[analysis.prioritySuggestion.priority]}</strong>
+                    <span>{analysis.prioritySuggestion.reasons.join(" · ")}</span>
+                    {user?.role !== "requester" && analysis.prioritySuggestion.priority !== priority ? (
+                      <button type="button" className="text-link" onClick={() => setPriority(analysis.prioritySuggestion!.priority)}>
+                        {text("Dùng mức ưu tiên gợi ý", "Use suggested priority")}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
               <div className="analysis-item">
                 <SearchCheck size={17} />
                 <div>

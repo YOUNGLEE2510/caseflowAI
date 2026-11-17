@@ -21,6 +21,8 @@ const incidentSchema = new Schema(
     severity: { type: String, enum: SEVERITY_LEVELS, default: "medium" },
     status: { type: String, enum: INCIDENT_STATUSES, default: "monitoring" },
     team: { type: String, required: true },
+    propertyCode: { type: String },
+    appointmentAt: { type: Date, default: null },
     ownerId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     ownerName: { type: String, default: "" },
     caseIds: [{ type: Schema.Types.ObjectId, ref: "CaseRecord" }],
@@ -39,5 +41,10 @@ const incidentSchema = new Schema(
   },
   { timestamps: true }
 );
+
+incidentSchema.index({ organizationId: 1, caseIds: 1 }, {
+  unique: true,
+  partialFilterExpression: { propertyCode: { $type: "string" }, resolvedAt: null, "caseIds.0": { $exists: true } }
+});
 
 export const Incident = models.Incident || model("Incident", incidentSchema);

@@ -31,8 +31,13 @@ interface LoginTicket { userId: import("mongoose").Types.ObjectId; organizationI
 const dummyPasswordHash = bcrypt.hashSync(randomBytes(32).toString("hex"), 12);
 export const authRouter = Router();
 authRouter.use(microsoftRouter);
-authRouter.get("/auth/organizations", async (_req, res) => {
-  const organizations = await Organization.find({ status: "active" }).select("name slug -_id").sort({ name: 1 }).limit(100).lean();
+authRouter.get("/auth/providers", (_req, res) => {
+  res.json({ google: Boolean(config.GOOGLE_OAUTH_CLIENT_ID && config.GOOGLE_OAUTH_CLIENT_SECRET && config.GOOGLE_OAUTH_REDIRECT_URI),
+    microsoft: Boolean(config.MICROSOFT_OAUTH_CLIENT_ID && config.MICROSOFT_OAUTH_CLIENT_SECRET && config.MICROSOFT_OAUTH_REDIRECT_URI) });
+});
+authRouter.get("/auth/organizations", async (req, res) => {
+  const { domain } = z.object({ domain: z.enum(["education", "rental"]).optional() }).parse(req.query);
+  const organizations = await Organization.find({ status: "active", ...(domain ? { "settings.serviceDomain": domain } : {}) }).select("name slug -_id").sort({ name: 1 }).limit(100).lean();
   res.json({ organizations });
 });
 
@@ -46,13 +51,13 @@ const loginSchema = z.object({
 const passwordResetRequestSchema = z.object({
   organizationSlug: z.string().trim().min(2).max(80),
   email: z.string().email()
-});
+}).strict();
 
 const passwordResetConfirmSchema = z.object({
   organizationSlug: z.string().trim().min(2).max(80),
   token: z.string().regex(/^[a-f0-9]{64}$/i),
   password: newPasswordSchema
-});
+}).strict();
 const googleStartSchema = z.object({
   organization: z.string().trim().min(2).max(80),
   remember: z.enum(["true", "false"]).optional()

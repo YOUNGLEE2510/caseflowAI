@@ -1,4 +1,9 @@
 export const categoryLabels: Record<string, { vi: string; en: string }> = {
+  water: { vi: "Cấp thoát nước", en: "Water and drainage" },
+  electrical: { vi: "Điện", en: "Electrical" },
+  internet: { vi: "Internet", en: "Internet" },
+  appliances: { vi: "Thiết bị căn hộ", en: "Apartment appliances" },
+  access_security: { vi: "Ra vào và an ninh", en: "Access and security" },
   it_access: { vi: "Tài khoản và CNTT", en: "Accounts and IT" },
   academic_records: { vi: "Học vụ", en: "Academic records" },
   student_services: { vi: "Dịch vụ sinh viên", en: "Student services" },
@@ -20,7 +25,7 @@ export function timelineLabel(event: { type: string; label: string }, locale: "v
     const to = statusLabels[transition[2]]?.[locale] || transition[2];
     return `${from} → ${to}`;
   }
-  const label = event.label.replace(/\b(it_access|academic_records|student_services|facilities|finance|general_support)\b/g, key => categoryLabels[key][locale]);
+  const label = event.label.replace(/\b(water|electrical|internet|appliances|access_security|it_access|academic_records|student_services|facilities|finance|general_support)\b/g, key => categoryLabels[key][locale]);
   const channel = /^Tiếp nhận từ kênh (\w+)$/.exec(event.label);
   if (channel) {
     const channels: Record<string, { vi: string; en: string }> = { portal: { vi: "Cổng trực tuyến", en: "Online portal" }, email: { vi: "Email", en: "Email" }, phone: { vi: "Điện thoại", en: "Phone" }, walk_in: { vi: "Tiếp nhận trực tiếp", en: "Walk-in" } };

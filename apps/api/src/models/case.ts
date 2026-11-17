@@ -62,6 +62,8 @@ const caseSchema = new Schema(
     slaPausedHours: { type: Number, default: 0 },
     attachmentCount: { type: Number, default: 0 },
     attachmentBytes: { type: Number, default: 0 },
+    // Set once legacy counters were rebuilt from Attachment documents; never defaulted so old records are detected.
+    attachmentCountersReconciled: { type: Boolean },
     attachmentReservations: { type: [{
       filename: String, size: Number, storageProvider: { type: String, enum: ["local", "s3", "cloudinary"] }, expiresAt: Date
     }], default: [], select: false },
@@ -83,6 +85,9 @@ const caseSchema = new Schema(
     satisfactionComment: { type: String, default: "", maxlength: 1000 },
     satisfactionAt: { type: Date, default: null },
     customFields: { type: Map, of: String, default: {} },
+    propertyCode: { type: String },
+    unitCode: { type: String },
+    assetCode: { type: String },
     tags: [{ type: String }],
     ai: {
       processingStatus: { type: String, enum: ["queued", "running", "complete", "failed", "cancelled"], default: "complete" },
@@ -94,8 +99,11 @@ const caseSchema = new Schema(
       extracted: { type: Map, of: String, default: {} },
       riskScore: { type: Number, default: 0 },
       riskFactors: [{ type: String }],
+      suggestedPriority: { type: String, enum: ["", "low", "normal", "high", "urgent"], default: "" },
+      priorityReasons: [{ type: String }],
       suggestedResponse: { type: String, default: "" },
       similarCaseIds: [{ type: Schema.Types.ObjectId, ref: "CaseRecord" }],
+      sharedIncidentCandidate: { type: Boolean, default: false },
       modelVersion: { type: String, default: "baseline-v1" },
       analyzedAt: { type: Date, default: Date.now },
       reviewStatus: {
@@ -137,6 +145,9 @@ caseSchema.pre("validate", function () {
 caseSchema.pre("insertMany", function (next, docs: Array<{ code?: string; title?: string; requesterName?: string; searchTokens?: string[]; searchVersion?: number }>) {
   for (const doc of docs) { doc.searchTokens = caseSearchTokens(doc); doc.searchVersion = 1; }
   next();
+});
+caseSchema.index({ organizationId: 1, propertyCode: 1, createdAt: -1 }, {
+  partialFilterExpression: { propertyCode: { $type: "string" } }
 });
 caseSchema.index({ organizationId: 1, requesterId: 1, idempotencyKeyHash: 1 }, {
   unique: true,

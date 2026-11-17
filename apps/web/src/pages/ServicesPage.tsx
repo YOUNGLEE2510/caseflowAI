@@ -8,6 +8,11 @@ import { useLocale } from "../i18n";
 import type { ServiceDefinition } from "../types";
 
 const classificationHints: Record<string, { vi: string; en: string }> = {
+  water: { vi: "nước yếu, mất nước, rò rỉ, tắc thoát nước, máy bơm", en: "low water pressure, water outage, leak, blocked drain, pump" },
+  electrical: { vi: "mất điện, chập điện, cầu dao, ổ cắm, đèn", en: "power outage, short circuit, circuit breaker, socket, lighting" },
+  internet: { vi: "mất mạng, Wi-Fi yếu, kết nối chập chờn, bộ định tuyến", en: "internet outage, weak Wi-Fi, unstable connection, router" },
+  appliances: { vi: "điều hòa, bình nóng lạnh, tủ lạnh, máy giặt, thiết bị hỏng", en: "air conditioner, water heater, refrigerator, washing machine, faulty appliance" },
+  access_security: { vi: "khóa cửa, thẻ ra vào, cửa chung, an ninh, người lạ", en: "door lock, access card, entrance, security, unauthorized visitor" },
   it_access: { vi: "đăng nhập, mật khẩu, email xác thực, tài khoản, Wi-Fi, cổng sinh viên", en: "sign in, password, verification email, account, Wi-Fi, student portal" },
   academic_records: { vi: "học phần, lịch học, đăng ký môn, bảng điểm, điều kiện tốt nghiệp", en: "course, class schedule, enrollment, transcript, graduation requirements" },
   student_services: { vi: "thẻ sinh viên, giấy xác nhận, hỗ trợ đời sống, thủ tục", en: "student card, confirmation letter, wellbeing support, procedure" },

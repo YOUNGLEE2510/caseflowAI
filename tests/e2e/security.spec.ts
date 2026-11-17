@@ -6,8 +6,8 @@ const OTPAuth = createRequire(resolve(process.cwd(), "apps/api/package.json"))("
 
 async function login(page: Page, email: string, password = "Demo123!") {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tổ chức").fill(email);
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
 }
@@ -63,7 +63,7 @@ test("owner can cancel or confirm deletion of a mistaken upload", async ({ page,
   const loginRes = await request.post("/api/auth/login", { data: { organizationSlug: "minh-khai-university", email: "student@caseflow.local", password: "Demo123!" } });
   const { token } = await loginRes.json();
   const create = await request.post("/api/cases", { headers: { Authorization: `Bearer ${token}` }, data: {
-    title: `Xóa tệp nhầm ${Date.now()}`, description: "Hồ sơ kiểm thử xóa tệp.", serviceKey: "general_support"
+    title: `Xóa tệp nhầm ${Date.now()}`, description: "Hồ sơ kiểm thử xóa tệp.", serviceKey: "general_support", propertyCode: "TOWER-A", unitCode: "A301"
   } });
   const testCase = (await create.json()).case;
   await login(page, "student@caseflow.local");

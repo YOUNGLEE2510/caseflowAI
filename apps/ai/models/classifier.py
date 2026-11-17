@@ -12,7 +12,7 @@ import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import FeatureUnion, Pipeline
-from ..config import TRAINING_EXAMPLES
+from ..config import TRAINING_EXAMPLES, DOMAIN_PROFILE
 from .text_utils import summarize, extract_entities
 
 VARIANTS = ("word", "character", "hybrid")
@@ -60,7 +60,8 @@ def load_or_train(variant: str, directory: Path) -> tuple[Pipeline, dict]:
     model = build_classifier(variant)
     metadata = {"version": version, "variant": variant, "datasetSha256": DATASET_SHA256,
                 "sklearnVersion": sklearn.__version__, "trainingSamples": len(training_rows()[0]),
-                "trainedAt": datetime.now(timezone.utc).isoformat(), "datasetKind": "demo", "confidenceCalibrated": False}
+                "trainedAt": datetime.now(timezone.utc).isoformat(), "datasetKind": "demo",
+                "domainProfile": DOMAIN_PROFILE, "confidenceCalibrated": False}
     temporary = directory / f".{version}-{uuid4().hex}.tmp"
     temp_manifest = temporary.with_suffix(".json.tmp")
     try:

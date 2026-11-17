@@ -3,8 +3,8 @@ import { test, expect, type Page } from "@playwright/test";
 async function login(page: Page, email: string) {
   await page.goto("/login");
   await expect(page.locator(".demo-switcher")).toHaveCount(0);
-  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tổ chức").fill(email);
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
@@ -91,6 +91,8 @@ test("cancelled create has no side effects and confirmation supports keyboard", 
   let writes = 0;
   page.on("request", request => { if (request.method() === "POST" && /\/api\/cases$/.test(request.url())) writes++; });
   await page.getByLabel("Tiêu đề", { exact: true }).fill("Yêu cầu cần xác nhận");
+  await page.getByRole("combobox", { name: "Cơ sở", exact: true }).selectOption("TOWER-A");
+  await page.getByRole("combobox", { name: "Căn hộ", exact: true }).selectOption("A301");
   await page.getByLabel("Mô tả chi tiết").fill("Tôi cần được hỗ trợ về thủ tục học vụ.");
   await page.getByRole("button", { name: "Tạo hồ sơ", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Gửi yêu cầu?", exact: true })).toBeVisible();

@@ -74,3 +74,11 @@ Mô hình SLA hiện dùng dữ liệu mô phỏng nên chỉ chứng minh luồ
 | Usability | SUS từ 68 trở lên và không có lỗi chặn tác vụ chính |
 
 Các ngưỡng trên là mục tiêu nghiên cứu, không phải kết quả đã đạt. Mọi báo cáo phải ghi phiên bản dữ liệu, taxonomy, mã nguồn, seed và ngày chạy.
+## Thực nghiệm bổ sung cho bối cảnh căn hộ
+
+- Dữ liệu mô phỏng: `apps/ai/tests/fixtures/rental_related_scenarios.json`; chia theo kịch bản gốc, không để câu diễn đạt lại của một ca lọt sang cả train và test. Bộ hiện tại chỉ có 7 kịch bản, chưa đủ để kết luận tổng quát.
+- So sánh lọc cơ sở + 48 giờ với `hashing-char-context-v1`. Thuật toán mới không fit IDF trên từng batch; tín hiệu cùng thiết bị/căn chỉ bổ trợ. Ngưỡng khởi tạo 0.5 chưa hiệu chỉnh. Chỉ chọn ngưỡng trên tập validation độc lập sau này, không tinh chỉnh bằng các ca test này.
+- Chạy `python -m apps.ai.evaluate_related`; báo cáo precision/recall/F1 theo cặp, false links và ca bỏ sót tại `artifacts/ai-evaluation/rental-related.json`. Không dùng kết quả của bộ nhỏ này để tuyên bố giảm thời gian hay hiệu quả vận hành.
+- Thí nghiệm người dùng: hai người luân phiên vai người xử lý; đối trọng thứ tự A/B, dùng bộ ca gốc tương đương nhưng không lặp lại cùng ca. A không gợi ý, B có gợi ý. Ghi thời gian từ lúc thấy phiếu đến khi xác nhận phân loại/đầu việc, nhãn cuối, số đầu việc trùng, liên kết sai và thao tác sửa gợi ý. Không tính thời gian chờ dịch vụ AI riêng thành thời gian con người làm việc.
+- Hai người gán nhãn độc lập trước khi xem gợi ý, giữ cả hai bản nhãn và phân xử chỗ bất đồng. Chỉ hai tác giả tự thử là pilot có thiên lệch, không thay thế khảo sát người vận hành.
+- Chưa thực hiện thí nghiệm thời gian; không điền số giả. Dùng CSV với cột `participant,scenario_group,condition,started_at,confirmed_at,classification_correct,duplicate_jobs,false_links`. Ngày giờ ISO có múi giờ; điều kiện `manual` hoặc `assisted`. Báo số lượt, trung vị và khoảng phân tán, không chỉ phần trăm cải thiện.

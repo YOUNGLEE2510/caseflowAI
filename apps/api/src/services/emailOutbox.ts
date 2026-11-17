@@ -29,8 +29,18 @@ export async function migrateLegacyEmailEncryption() {
     for (const job of jobs) await EmailOutbox.updateOne({ _id: job._id, payload: job.payload }, { $set: { payload: encrypt(decrypt(job.payload)) } });
   }
 }
-export async function enqueuePasswordReset(organizationSlug: string, email: string) {
-  await EmailOutbox.create({ kind: "reset-request", payload: encrypt({ organizationSlug, email }), expiresAt: new Date(Date.now() + 30 * 60_000) });
+export const PASSWORD_RESET_COOLDOWN_MS = 2 * 60_000;
+/** At most one reset job per recipient per cooldown window, across IPs, instances and concurrent requests. */
+export async function enqueuePasswordReset(organizationSlug: string, email: string, now = Date.now()) {
+  const recipient = createHash("sha256").update(JSON.stringify([organizationSlug.trim().toLowerCase(), email.trim().toLowerCase()])).digest("hex");
+  const deliveryKey = `reset:${recipient}:${Math.floor(now / PASSWORD_RESET_COOLDOWN_MS)}`;
+  const job = { kind: "reset-request", payload: encrypt({ organizationSlug, email }), expiresAt: new Date(now + 30 * 60_000), deliveryKey };
+  try {
+    await EmailOutbox.updateOne({ deliveryKey }, { $setOnInsert: job }, { upsert: true });
+  } catch (error) {
+    // A concurrent upsert won the unique deliveryKey race; the reset is already queued.
+    if ((error as { code?: number }).code !== 11000) throw error;
+  }
 }
 export async function enqueueEmail(payload: Parameters<typeof sendEmail>[0], deliveryKey?: string) {
   const job = { kind: "email", payload: encrypt(payload), expiresAt: new Date(Date.now() + 86400_000), ...(deliveryKey ? { deliveryKey } : {}) };

@@ -337,7 +337,15 @@
     white-space: nowrap;
   }
   .service-workspace .mobile-brand strong { font-size: 15px; font-weight: 600; }
-  .service-workspace .mobile-brand small { font-size: 11px; }
+  .service-workspace .mobile-brand small {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    line-height: 1.4;
+  }
   .service-workspace .topbar-title { flex: 1 1 0; min-width: 0; }
   .service-workspace .topbar-title > div { min-width: 0; }
   .service-workspace .topbar-title strong { font-size: 15px; }
@@ -433,6 +441,8 @@
 .service-workspace .incident-case-list .case-code { grid-column: 1; }
 .service-workspace .incident-case-list strong { grid-column: 1; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
 .service-workspace .incident-case-list svg { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+.service-workspace .incident-action-list .button { min-width: 0; height: auto; min-height: 44px; text-align: left; justify-content: flex-start; }
+.service-workspace .incident-action-list .button span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .service-workspace .widget-error { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .service-workspace .progress-widget header { grid-template-columns: 30px minmax(0, 1fr) auto; }
 .service-workspace .progress-widget header strong { max-width: none; text-align: right; }

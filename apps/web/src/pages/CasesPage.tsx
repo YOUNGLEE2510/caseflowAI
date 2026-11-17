@@ -209,6 +209,8 @@ export function CasesPage() {
                       <td>
                         <Link to={`/cases/${item._id}`} className="case-title-cell">
                           <strong title={item.title}>{item.title}</strong>
+                          {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && item.ai.sharedIncidentCandidate && !["closed", "resolved"].includes(item.status) ?
+                            <span>{text("Có phản ánh liên quan — kiểm tra sự cố chung", "Related requests — review shared incident")}</span> : null}
                           <small>{categoryLabels[item.category]?.[locale] || item.category}</small>
                         </Link>
                       </td>

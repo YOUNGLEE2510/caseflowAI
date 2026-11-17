@@ -8,7 +8,7 @@ import { Modal } from "../components/Modal";
 import { useLocale } from "../i18n";
 import { useConfirmation } from "../components/ConfirmationProvider";
 
-const demoOrganizationSlug = "minh-khai-university";
+const demoOrganizationSlug = "caseflow-rental-demo";
 
 export function LoginPage() {
   const { user, login, loginWithGoogle, loginWithMicrosoft } = useAuth();
@@ -18,9 +18,16 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const [organizationSlug, setOrganizationSlug] = useState(demoOrganizationSlug);
   const [organizations, setOrganizations] = useState<Array<{ name: string; slug: string }>>([]);
+  const [providers, setProviders] = useState({ google: false, microsoft: false });
   useEffect(() => {
     let active = true;
-    void api<{ organizations: Array<{ name: string; slug: string }> }>("/auth/organizations").then(response => {
+    void api<{ google: boolean; microsoft: boolean }>("/auth/providers")
+      .then(value => { if (active) setProviders(value); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    void api<{ organizations: Array<{ name: string; slug: string }> }>("/auth/organizations?domain=rental").then(response => {
       if (!active) return;
       setOrganizations(response.organizations);
       const requested = searchParams.get("organization");
@@ -124,7 +131,7 @@ export function LoginPage() {
 
   return (
     <div className="login-screen">
-      <aside className="login-visual" aria-label={text("Trung tâm dịch vụ sinh viên", "Student service center")}>
+      <aside className="login-visual" aria-label={text("Dịch vụ vận hành chuỗi căn hộ", "Rental apartment operations")}>
         <div className="login-visual-overlay" />
         <div className="login-brand">
           <span className="brand-mark brand-mark-light">
@@ -132,13 +139,13 @@ export function LoginPage() {
           </span>
           <span>
             <strong>CaseFlow</strong>
-            <small>{text("Quản lý dịch vụ", "Service management")}</small>
+            <small>{text("Vận hành căn hộ", "Apartment operations")}</small>
           </span>
         </div>
         <div className="login-visual-copy">
-          <span className="eyebrow">{text("Dịch vụ được kết nối", "Connected services")}</span>
-          <h1>{text("Hỗ trợ đúng lúc,", "Help at the right time,")}<br />{text("rõ ràng ở từng bước.", "clarity at every step.")}</h1>
-          <p>{text("Người yêu cầu, đội xử lý và tri thức tổ chức cùng làm việc trong một không gian.", "Bring requesters, service teams and trusted knowledge into one shared workspace.")}</p>
+          <span className="eyebrow">{text("Quản lý phản ánh và sửa chữa", "Maintenance requests and repairs")}</span>
+          <h1>{text("Tiếp nhận phản ánh,", "Receive requests,")}<br />{text("phối hợp xử lý sự cố.", "coordinate incident response.")}</h1>
+          <p>{text("Kết nối cư dân, đội kỹ thuật và quản lý cơ sở trong quá trình tiếp nhận, sửa chữa và cập nhật tiến độ.", "Connect residents, technicians and property managers from reporting to repair and progress updates.")}</p>
         </div>
       </aside>
 
@@ -146,27 +153,27 @@ export function LoginPage() {
         <div className="login-locale"><LocaleSwitcher /></div>
         <section className="login-panel">
           <div className="login-heading">
-            <span className="eyebrow">{text("Đại học Minh Khai", "Minh Khai University")}</span>
+            <span className="eyebrow">CaseFlow</span>
             <h1>{text("Chào mừng trở lại", "Welcome back")}</h1>
-            <p>{text("Đăng nhập để tiếp tục công việc đang dang dở.", "Sign in to pick up where you left off.")}</p>
+            <p>{text("Đăng nhập để gửi phản ánh và theo dõi việc xử lý tại căn hộ của bạn.", "Sign in to report an issue and track repairs at your apartment.")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="form-stack">
             <label className="field">
-              <span>{text("Mã tổ chức", "Organization code")}</span>
-              {organizations.length ? <select value={organizationSlug} onChange={event => setOrganizationSlug(event.target.value)} required aria-label={text("Tổ chức", "Organization")}>
+              <span>{text("Đơn vị vận hành", "Property operator")}</span>
+              {organizations.length ? <select value={organizationSlug} onChange={event => setOrganizationSlug(event.target.value)} required aria-label={text("Đơn vị vận hành", "Property operator")}>
                 {organizations.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}
               </select> : <input
                 value={organizationSlug}
                 onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())}
                 autoComplete="organization"
-                placeholder="minh-khai-university"
+                placeholder="caseflow-rental-demo"
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 required
               />}
             </label>
             <label className="field">
-              <span>{text("Email tổ chức", "Organization email")}</span>
+              <span>{text("Email tài khoản", "Account email")}</span>
               <input
                 type="email"
                 value={email}
@@ -214,12 +221,12 @@ export function LoginPage() {
           </form>
 
           <div className="login-provider-separator" aria-hidden="true"><span>{text("hoặc", "or")}</span></div>
-          <button className="button login-google" type="button" onClick={startGoogleLogin} disabled={loading || !organizationSlug.trim()}>
+          <button className="button login-google" type="button" onClick={startGoogleLogin} title={!providers.google ? text("Chưa cấu hình đăng nhập Google", "Google sign-in is not configured") : undefined} disabled={loading || !organizationSlug.trim() || !providers.google}>
             <img className="provider-mark" src="/google-logo.png" width="20" height="20" alt="" />
             <span>{text("Tiếp tục với Google", "Continue with Google")}</span>
           </button>
 
-          <button className="button login-google login-microsoft" type="button" disabled={loading || !organizationSlug.trim()} onClick={() => {
+          <button className="button login-google login-microsoft" type="button" title={!providers.microsoft ? text("Chưa cấu hình đăng nhập Microsoft", "Microsoft sign-in is not configured") : undefined} disabled={loading || !organizationSlug.trim() || !providers.microsoft} onClick={() => {
             const query = new URLSearchParams({ organization: organizationSlug, remember: String(remember) });
             window.location.assign(apiUrl(`/auth/microsoft?${query}`));
           }}>
@@ -239,16 +246,16 @@ export function LoginPage() {
             <Check size={18} />
             <span>
               <strong>{text("Chưa có tài khoản?", "Need an account?")}</strong>
-              <small>{text("Liên hệ bộ phận hỗ trợ nếu email chưa được đăng ký.", "Contact your service desk if your email has not been registered.")}</small>
+              <small>{text("Liên hệ ban quản lý căn hộ để được cấp tài khoản cư dân.", "Contact property management to receive your resident account.")}</small>
             </span>
           </div>
         </section>
         <footer className="login-footer">© 2026 CaseFlow · {text("Quyền riêng tư · Điều khoản", "Privacy · Terms")}</footer>
         {resetOpen ? <Modal title={text("Đặt lại mật khẩu", "Reset password")} onClose={() => setResetOpen(false)}>
           <form className="form-stack" onSubmit={requestPasswordReset}>
-            <p className="modal-copy">{text("Nhập mã tổ chức và email đã đăng ký. Nếu tài khoản hợp lệ, hướng dẫn sẽ được gửi qua email.", "Enter your organization code and registered email. If the account is valid, instructions will be sent by email.")}</p>
-            <label className="field"><span>{text("Mã tổ chức", "Organization code")}</span><input value={organizationSlug} onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())} required /></label>
-            <label className="field"><span>{text("Email tổ chức", "Organization email")}</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
+            <p className="modal-copy">{text("Nhập mã đơn vị vận hành và email tài khoản. Nếu thông tin hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi qua email.", "Enter your property operator code and account email. If the details are valid, password reset instructions will be emailed to you.")}</p>
+            <label className="field"><span>{text("Mã đơn vị vận hành", "Property operator code")}</span><input value={organizationSlug} onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())} required /></label>
+            <label className="field"><span>{text("Email tài khoản", "Account email")}</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
             {resetMessage ? <p className="form-notice" role="status">{resetMessage}</p> : null}
             <footer className="editor-actions">
               <button type="button" className="button button-secondary" onClick={() => setResetOpen(false)}>{text("Hủy", "Cancel")}</button>
