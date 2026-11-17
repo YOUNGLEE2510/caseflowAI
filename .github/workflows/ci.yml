@@ -17,7 +17,12 @@ jobs:
           cache: pip
           cache-dependency-path: apps/ai/requirements-research.txt
       - run: npm ci
-      - run: npm audit --audit-level=high
+      # Block on advisories in shipped (production) dependencies.
+      - run: npm audit --omit=dev --audit-level=high
+      # Report dev-tooling advisories without failing; some (e.g. picomatch GHSA-fc5q-39xc-vjpf) have no fix yet.
+      - name: npm audit (dev dependencies, report only)
+        run: npm audit --audit-level=high
+        continue-on-error: true
       - run: pip install -r apps/ai/requirements-research.txt
       - run: pip install pip-audit==2.10.0
       - run: pip-audit -r apps/ai/requirements-research.txt
