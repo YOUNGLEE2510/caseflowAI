@@ -196,6 +196,7 @@ describe("public QR intake", () => {
     const verified = await call(`/cases/${id}/intake-verification`, people.agentA, "POST",
       { decision: "verified", residentId: String(people.residentA._id), note: "Đã gọi lại, khách xác nhận ở căn" });
     expect(verified.status).toBe(200);
+    expect(verified.body.case.events.find((event: any) => event.type === "intake_verified").metadata.note).toBe("Đã gọi lại, khách xác nhận ở căn");
     expect(verified.body.case.requesterId).toBe(String(people.residentA._id));
     expect((await call(`/cases/${id}/intake-verification`, people.agentA, "POST", { decision: "rejected", note: "Thử lại" })).status).toBe(409);
     expect((await call(`/cases/${id}`, people.agentA, "PATCH", { assigneeId: String(people.agentA._id) })).status).toBe(200);
@@ -205,6 +206,7 @@ describe("public QR intake", () => {
     expect(own.status).toBe(200);
     expect(own.body.case.intakeVerification).toEqual({ status: "verified" });
     expect(own.raw).not.toContain("0901234567");
+    expect(own.raw).not.toContain("Đã gọi lại, khách xác nhận ở căn");
 
     const audits = await models.AuditLog.find({ resourceId: id }).lean();
     expect(JSON.stringify(audits)).not.toContain("0901234567");

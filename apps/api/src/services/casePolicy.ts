@@ -39,7 +39,12 @@ export function presentCase(record: any, role: AuthUser["role"]) {
     // NOTE: lọc comment/event internal ở tầng present, không phải tầng query.
     // Nghĩa là DB vẫn trả hết, chỉ ẩn khi serialize cho requester.
     comments: (value.comments || []).filter((comment: any) => !comment.internal),
-    events: (value.events || []).filter((event: any) => !event.internal),
+    events: (value.events || []).filter((event: any) => !event.internal).map((event: any) => {
+      // Verification notes remain staff-only, including notes already stored in old timelines.
+      if (event.type !== "intake_verified") return event;
+      const { metadata: _metadata, ...publicEvent } = event;
+      return publicEvent;
+    }),
     ai: { ...value.ai, similarCaseIds: [], suggestedResponse: "" }
   };
 }
