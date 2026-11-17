@@ -70,6 +70,8 @@ function formatFileSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+import { RelatedIncidentPanel } from "../components/RelatedIncidentPanel";
+
 export function CaseDetailPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -342,6 +344,8 @@ export function CaseDetailPage() {
       {uploadWarning ? <ErrorState message={uploadWarning} /> : null}
       {(location.state as { created?: boolean } | null)?.created ? <div role="status" className="analysis-review-note">{text("Đã tiếp nhận hồ sơ. Bạn có thể theo dõi tiến độ và bổ sung thông tin tại đây.", "Request received. Track progress and add information here.")}</div> : null}
 
+      {data?.case.propertyCode && ["manager", "org_admin", "platform_admin"].includes(user?.role || "") ?
+        <RelatedIncidentPanel id={data.case._id} code={data.case.code} title={data.case.title} /> : null}
       <div className="case-detail-grid">
         <div className="case-main-column">
           {canOperate && <RecommendationPanel key={record._id} caseId={record._id}
@@ -356,6 +360,7 @@ export function CaseDetailPage() {
               <span className="channel-label">{channelLabels[record.channel]?.[locale] || record.channel.replace("_", " ")}</span>
             </div>
             <ReadMore text={record.description} limit={360} className="case-description-copy" />
+            {record.propertyCode ? <dl className="case-custom-fields"><div><dt>{text("Mã cơ sở", "Property code")}</dt><dd>{record.propertyCode}</dd></div>{record.unitCode ? <div><dt>{text("Mã căn", "Unit code")}</dt><dd>{record.unitCode}</dd></div> : null}{record.assetCode ? <div><dt>{text("Thiết bị", "Asset")}</dt><dd>{record.assetCode}</dd></div> : null}</dl> : null}
             {Object.keys(record.customFields || {}).length ? <dl className="case-custom-fields">{Object.entries(record.customFields || {}).map(([field, value]) => <div key={field}><dt>{field}</dt><dd>{value}</dd></div>)}</dl> : null}
           </section>
 
@@ -451,7 +456,7 @@ export function CaseDetailPage() {
               <div className="inline-empty">{text("Chưa có tệp đính kèm.", "No files have been attached.")}</div>
             )}
             <div className="attachment-upload">
-              {canOperate && <label className="checkbox-field"><input type="checkbox" checked={attachmentInternal} onChange={event => setAttachmentInternal(event.target.checked)} />{text("Tệp nội bộ, không hiển thị cho sinh viên", "Internal file, hidden from requesters")}</label>}
+              {canOperate && <label className="checkbox-field"><input type="checkbox" checked={attachmentInternal} onChange={event => setAttachmentInternal(event.target.checked)} />{text("Tệp nội bộ, không hiển thị cho người gửi phản ánh", "Internal file, hidden from the requester")}</label>}
               <FileUploadArea
                 files={files}
                 onFilesChange={setFiles}
@@ -611,6 +616,27 @@ export function CaseDetailPage() {
               <span>{text("Độ tin cậy phân loại", "Classification confidence")}</span>
               <strong>{Math.round(record.ai.confidence * 100)}%</strong>
             </div>
+            {record.ai.suggestedPriority ? (
+              <div className="priority-suggestion" aria-label={text("Gợi ý mức ưu tiên", "Suggested priority")}>
+                <div className="priority-suggestion-head">
+                  <span>{text("Gợi ý ưu tiên", "Suggested priority")}</span>
+                  <PriorityBadge priority={record.ai.suggestedPriority} />
+                </div>
+                {record.ai.priorityReasons?.length ? (
+                  <ul>{record.ai.priorityReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+                ) : null}
+                {canOperate && record.status !== "closed" && record.ai.suggestedPriority !== record.priority ? (
+                  <button type="button" className="text-link" disabled={saving}
+                    onClick={() => void updateCase({ priority: record.ai.suggestedPriority })}>
+                    {text("Áp dụng mức ưu tiên gợi ý", "Apply suggested priority")}
+                  </button>
+                ) : (
+                  <small>{record.ai.suggestedPriority === record.priority
+                    ? text("Trùng với mức ưu tiên hiện tại.", "Matches the current priority.")
+                    : text("Chỉ nhân viên mới thay đổi mức ưu tiên.", "Only staff can change priority.")}</small>
+                )}
+              </div>
+            ) : null}
             <div className={`ai-review-row ai-review-${record.ai.reviewStatus || "pending"}`}>
               <CheckCircle2 size={15} />
               <div>

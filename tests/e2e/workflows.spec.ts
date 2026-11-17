@@ -10,8 +10,8 @@ async function confirmAction(page: Page, title: string) {
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tổ chức").fill(email);
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
@@ -23,6 +23,7 @@ async function overflow(page: Page) {
 }
 
 test("login provider logos and password borders render on desktop and mobile", async ({ page }) => {
+  await page.route("**/api/auth/providers", route => route.fulfill({ json: { google: false, microsoft: false } }));
   await mkdir("artifacts/login-ui", { recursive: true });
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
@@ -30,6 +31,8 @@ test("login provider logos and password borders render on desktop and mobile", a
     await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toBeVisible();
     expect(await page.getByRole("button", { name: "Tiếp tục với Google", exact: true }).evaluate((node) => getComputedStyle(node).borderTopWidth)).toBe("1px");
     await expect(page.getByRole("button", { name: "Tiếp tục với Outlook / Microsoft", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Tiếp tục với Outlook / Microsoft", exact: true })).toBeDisabled();
     const images = await page.locator(".login-panel .provider-mark").evaluateAll((nodes) => nodes.map((node) => ({ complete: (node as HTMLImageElement).complete, width: (node as HTMLImageElement).naturalWidth })));
     expect(images).toHaveLength(2);
     expect(images.every((item) => item.complete && item.width > 0)).toBe(true);
@@ -56,8 +59,8 @@ test("password reset request is available without disclosing account existence",
   await page.getByRole("button", { name: "Quên mật khẩu?", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Đặt lại mật khẩu" });
   await expect(dialog).toBeVisible();
-  await dialog.getByLabel("Mã tổ chức").fill("minh-khai-university");
-  await dialog.getByLabel("Email tổ chức").fill("student@caseflow.local");
+  await dialog.getByLabel("Mã đơn vị vận hành").fill("minh-khai-university");
+  await dialog.getByLabel("Email tài khoản").fill("student@caseflow.local");
   await dialog.getByRole("button", { name: "Gửi hướng dẫn", exact: true }).click();
   await confirmAction(page, "Gửi hướng dẫn đổi mật khẩu?");
   await expect(dialog.getByText("Nếu tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.", { exact: true })).toBeVisible();
@@ -172,6 +175,8 @@ test("request intake, real file round-trip, staff review and private notes", asy
   await login(page, "student@caseflow.local");
   await page.goto("/cases/new");
   await page.getByLabel("Tiêu đề", { exact: true }).fill("Hỗ trợ tài khoản kiểm thử");
+  await page.getByRole("combobox", { name: "Cơ sở", exact: true }).selectOption("TOWER-A");
+  await page.getByRole("combobox", { name: "Căn hộ", exact: true }).selectOption("A301");
   await page.getByLabel("Mô tả chi tiết").fill("Em cần hỗ trợ khôi phục tài khoản cổng sinh viên để đăng ký học phần.");
   await page.getByLabel("Dịch vụ", { exact: true }).selectOption("it_access");
   await page.getByLabel("Mã sinh viên", { exact: true }).fill("SV2026001");

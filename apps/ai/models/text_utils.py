@@ -38,5 +38,11 @@ def extract_entities(text: str) -> dict[str, str]:
         extracted["location"] = room.group(0).upper()
     if deadline:
         extracted["deadline"] = deadline.group(0)
+    unit = re.search(r"(?:căn(?:\s+hộ)?|phòng)\s+([A-Z]?\d{2,4})\b", text, re.IGNORECASE)
+    if unit:
+        extracted["unitCode"] = unit.group(1).upper()
+    property_code = re.search(r"\bTOWER-[A-Z0-9]+\b", text, re.IGNORECASE)
+    if property_code:
+        extracted["propertyCode"] = property_code.group(0).upper()
 
     return extracted

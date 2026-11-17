@@ -1,0 +1,56 @@
+[
+  {
+    "id": "shared-water", "split": "test",
+    "source": {"id": "a1", "title": "Nước yếu", "text": "Nước yếu ở tất cả vòi trong căn từ sáng nay", "propertyCode": "A", "unitCode": "301", "assetCode": "PUMP-A", "createdAt": "2026-11-01T08:00:00Z"},
+    "items": [
+      {"id": "a2", "title": "Nước chảy yếu", "text": "Nước yếu ở tất cả vòi trong căn từ sáng nay", "propertyCode": "A", "unitCode": "302", "assetCode": "PUMP-A", "createdAt": "2026-11-01T09:00:00Z"},
+      {"id": "b1", "title": "Nước yếu", "text": "Nước yếu ở tất cả vòi trong căn từ sáng nay", "propertyCode": "B", "unitCode": "301", "assetCode": "PUMP-B", "createdAt": "2026-11-01T09:00:00Z"}
+    ], "expectedIds": ["a2"]
+  },
+  {
+    "id": "same-building-unrelated", "split": "test",
+    "source": {"id": "water", "title": "Nước yếu", "text": "Nước yếu tại vòi sen và bếp", "propertyCode": "A", "unitCode": "301", "createdAt": "2026-11-01T08:00:00Z"},
+    "items": [
+      {"id": "network", "title": "Mất internet", "text": "Modem báo LOS đỏ, wifi không vào internet", "propertyCode": "A", "unitCode": "302", "createdAt": "2026-11-01T09:00:00Z"},
+      {"id": "fridge", "title": "Tủ lạnh", "text": "Tủ lạnh không làm mát thực phẩm", "propertyCode": "A", "unitCode": "301", "createdAt": "2026-11-01T09:00:00Z"}
+    ], "expectedIds": []
+  },
+  {
+    "id": "old-incident", "split": "test",
+    "source": {"id": "new", "title": "Mất mạng", "text": "Wifi kết nối nhưng không có internet", "propertyCode": "A", "createdAt": "2026-11-05T08:00:00Z"},
+    "items": [
+      {"id": "old", "title": "Mất mạng", "text": "Wifi kết nối nhưng không có internet", "propertyCode": "A", "createdAt": "2026-11-01T08:00:00Z"},
+      {"id": "resolved", "title": "Mất mạng", "text": "Wifi kết nối nhưng không có internet", "propertyCode": "A", "createdAt": "2026-11-05T07:00:00Z", "status": "resolved"}
+    ], "expectedIds": []
+  },
+  {
+    "id": "residual-room-fault", "split": "test",
+    "source": {"id": "residual", "title": "Vẫn mất nước", "text": "Phòng tôi vẫn mất nước sau khi sửa máy bơm", "propertyCode": "A", "unitCode": "301", "assetCode": "PUMP-A", "createdAt": "2026-11-01T12:00:00Z"},
+    "items": [
+      {"id": "pump-fixed", "title": "Mất nước", "text": "Phòng tôi vẫn mất nước sau khi sửa máy bơm", "propertyCode": "A", "unitCode": "302", "assetCode": "PUMP-A", "createdAt": "2026-11-01T08:00:00Z", "status": "resolved"}
+    ], "expectedIds": []
+  },
+  {
+    "id": "shared-network", "split": "test",
+    "source": {"id": "wifi1", "title": "Mất mạng", "text": "Wifi kết nối được nhưng không có internet từ sáng", "propertyCode": "A", "unitCode": "201", "assetCode": "NET-A", "createdAt": "2026-11-01T08:00:00Z"},
+    "items": [
+      {"id": "wifi2", "title": "Không vào mạng", "text": "Wifi kết nối được nhưng không có internet từ sáng", "propertyCode": "A", "unitCode": "202", "assetCode": "NET-A", "createdAt": "2026-11-01T08:30:00Z"},
+      {"id": "lock", "title": "Khóa cửa", "text": "Mất chìa khóa không mở được cửa phòng", "propertyCode": "A", "unitCode": "201", "createdAt": "2026-11-01T08:30:00Z"}
+    ], "expectedIds": ["wifi2"]
+  },
+  {
+    "id": "paraphrased-shared-water", "split": "test",
+    "source": {"id": "short", "title": "Nước yếu", "text": "Vòi sen chỉ chảy nhỏ giọt từ sáng", "propertyCode": "A", "assetCode": "PUMP-A", "createdAt": "2026-11-01T08:00:00Z"},
+    "items": [
+      {"id": "paraphrase", "title": "Không tắm được", "text": "Áp lực cấp nước quá thấp, mở hết vòi vẫn không đủ dùng", "propertyCode": "A", "assetCode": "PUMP-A", "createdAt": "2026-11-01T08:30:00Z"}
+    ], "expectedIds": ["paraphrase"]
+  },
+  {
+    "id": "identical-symptoms-different-causes", "split": "test",
+    "source": {"id": "symptom1", "title": "Nước yếu", "text": "Nước vòi sen rất yếu", "propertyCode": "A", "unitCode": "301", "createdAt": "2026-11-01T08:00:00Z"},
+    "items": [
+      {"id": "symptom2", "title": "Nước yếu", "text": "Nước vòi sen rất yếu", "propertyCode": "A", "unitCode": "302", "createdAt": "2026-11-01T08:30:00Z"}
+    ], "expectedIds": [],
+    "annotation": "Kịch bản giả định hai đầu vòi riêng bị tắc; mô tả chưa đủ để suy ra nguyên nhân. Đây là hard negative, không truyền annotation vào thuật toán."
+  }
+]

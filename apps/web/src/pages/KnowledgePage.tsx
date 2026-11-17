@@ -110,7 +110,7 @@ export function KnowledgePage() {
             maxLength={1000}
             value={query}
             onChange={(event) => { setQuery(event.target.value); setResult(null); setSearchError(""); }}
-            placeholder={text("Ví dụ: Sinh viên quên mật khẩu cần làm gì?", "Example: What should a student do after forgetting a password?")}
+            placeholder={text("Ví dụ: Căn hộ bị nước yếu cần kiểm tra gì?", "Example: What should I check if my apartment has low water pressure?")}
           />
           <button className="button button-primary" disabled={searching || query.trim().length < 3}>
             {searching ? <span className="spinner spinner-light" /> : <Send size={16} />}

@@ -59,17 +59,23 @@ app.use(["/api/auth/google", "/api/auth/microsoft"], rateLimit({
   legacyHeaders: false,
   message: { message: "Yêu cầu đăng nhập quá nhiều lần. Vui lòng thử lại sau." }
 }));
-app.use("/api/auth/password-reset", rateLimit({
-  windowMs: 15 * 60_000,
-  limit: 5,
-  keyGenerator: req => `${req.ip || "unknown"}:${createHash("sha256").update(JSON.stringify([
-    typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "",
-    typeof req.body?.organizationSlug === "string" ? req.body.organizationSlug.trim().toLowerCase() : "",
-    typeof req.body?.token === "string" ? req.body.token.slice(0, 128) : ""
-  ])).digest("hex")}`,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: { message: "Yêu cầu đặt lại mật khẩu quá nhiều lần. Vui lòng thử lại sau." }
+const passwordResetIdentity = (req: express.Request) => createHash("sha256").update(JSON.stringify([
+  typeof req.body?.organizationSlug === "string" ? req.body.organizationSlug.trim().toLowerCase() : "",
+  typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : ""
+])).digest("hex");
+const passwordResetLimitMessage = { message: "Yêu cầu đặt lại mật khẩu quá nhiều lần. Vui lòng thử lại sau." };
+// Request: one bucket per recipient (independent of IP and unused body fields) plus one per IP.
+app.use("/api/auth/password-reset/request", rateLimit({
+  windowMs: 15 * 60_000, limit: 5, keyGenerator: req => `reset-recipient:${passwordResetIdentity(req)}`,
+  standardHeaders: "draft-7", legacyHeaders: false, message: passwordResetLimitMessage
+}), rateLimit({
+  windowMs: 15 * 60_000, limit: 20, keyGenerator: req => `reset-ip:${req.ip || "unknown"}`,
+  standardHeaders: "draft-7", legacyHeaders: false, message: passwordResetLimitMessage
+}));
+// Confirm: tokens are 256-bit random, so limit attempts per IP rather than per submitted token.
+app.use("/api/auth/password-reset/confirm", rateLimit({
+  windowMs: 15 * 60_000, limit: 10, keyGenerator: req => `reset-confirm:${req.ip || "unknown"}`,
+  standardHeaders: "draft-7", legacyHeaders: false, message: passwordResetLimitMessage
 }));
 app.use("/api", apiRouter);
 app.use(notFound);

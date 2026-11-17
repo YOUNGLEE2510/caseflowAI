@@ -76,7 +76,8 @@ services:
       dockerfile: Dockerfile.ai
     environment:
       CLASSIFIER_VARIANT: word
-      MODEL_REGISTRY_DIR: /app/model-store/registry
+      DOMAIN_PROFILE: ${DOMAIN_PROFILE:-rental}
+      MODEL_REGISTRY_DIR: /app/model-store/registry/${DOMAIN_PROFILE:-rental}
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:?Run npm run docker:up to generate internal credentials}
     volumes:
       - model-data:/app/model-store
@@ -104,6 +105,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       AI_SERVICE_URL: http://ai:8001
+      DOMAIN_PROFILE: ${DOMAIN_PROFILE:-rental}
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:?Internal AI credentials required}
       AI_REQUEST_TIMEOUT_MS: ${AI_REQUEST_TIMEOUT_MS:-10000}
       METRICS_TOKEN: ${METRICS_TOKEN:-}

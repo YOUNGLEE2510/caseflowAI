@@ -25,6 +25,7 @@ vi.mock("../src/services/aiClient.js", () => ({
   fallbackClassify: () => ({ modelVersion: "fallback-v1", label: "general_support", confidence: 0.3, summary: "Account support", extracted: {}, topCandidates: [], provider: "fallback" }),
   classifyText: async () => ({ modelVersion: "test-model-v2", label: "it_access", confidence: 0.8, summary: "Account support", extracted: { location: "Building A" }, topCandidates: [], provider: "test" }),
   findSimilarCases: async (_text: string, cases: any[]) => cases.map((item) => ({ id: item.id, title: item.title, score: 0.9 })),
+  findRelatedCases: async (_source: unknown, cases: any[]) => cases.map((item) => ({ id: item.id, title: item.title, score: 0.9, signals: ["same_property"] })),
   predictSla: async () => ({ riskScore: 0.3, factors: [] }),
   retrieveKnowledge: async (_query: string, articles: any[]) => ({ answer: "Source retrieval", citations: articles })
 }));
@@ -50,7 +51,7 @@ async function request(path: string, user: any = requester, method = "GET", body
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${typeof user === "string" ? user : token(user)}` },
     body: body === undefined ? undefined : JSON.stringify(body)
   });
-  return { status: response.status, body: await response.json() as any };
+  return { status: response.status, body: response.status === 204 ? null : await response.json() as any };
 }
 
 beforeAll(async () => {
@@ -92,6 +93,180 @@ beforeEach(async () => {
     { organizationId: org._id, key: "it_access", name: "IT", category: "it_access", team: "IT", slaHours: 24, requiredFields: ["Student ID"] }
   ]);
   record = await models.CaseRecord.create({ organizationId: org._id, code: "TEST-01", title: "Test request", description: "A test request for help", serviceKey: "it_access", category: "it_access", requesterId: requester._id, requesterName: requester.name, team: "IT", dueAt: new Date(Date.now() + 3600000) });
+});
+
+describe("request-driven AI triage", () => {
+  it("does not claim a case through a different organization", async () => {
+    const { processCaseTriage } = await import("../src/jobs/caseTriage.js");
+    await models.CaseRecord.updateOne({ _id: record._id }, { $set: { "ai.processingStatus": "queued" } });
+    await processCaseTriage({ caseId: String(record._id), organizationId: String(outsider.organizationId) });
+    expect((await models.CaseRecord.findById(record._id)).ai.processingStatus).toBe("queued");
+  });
+  it("keeps an accepted case available for manual review when AI fails", async () => {
+    const { config } = await import("../src/config.js");
+    const ai = await import("../src/services/aiClient.js");
+    const failure = vi.spyOn(ai, "classifyText").mockRejectedValue(new Error("AI unavailable"));
+    const previous = config.CASE_TRIAGE_MODE;
+    config.CASE_TRIAGE_MODE = "inline";
+    try {
+      const result = await request("/cases", requester, "POST", { description: "Unable to access my account in Building A", serviceKey: "general_support" });
+      expect(result.status).toBe(201);
+      expect(result.body.case.ai.processingStatus).toBe("failed");
+      expect(result.body.case.ai.reviewStatus).toBe("pending");
+    } finally { config.CASE_TRIAGE_MODE = previous; failure.mockRestore(); }
+  });
+  it("finishes the submitted case without claiming other queued cases", async () => {
+    const { config } = await import("../src/config.js");
+    const previous = config.CASE_TRIAGE_MODE;
+    config.CASE_TRIAGE_MODE = "inline";
+    try {
+      await models.CaseRecord.updateOne({ _id: record._id }, { $set: { "ai.processingStatus": "queued" } });
+      const result = await request("/cases", requester, "POST", {
+        title: "Request-driven analysis", description: "Unable to access my account in Building A", serviceKey: "general_support"
+      });
+      expect(result.status).toBe(201);
+      expect(result.body.case.ai.processingStatus).toBe("complete");
+      expect(result.body.case.ai.modelVersion).toBe("test-model-v2");
+      expect((await models.CaseRecord.findById(record._id)).ai.processingStatus).toBe("queued");
+    } finally { config.CASE_TRIAGE_MODE = previous; }
+  });
+});
+
+describe("shared rental incidents", () => {
+  it("marks earlier related requests without overwriting human review or other locations", async () => {
+    const { processCaseTriage } = await import("../src/jobs/caseTriage.js");
+    await models.CaseRecord.updateOne({ _id: record._id }, { $set: {
+      propertyCode: "TOWER-A", unitCode: "A301", "ai.processingStatus": "queued"
+    } });
+    await processCaseTriage();
+    expect((await models.CaseRecord.findById(record._id)).ai.sharedIncidentCandidate).toBe(false);
+    await models.CaseRecord.updateOne({ _id: record._id }, { $set: {
+      "ai.reviewStatus": "confirmed", "ai.humanCorrectedLabel": "water"
+    } });
+    const before = await models.CaseRecord.findById(record._id);
+    const extra = (code: string, organizationId: unknown, propertyCode: string, status = "new", hoursAgo = 0) => models.CaseRecord.create({
+      organizationId, code, title: "Water pressure is low", description: "Water pressure is low across all taps",
+      serviceKey: "general_support", category: "general_support", requesterId: requester._id,
+      requesterName: requester.name, team: "IT", propertyCode, unitCode: "A302", status,
+      dueAt: new Date(Date.now() + 3600000), createdAt: new Date(Date.now() - hoursAgo * 3600000)
+    });
+    const excluded = await Promise.all([
+      extra("OTHER-SITE", org._id, "TOWER-B"),
+      extra("OTHER-TENANT", outsider.organizationId, "TOWER-A"),
+      extra("RESOLVED", org._id, "TOWER-A", "resolved"),
+      extra("OLD-REPORT", org._id, "TOWER-A", "new", 72)
+    ]);
+    const second = await extra("SECOND-REPORT", org._id, "TOWER-A");
+    await models.CaseRecord.updateOne({ _id: second._id }, { $set: { "ai.processingStatus": "queued" } });
+    await processCaseTriage();
+    const earlier = await models.CaseRecord.findById(record._id);
+    expect(earlier.ai.sharedIncidentCandidate).toBe(true);
+    expect(earlier.ai.reviewStatus).toBe("confirmed");
+    expect(earlier.ai.humanCorrectedLabel).toBe("water");
+    expect(earlier.__v).toBe(before.__v);
+    expect((await models.CaseRecord.findById(second._id)).ai.sharedIncidentCandidate).toBe(true);
+    for (const item of excluded) expect((await models.CaseRecord.findById(item._id)).ai.sharedIncidentCandidate).toBe(false);
+  });
+  it("keeps asset identity immutable and protects repair task transitions", async () => {
+    const { MaintenanceTask, RentalAsset } = await import("../src/models/rental.js");
+    await MaintenanceTask.init();
+    await RentalAsset.init();
+    for (const code of ["TOWER-A", "TOWER-B"]) expect((await request("/rental/catalog", admin, "PUT",
+      { kind: "property", code, name: code })).status).toBe(204);
+    const asset = { kind: "asset", propertyCode: "TOWER-A", code: "PUMP", name: "Shared pump", category: "water" };
+    expect((await request("/rental/catalog", admin, "PUT", asset)).status).toBe(204);
+    expect((await request("/rental/catalog", admin, "PUT", { ...asset, propertyCode: "TOWER-B" })).status).toBe(409);
+    expect((await RentalAsset.findOne({ organizationId: org._id, code: "PUMP" })).propertyCode).toBe("TOWER-A");
+    const body = { assetCode: "PUMP", title: "Inspect water pump", dueAt: new Date(Date.now() + 3600000).toISOString(), assigneeId: String(agent._id) };
+    const path = "/rental/tasks/repair-test-idempotency-1";
+    expect((await request(path, requester, "PUT", body)).status).toBe(403);
+    expect((await request(path, outsider, "PUT", body)).status).toBe(422);
+    const created = await request(path, admin, "PUT", body);
+    expect(created.status).toBe(200);
+    expect((await request(path, admin, "PUT", body)).body.id).toBe(created.body.id);
+    expect((await request(path, admin, "PUT", { ...body, title: "Changed repair task" })).status).toBe(409);
+    expect((await request("/rental/tasks", requester)).status).toBe(403);
+    expect((await request("/rental/tasks", outsider)).body.tasks).toHaveLength(0);
+    const task = await MaintenanceTask.findById(created.body.id);
+    const update = `/rental/tasks/${task._id}`;
+    expect((await request(update, outsider, "PATCH", { version: task.__v, status: "in_progress" })).status).toBe(404);
+    expect((await request(update, agent, "PATCH", { version: task.__v, status: "completed", result: "Done" })).status).toBe(422);
+    expect((await request(update, agent, "PATCH", { version: task.__v, status: "in_progress" })).status).toBe(204);
+    expect((await request(update, agent, "PATCH", { version: task.__v, status: "in_progress" })).status).toBe(422);
+    expect((await request(update, agent, "PATCH", { version: task.__v + 1, status: "completed", result: "" })).status).toBe(422);
+    expect((await request(update, agent, "PATCH", { version: task.__v + 1, status: "completed", result: "Pump checked, pressure restored" })).status).toBe(204);
+    expect((await request("/rental/assets/PUMP/history", admin)).body.tasks[0].result).toBe("Pump checked, pressure restored");
+    expect(await MaintenanceTask.countDocuments()).toBe(1);
+  });
+  it("validates catalog ownership, resident access and asset location", async () => {
+    await models.Organization.updateOne({ _id: org._id }, { $set: { "settings.serviceDomain": "rental" } });
+    const property = { kind: "property", code: "tower-a", name: "Demo Tower A" };
+    expect((await request("/rental/catalog", requester, "PUT", property)).status).toBe(403);
+    expect((await request("/rental/catalog", admin, "PUT", property)).status).toBe(204);
+    expect((await request("/rental/catalog", admin, "PUT", { kind: "unit", propertyCode: "TOWER-A",
+      code: "A301", residentIds: [String(outsider._id)] })).status).toBe(422);
+    expect((await request("/rental/catalog", admin, "PUT", { kind: "unit", propertyCode: "TOWER-A",
+      code: "A301", residentIds: [String(requester._id)] })).status).toBe(204);
+    expect((await request("/rental/catalog", admin, "PUT", { kind: "unit", propertyCode: "TOWER-A",
+      code: "A302", residentIds: [] })).status).toBe(204);
+    expect((await request("/rental/catalog", admin, "PUT", { kind: "asset", propertyCode: "TOWER-A",
+      unitCode: "A302", code: "AC-302", name: "Air conditioner", category: "appliances" })).status).toBe(204);
+    const catalog = await request("/rental/catalog");
+    expect(catalog.body.units.map((unit: { code: string }) => unit.code)).toEqual(["A301"]);
+    expect(catalog.body.assets).toHaveLength(0);
+    expect(catalog.body.residents).toHaveLength(0);
+    expect((await request("/rental/catalog", outsider)).body.properties).toHaveLength(0);
+    const body = { title: "Repair request", description: "Water pressure is low today", propertyCode: "TOWER-A", unitCode: "A302" };
+    expect((await request("/cases", requester, "POST", body)).status).toBe(403);
+    expect((await request("/cases", requester, "POST", { ...body, unitCode: "A301", assetCode: "AC-302" })).status).toBe(422);
+    expect((await request("/cases", requester, "POST", { ...body, unitCode: "A301" })).status).toBe(201);
+    expect((await request("/rental/assets/AC-302/history", requester)).status).toBe(403);
+    expect(await models.AuditLog.countDocuments({ organizationId: org._id, action: "rental.catalog.update" })).toBe(4);
+  });
+  it("coordinates requests from separate residents without closing or exposing them", async () => {
+    await models.Incident.init();
+    const resident = await models.User.create({ organizationId: org._id, name: "Resident",
+      email: "resident@test.local", passwordHash: requester.passwordHash, role: "requester" });
+    const createCase = (user: typeof requester, propertyCode: string, unitCode: string) =>
+      request("/cases", user, "POST", { title: "Nước yếu", description: "Nước yếu ở cả căn từ sáng nay", propertyCode, unitCode });
+    const first = await createCase(requester, "tower-a", "A301");
+    const second = await createCase(resident, "TOWER-A", "A302");
+    const otherSite = await createCase(resident, "TOWER-B", "B301");
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(otherSite.status).toBe(201);
+    expect(first.body.case.propertyCode).toBe("TOWER-A");
+    const body = { title: "Nước yếu tầng 3", caseCode: first.body.case.code };
+    expect((await request("/incidents", requester, "POST", body)).status).toBe(403);
+    expect((await request("/incidents", outsider, "POST", body)).status).toBe(404);
+    const created = await request("/incidents", admin, "POST", body);
+    expect(created.status).toBe(201);
+    expect((await request("/incidents", admin, "POST", body)).status).toBe(409);
+    const path = `/incidents/${created.body.id}`;
+    expect((await request(`${path}/options`, requester)).status).toBe(403);
+    expect((await request(`${path}/options`, outsider)).status).toBe(404);
+    expect((await request(`/cases/${first.body.case._id}/related`, requester)).status).toBe(403);
+    expect((await request(`/cases/${first.body.case._id}/related`, outsider)).status).toBe(404);
+    expect((await request(`/cases/${first.body.case._id}/related`, admin)).body.matches.map((item: { code: string }) => item.code)).toEqual([second.body.case.code]);
+    expect((await request(`${path}/options`, admin)).body.candidates.map((item: { code: string }) => item.code)).toEqual([second.body.case.code]);
+    const link = (caseCode: string, linked = true) => request(`${path}/cases`, admin, "PUT", { caseCode, linked });
+    expect((await link(otherSite.body.case.code)).status).toBe(404);
+    expect((await link(second.body.case.code)).status).toBe(204);
+    expect((await link(second.body.case.code)).status).toBe(204);
+    expect((await link(second.body.case.code, false)).status).toBe(204);
+    expect((await link(second.body.case.code)).status).toBe(204);
+    const current = await models.Incident.findById(created.body.id);
+    const update = { version: current.__v, ownerId: String(agent._id), appointmentAt: new Date().toISOString(),
+      severity: "medium", status: "resolved", resolution: "Đã kiểm tra và phục hồi nguồn cấp chung" };
+    expect((await request(path, admin, "PATCH", { ...update, ownerId: String(outsider._id) })).status).toBe(422);
+    expect((await request(path, admin, "PATCH", update)).status).toBe(204);
+    expect((await request(path, admin, "PATCH", update)).status).toBe(409);
+    expect((await models.CaseRecord.find({ _id: { $in: [first.body.case._id, second.body.case._id] } })).map(item => item.status)).toEqual(["new", "new"]);
+    expect(await models.Notification.countDocuments({ title: "Sự cố chung đã được xử lý", userId: { $in: [requester._id, resident._id] } })).toBe(2);
+    expect((await request(`/cases/${second.body.case._id}`, requester)).status).toBe(404);
+    expect(await models.AuditLog.countDocuments({ organizationId: org._id, action: "incident.link" })).toBe(2);
+    expect(await models.AuditLog.countDocuments({ organizationId: org._id, action: "incident.unlink" })).toBe(1);
+  });
 });
 
 describe("personnel boundaries and leave workflow", () => {
@@ -658,6 +833,17 @@ describe("tenant and privacy boundaries", () => {
     const result = await request("/ai/analyze-intake", requester, "POST", { text: "Cannot access student account" });
     expect(result.status).toBe(200);
     expect(result.body.similar).toEqual([]);
+  });
+  it("suggests a priority with reasons and records the staff decision", async () => {
+    const intake = await request("/ai/analyze-intake", agent, "POST", { text: "Ổ cắm trong bếp có tia lửa và mùi khét" });
+    expect(intake.status).toBe(200);
+    expect(intake.body.prioritySuggestion.priority).toBe("urgent");
+    expect(intake.body.prioritySuggestion.reasons.length).toBeGreaterThan(0);
+    await models.CaseRecord.updateOne({ _id: record._id }, { "ai.suggestedPriority": "high", priority: "normal" });
+    const updated = await request(`/cases/${record._id}`, agent, "PATCH", { priority: "high" });
+    expect(updated.status).toBe(200);
+    expect(updated.body.case.priority).toBe("high");
+    expect(updated.body.case.events.some((event: { type: string; label: string }) => event.type === "priority_changed" && event.label.includes("theo gợi ý AI"))).toBe(true);
   });
   it("rejects requester internal notes and admin operations", async () => {
     expect((await request(`/cases/${record._id}/comments`, requester, "POST", { body: "note", internal: true })).status).toBe(403);
@@ -1251,6 +1437,14 @@ describe("security audit and distributed jobs", () => {
     const saved = await models.CaseRecord.findById(record._id).lean<any>();
     expect(saved.slaBreachedAt).toBeNull();
     expect(saved.dueAt.getTime()).toBeGreaterThan(Date.now());
+  });
+  it("publishes only boolean OAuth provider availability without credentials", async () => {
+    const response = await fetch(`${base}/api/auth/providers`);
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(Object.keys(body).sort()).toEqual(["google", "microsoft"]);
+    expect(typeof body.google).toBe("boolean");
+    expect(typeof body.microsoft).toBe("boolean");
   });
   it("persists AI model provenance and extracted information", async () => {
     const result = await request("/cases", requester, "POST", { title: "Need account assistance", description: "Unable to access my account in Building A", serviceKey: "general_support", priority: "normal", channel: "portal" });

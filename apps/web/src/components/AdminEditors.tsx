@@ -8,7 +8,7 @@ import { Modal } from "./Modal";
 import { useConfirmation } from "./ConfirmationProvider";
 import { categoryLabels } from "../utils/labels";
 
-export const categories = ["it_access", "academic_records", "student_services", "facilities", "finance", "general_support"];
+export const categories = ["water", "electrical", "internet", "appliances", "access_security", "general_support"];
 type EditorActions = { onClose: () => void; onSaved: () => void };
 
 export function ServiceEditor({ service, onClose, onSaved }: EditorActions & { service?: ServiceDefinition }) {
@@ -33,7 +33,7 @@ export function ServiceEditor({ service, onClose, onSaved }: EditorActions & { s
       <label className="field"><span>{text("Mã dịch vụ", "Service key")}</span><input required minLength={2} maxLength={50} pattern="[a-z][a-z0-9_]*" disabled={Boolean(service)} value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} /></label>
       <label className="field"><span>{text("Tên dịch vụ", "Service name")}</span><input required minLength={2} maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
       <label className="field"><span>{text("Mô tả", "Description")}</span><textarea maxLength={500} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-      <div className="form-grid"><label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{categories.map((category) => <option key={category} value={category}>{categoryLabels[category][locale]}</option>)}</select></label>
+      <div className="form-grid"><label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{Array.from(new Set([...categories, form.category])).map((category) => <option key={category} value={category}>{categoryLabels[category]?.[locale] || category}</option>)}</select></label>
       <label className="field"><span>{text("Đơn vị phụ trách", "Owning team")}</span><input required minLength={2} maxLength={60} value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })} /></label></div>
       <label className="field"><span>{text("SLA xử lý (giờ)", "Resolution SLA (hours)")}</span><input type="number" required min={1} max={720} value={form.slaHours} onChange={(e) => setForm({ ...form, slaHours: Number(e.target.value) })} /></label>
       <label className="field"><span>{text("Trường bắt buộc (mỗi dòng một tên)", "Required fields (one name per line)")}</span><textarea rows={3} disabled={form.key === "general_support"} value={form.fields} onChange={(e) => setForm({ ...form, fields: e.target.value })} /></label>
@@ -110,7 +110,7 @@ export function ArticleEditor({ article, canPublish, onClose, onSaved }: EditorA
     <form className="form-stack" onSubmit={submit}>
       <label className="field"><span>{text("Tên tài liệu", "Document title")}</span><input required minLength={5} maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
       <label className="field"><span>{text("Nội dung", "Content")}</span><textarea rows={10} required minLength={20} maxLength={50000} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} /></label>
-      <label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{categories.map((category) => <option key={category} value={category}>{categoryLabels[category][locale]}</option>)}</select></label>
+      <label className="field"><span>{text("Nhóm phân loại", "Category")}</span><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{Array.from(new Set([...categories, form.category])).map((category) => <option key={category} value={category}>{categoryLabels[category]?.[locale] || category}</option>)}</select></label>
       <label className="field"><span>{text("Nguồn ban hành", "Issuing source")}</span><input required minLength={2} maxLength={120} value={form.sourceLabel} onChange={(e) => setForm({ ...form, sourceLabel: e.target.value })} /></label>
       <label className="field"><span>{text("Liên kết nguồn", "Source URL")}</span><input type="url" value={form.sourceUrl} onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })} /></label>
       <label className="field"><span>{text("Phiên bản", "Version")}</span><input required maxLength={30} value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} /></label>

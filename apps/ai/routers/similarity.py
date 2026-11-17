@@ -3,8 +3,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from ..schemas import SimilarityRequest
+from ..related import RelatedRequest, rank_related
 
 router = APIRouter()
+
+
+@router.post("/related")
+def related(request: RelatedRequest) -> dict:
+    return rank_related(request)
 
 
 @router.post("/similarity")

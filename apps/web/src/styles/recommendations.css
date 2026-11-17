@@ -6,3 +6,9 @@
 .recommendation-draft { white-space: pre-wrap; }
 .recommendation-citation { padding: 8px 0; overflow-wrap: anywhere; }
 .action-bar input { min-width: 0; max-width: 100%; height: 40px; padding: 8px 10px; border: 1px solid var(--border, #cbd5d1); border-radius: 6px; background: #fff; color: inherit; font: inherit; }
+
+.priority-suggestion { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--ai-border); background: var(--ai-bg); border-radius: 8px; }
+.priority-suggestion-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.priority-suggestion-head > span { font-size: 0.82rem; color: var(--muted); }
+.priority-suggestion ul { margin: 0; padding-left: 18px; font-size: 0.85rem; overflow-wrap: anywhere; }
+.priority-suggestion .text-link { justify-self: start; }

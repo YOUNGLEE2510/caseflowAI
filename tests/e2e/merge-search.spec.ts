@@ -6,15 +6,15 @@ test("indexed search finds unaccented prefixes and managers merge duplicates wit
   const marker = String(Date.now());
   const create = async (suffix: string) => {
     const response = await request.post("/api/cases", { headers: { Authorization: `Bearer ${token}` }, data: {
-      title: `Gộp kiểm thử ${marker} ${suffix}`, description: "Em gửi lại cùng một yêu cầu hỗ trợ chung để kiểm thử gộp hồ sơ.", serviceKey: "general_support"
+      title: `Gộp kiểm thử ${marker} ${suffix}`, description: "Em gửi lại cùng một yêu cầu hỗ trợ chung để kiểm thử gộp hồ sơ.", serviceKey: "general_support", propertyCode: "TOWER-A", unitCode: "A301"
     } });
     expect(response.status()).toBe(201);
     return (await response.json()).case;
   };
   const target = await create("hồ sơ chính"), source = await create("bản trùng");
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Tổ chức", exact: true }).selectOption("minh-khai-university");
-  await page.getByLabel("Email tổ chức").fill("manager@caseflow.local");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByLabel("Email tài khoản").fill("manager@caseflow.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);

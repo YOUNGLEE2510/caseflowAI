@@ -25,7 +25,7 @@ import { auditFromReq, logAudit } from "../services/helpers.js";
 import { caseScope } from "../services/casePolicy.js";
 import { validateObjectId } from "../middleware/validateId.js";
 import { Types } from "mongoose";
-import { uploadDirectory, settleUpload, type UploadReservation } from "../services/attachmentUploads.js";
+import { uploadDirectory, settleUpload, reconcileLegacyAttachmentCounters, type UploadReservation } from "../services/attachmentUploads.js";
 
 export const attachmentRouter = Router();
 
@@ -129,9 +129,7 @@ attachmentRouter.post("/cases/:caseId/attachments", uploadLimit, raw({ type: "ap
   const scan = await scanFile(buffer);
   const upload: UploadReservation = { _id: attachmentId, filename, size: buffer.length,
     storageProvider: config.STORAGE_PROVIDER, expiresAt: new Date(Date.now() + 10 * 60000) };
-  const [existing] = await Attachment.aggregate([{ $match: { caseId: caseRecord._id, deletedAt: null, deleting: { $ne: true } } },
-    { $group: { _id: null, count: { $sum: 1 }, bytes: { $sum: "$size" } } }]);
-  await CaseRecord.updateOne({ _id: caseRecord._id }, { $max: { attachmentCount: existing?.count || 0, attachmentBytes: existing?.bytes || 0 } });
+  if (!await reconcileLegacyAttachmentCounters(caseRecord._id)) throw new HttpError(409, "Hồ sơ đang được cập nhật. Vui lòng thử lại.");
   const reservation = await CaseRecord.updateOne({ _id: caseRecord._id, ...caseScope(req.auth!), status: { $ne: "closed" },
     attachmentReservations: { $not: { $elemMatch: { _id: attachmentId } } },
     attachmentCount: { $lt: 10 }, attachmentBytes: { $lte: 50 * 1024 * 1024 - buffer.length } },

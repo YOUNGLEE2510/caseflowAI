@@ -49,6 +49,7 @@ const workspaceItems: NavItem[] = [
 ];
 
 const adminItems: NavItem[] = [
+  { to: "/rental", label: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, icon: Workflow, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/personnel", label: { vi: "Nhân sự", en: "Personnel" }, icon: Users, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/system", label: { vi: "Vận hành", en: "System" }, icon: Activity, roles: ["manager", "org_admin", "platform_admin"] },
   {
@@ -80,6 +81,7 @@ const routeMeta = [
   { prefix: "/incidents", title: { vi: "Trung tâm sự cố", en: "Incident center" }, subtitle: { vi: "Theo dõi sự cố đã ghi nhận", en: "Recorded incidents" } },
   { prefix: "/knowledge", title: { vi: "Kho tri thức", en: "Knowledge base" }, subtitle: { vi: "Tìm kiếm có căn cứ và kiểm soát nguồn", en: "Grounded answers from approved sources" } },
   { prefix: "/services", title: { vi: "Quản trị dịch vụ", en: "Service management" }, subtitle: { vi: "Cấu hình danh mục và quy tắc định tuyến", en: "Catalog, routing and SLA rules" } },
+  { prefix: "/rental", title: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, subtitle: { vi: "Tòa nhà, căn hộ, thiết bị và phiếu sửa chữa", en: "Properties, units, assets and repair tasks" } },
   { prefix: "/personnel", title: { vi: "Nhân sự", en: "Personnel" }, subtitle: { vi: "Hồ sơ, lịch làm việc và nghỉ phép", en: "Staff, schedules and leave" } },
   { prefix: "/users", title: { vi: "Tài khoản và phân quyền", en: "Accounts and access" }, subtitle: { vi: "Quản lý quyền truy cập theo vai trò", en: "Role-based access management" } },
   { prefix: "/overview", title: { vi: "Tổng quan vận hành", en: "Operations overview" }, subtitle: { vi: "Tình trạng dịch vụ theo thời gian thực", en: "Live service health" } }
@@ -242,7 +244,7 @@ export function AppShell() {
             </span>
             <span className="brand-copy">
               <strong>CaseFlow</strong>
-              <small>{text("Quản lý dịch vụ", "Service management")}</small>
+              <small>{text("Vận hành căn hộ", "Apartment operations")}</small>
             </span>
           </Link>
           <button className="sidebar-collapse icon-button" type="button" onClick={toggleSidebar} aria-expanded={!collapsed} aria-label={collapsed ? text("Mở rộng sidebar", "Expand sidebar") : text("Thu gọn sidebar", "Collapse sidebar")} title={collapsed ? text("Mở rộng sidebar", "Expand sidebar") : text("Thu gọn sidebar", "Collapse sidebar")}>
@@ -321,7 +323,7 @@ export function AppShell() {
             </span>
             <span>
               <strong>CaseFlow</strong>
-              <small>{organizationName}</small>
+              <small title={organizationName}>{organizationName}</small>
             </span>
           </button>
 

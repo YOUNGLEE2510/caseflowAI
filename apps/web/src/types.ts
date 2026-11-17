@@ -65,6 +65,9 @@ export interface CaseRecord {
   createdAt: string;
   updatedAt: string;
   customFields?: Record<string, string>;
+  propertyCode?: string;
+  unitCode?: string;
+  assetCode?: string;
   ai: {
     processingStatus?: "queued" | "running" | "complete" | "failed" | "cancelled";
     classification: string;
@@ -73,7 +76,10 @@ export interface CaseRecord {
     summary: string;
     riskScore: number;
     riskFactors: string[];
+    suggestedPriority?: "" | Priority;
+    priorityReasons?: string[];
     similarCaseIds: string[];
+    sharedIncidentCandidate?: boolean;
     analyzedAt: string;
     reviewStatus: "pending" | "confirmed" | "corrected";
     reviewedAt?: string;
@@ -123,6 +129,13 @@ export interface NotificationRecord {
 
 export interface Incident {
   _id: string;
+  __v: number;
+  propertyCode?: string;
+  appointmentAt?: string | null;
+  ownerId?: string | null;
+  ownerName?: string;
+  resolution?: string;
+  rootCause?: string;
   code: string;
   title: string;
   summary: string;
@@ -131,7 +144,7 @@ export interface Incident {
   team: string;
   affectedCount: number;
   detectedAt: string;
-  caseIds: Array<Pick<CaseRecord, "_id" | "code" | "title" | "status" | "priority">>;
+  caseIds: Array<Pick<CaseRecord, "_id" | "code" | "title" | "status" | "priority" | "unitCode">>;
   signal: {
     clusterScore: number;
     growthRate: number;
@@ -174,6 +187,7 @@ export interface DashboardData {
     averageResolutionHours: number;
   };
   statusDistribution: Array<{ name: CaseStatus; value: number }>;
+  workloadBy?: "property" | "team";
   teamWorkload: Array<{ team: string; open: number; risk: number }>;
   recentCases: CaseRecord[];
   highRiskCases: CaseRecord[];

@@ -60,19 +60,19 @@ export function OverviewPage() {
       <div className="page-stack requester-home">
         <section className="requester-welcome">
           <h1>{text(`Chào ${displayName},`, `Hi ${displayName},`)}</h1>
-          <p>{text("Bạn cần CaseFlow hỗ trợ điều gì hôm nay?", "What can CaseFlow help you with today?")}</p>
+          <p>{text("Bạn cần hỗ trợ sự cố gì tại căn hộ hôm nay?", "What apartment issue can we help you with today?")}</p>
         </section>
 
         <Link to="/cases/new" className="button button-primary requester-create">
           <Plus size={18} />
-          {text("Tạo yêu cầu mới", "Create a request")}
+          {text("Báo sự cố mới", "Report an issue")}
         </Link>
 
         <Link to="/knowledge" className="requester-ai-card">
           <Sparkles size={20} />
           <span>
-            <strong>{text("Tìm câu trả lời trước khi gửi", "Find an answer before submitting")}</strong>
-            <small>{text("Tra cứu từ nguồn đã được tổ chức phê duyệt.", "Search your organization’s approved sources.")}</small>
+            <strong>{text("Tra cứu hướng dẫn xử lý trước khi gửi", "Check troubleshooting guides first")}</strong>
+            <small>{text("Tìm quy trình xử lý đã được đơn vị vận hành phê duyệt.", "Search procedures approved by your property operator.")}</small>
           </span>
           <ArrowRight size={18} />
         </Link>
@@ -170,7 +170,6 @@ export function OverviewPage() {
         }
       />
 
-      {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
       <section className="metric-grid" aria-label={text("Chỉ số tổng quan", "Overview metrics")}>
         {metrics.map((metric) => {
           const Icon = metric.icon;
@@ -217,6 +216,7 @@ export function OverviewPage() {
       ) : null}
 
       {canSeeAnalytics ? <OperationsProgress /> : null}
+      {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
 
       <nav className="work-queue-shortcuts" aria-label={text("Hàng đợi nhanh", "Quick queues")}>
         <Link to="/cases?status=new"><Inbox size={18} /><span>{text("Chờ tiếp nhận", "Awaiting triage")}</span><ArrowRight size={16} /></Link>
@@ -224,7 +224,6 @@ export function OverviewPage() {
         <Link to="/cases?status=waiting"><TriangleAlert size={18} /><span>{text("Chờ phản hồi", "Waiting for a response")}</span><ArrowRight size={16} /></Link>
       </nav>
 
-      <Suspense fallback={<div style={{ minHeight: 320 }} />}><DashboardCharts data={data} /></Suspense>
       <section className="priority-queue-panel">
         <div className="panel-heading">
           <div>
@@ -250,18 +249,27 @@ export function OverviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {priorityCases.map((item) => (
-                  <tr key={item._id}>
-                    <td><Link to={`/cases/${item._id}`} className="case-link">{item.code}</Link></td>
-                    <td>
-                      <Link to={`/cases/${item._id}`} className="table-title">{item.title}</Link>
-                    </td>
-                    <td>{item.requesterName}</td>
-                    <td><StatusBadge status={item.status} /></td>
-                    <td><PriorityBadge priority={item.priority} /></td>
-                    <td>{formatRelative(item.updatedAt)}</td>
-                  </tr>
-                ))}
+                {priorityCases.map((item) => {
+                  const location = [item.propertyCode, item.unitCode].filter(Boolean).join(" · ");
+                  return (
+                    <tr key={item._id}>
+                      <td><Link to={`/cases/${item._id}`} className="case-link">{item.code}</Link></td>
+                      <td>
+                        <Link to={`/cases/${item._id}`} className="case-title-cell">
+                          <strong title={item.title}>{item.title}</strong>
+                          {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && item.ai?.sharedIncidentCandidate ? (
+                            <span>{text("Có phản ánh liên quan — kiểm tra sự cố chung", "Related requests — review shared incident")}</span>
+                          ) : null}
+                          {location ? <small>{location}</small> : null}
+                        </Link>
+                      </td>
+                      <td>{item.requesterName}</td>
+                      <td><StatusBadge status={item.status} /></td>
+                      <td><PriorityBadge priority={item.priority} /></td>
+                      <td>{formatRelative(item.updatedAt)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -274,6 +282,7 @@ export function OverviewPage() {
           <span>{text(`Hiển thị ${priorityCases.length} hồ sơ ưu tiên`, `Showing ${priorityCases.length} priority cases`)}</span>
         </footer>
       </section>
+      <Suspense fallback={<LoadingState label={text("Đang tải biểu đồ", "Loading charts")} />}><DashboardCharts data={data} /></Suspense>
     </div>
   );
 }

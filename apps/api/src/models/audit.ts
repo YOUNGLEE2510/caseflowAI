@@ -16,7 +16,8 @@ const auditLogSchema = new Schema(
         "service.create", "service.update", "service.delete",
         "user.create", "user.update", "user.deactivate",
         "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.draft",
-        "incident.create", "incident.update", "incident.resolve",
+        "incident.create", "incident.update", "incident.resolve", "incident.link", "incident.unlink", "rental.catalog.update",
+        "maintenance.create", "maintenance.update",
         "auth.login", "auth.logout", "auth.logout_all", "auth.mfa_enable", "auth.mfa_verify", "auth.microsoft_link", "attachment.download", "attachment.upload", "attachment.delete",
         "ai.classify", "ai.retrain", "case.export", "ai.training_export",
         "recommendation.created", "recommendation.overview", "recommendation.accepted", "recommendation.dismissed"

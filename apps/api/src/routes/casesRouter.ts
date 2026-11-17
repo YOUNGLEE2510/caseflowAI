@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { withAiBudget } from "../services/aiBudget.js";
+import { config } from "../config.js";
+import { processCaseTriage } from "../jobs/caseTriage.js";
+import { suggestPriority } from "../services/prioritySuggestion.js";
 import { publicUser, type PublicUserSource } from "../services/publicUser.js";
 import { createHash, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
@@ -26,6 +29,9 @@ import { canUseAiRouting } from "../services/routing.js";
 import { caseScope, pageNumber, presentCase, validateStatusTransition } from "../services/casePolicy.js";
 import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 import { searchTerms } from "../services/caseSearch.js";
+import { incidentActions } from "./incidentActions.js";
+import { rentalRouter } from "./rental.js";
+import { RentalAsset, RentalProperty, RentalUnit } from "../models/rental.js";
 
 interface LeanService {
   _id: mongoose.Types.ObjectId;
@@ -58,8 +64,11 @@ const intakeSchema = z.object({
   requesterId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
   channel: z.enum(["portal", "phone", "email", "walk_in", "api"]).default("portal"),
-  customFields: z.record(z.string(), z.string().max(2000)).default({})
-}).strict();
+  customFields: z.record(z.string(), z.string().max(2000)).default({}),
+  propertyCode: z.string().trim().regex(/^[a-z\d-]{1,32}$/i).transform(value => value.toUpperCase()).optional(),
+  unitCode: z.string().trim().regex(/^[a-z\d-]{1,32}$/i).transform(value => value.toUpperCase()).optional(),
+  assetCode: z.string().trim().regex(/^[a-z\d-]{1,32}$/i).transform(value => value.toUpperCase()).optional()
+}).strict().refine(value => !value.unitCode || value.propertyCode, { path: ["propertyCode"], message: "Property code is required for a unit." });
 
 export const casesRouter = Router();
 
@@ -167,6 +176,7 @@ casesRouter.post("/ai/analyze-intake", async (req, res) => {
   res.json({
     classification,
     similar,
+    prioritySuggestion: suggestPriority({ text: input.text, category: classification.label, relatedOpenCases: similar.length }),
     service,
     needsReview: !service || !canUseAiRouting(classification.confidence, classification.provider)
   });
@@ -174,7 +184,7 @@ casesRouter.post("/ai/analyze-intake", async (req, res) => {
 
 /* ── Create Case ── */
 
-casesRouter.post("/cases", (_req, _res, next) => withAiBudget(5000, next), async (req, res) => {
+casesRouter.post("/cases", (_req, _res, next) => withAiBudget(config.CASE_TRIAGE_MODE === "inline" ? 15000 : 5000, next), async (req, res) => {
   const input = intakeSchema.parse(req.body);
   if (req.auth!.role === "requester" && input.requesterId && input.requesterId !== req.auth!.id) throw new HttpError(403, "Không được tạo hồ sơ thay người khác.");
   if (req.auth!.role !== "requester" && input.channel !== "portal" && !input.requesterId) throw new HttpError(422, "Chọn người yêu cầu khi tiếp nhận hộ.");
@@ -208,7 +218,22 @@ casesRouter.post("/cases", (_req, _res, next) => withAiBudget(5000, next), async
     throw new HttpError(422, "Người gửi yêu cầu chỉ được sử dụng kênh cổng trực tuyến.");
   }
   const classification = fallbackClassify(`${input.title || ""}. ${input.description}`);
-  const organization = await Organization.findById(req.auth!.organizationId).select("settings.holidayDates").lean();
+  const organization = await Organization.findById(req.auth!.organizationId).select("settings.holidayDates settings.serviceDomain")
+    .lean<{ settings?: { serviceDomain?: string; holidayDates?: string[] } }>();
+  if (organization?.settings?.serviceDomain === "rental") {
+    if (!input.propertyCode || !await RentalProperty.exists({ organizationId: req.auth!.organizationId, code: input.propertyCode, active: true })) {
+      throw new HttpError(422, "Cần chọn cơ sở hợp lệ.");
+    }
+    if (req.auth!.role === "requester" && !input.unitCode) throw new HttpError(422, "Cần chọn căn được phân quyền.");
+    if (input.unitCode && !await RentalUnit.exists({ organizationId: req.auth!.organizationId, propertyCode: input.propertyCode,
+      code: input.unitCode, ...(req.auth!.role === "requester" ? { residentIds: req.auth!.id } : {}) })) {
+      throw new HttpError(403, "Bạn không có quyền gửi phản ánh cho căn này.");
+    }
+    if (input.assetCode && !await RentalAsset.exists({ organizationId: req.auth!.organizationId, propertyCode: input.propertyCode,
+      code: input.assetCode, active: true, $or: [{ unitCode: "" }, { unitCode: input.unitCode || "" }] })) {
+      throw new HttpError(422, "Thiết bị không thuộc vị trí đã chọn.");
+    }
+  }
 
   const service = (
     (input.serviceKey
@@ -252,6 +277,9 @@ casesRouter.post("/cases", (_req, _res, next) => withAiBudget(5000, next), async
     organizationId: req.auth!.organizationId,
     title,
     description: input.description,
+    propertyCode: input.propertyCode,
+    unitCode: input.unitCode,
+    assetCode: input.assetCode,
     customFields: Object.fromEntries((service.requiredFields || []).map((field) => [field, input.customFields[field].trim()])),
     serviceKey: service.key,
     category: service.category,
@@ -304,6 +332,11 @@ casesRouter.post("/cases", (_req, _res, next) => withAiBudget(5000, next), async
       if (isDuplicateKeyError(error) && await replay()) return;
       if (!isDuplicateKeyError(error) || attempt === 2) throw error;
     }
+  }
+
+  if (config.CASE_TRIAGE_MODE === "inline") {
+    await processCaseTriage({ caseId: String(record._id), organizationId: req.auth!.organizationId });
+    record = await CaseRecord.findOne({ _id: record._id, organizationId: req.auth!.organizationId }).lean();
   }
 
   await logAudit({
@@ -363,11 +396,13 @@ casesRouter.get(
       ...(req.auth!.role === "agent" ? { team: req.auth!.team } : {})
     })
       .sort({ detectedAt: -1 })
-      .populate("caseIds", "code title status priority")
+      .populate({ path: "caseIds", select: "code title status priority unitCode", match: caseScope(req.auth!) })
       .lean();
     res.json({ incidents });
   }
 );
+casesRouter.use(incidentActions);
+casesRouter.use(rentalRouter);
 
 /* ── Services (read) ── */
 
