@@ -24,7 +24,7 @@ jobs:
       - run: npm run test:audit
         env:
           E2E_BROWSER_CHANNEL: chromium
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: product-audit
