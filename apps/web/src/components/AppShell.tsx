@@ -16,6 +16,7 @@ import {
   Siren,
   Users,
   Workflow,
+  Building2,
   X
 } from "lucide-react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -49,6 +50,7 @@ const workspaceItems: NavItem[] = [
 ];
 
 const adminItems: NavItem[] = [
+  { to: "/units", label: { vi: "Căn hộ", en: "Units" }, icon: Building2, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/rental", label: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, icon: Workflow, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/personnel", label: { vi: "Nhân sự", en: "Personnel" }, icon: Users, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/system", label: { vi: "Vận hành", en: "System" }, icon: Activity, roles: ["manager", "org_admin", "platform_admin"] },
@@ -81,6 +83,7 @@ const routeMeta = [
   { prefix: "/incidents", title: { vi: "Trung tâm sự cố", en: "Incident center" }, subtitle: { vi: "Theo dõi sự cố đã ghi nhận", en: "Recorded incidents" } },
   { prefix: "/knowledge", title: { vi: "Kho tri thức", en: "Knowledge base" }, subtitle: { vi: "Tìm kiếm có căn cứ và kiểm soát nguồn", en: "Grounded answers from approved sources" } },
   { prefix: "/services", title: { vi: "Quản trị dịch vụ", en: "Service management" }, subtitle: { vi: "Cấu hình danh mục và quy tắc định tuyến", en: "Catalog, routing and SLA rules" } },
+  { prefix: "/units", title: { vi: "Căn hộ", en: "Units" }, subtitle: { vi: "Tình trạng cho thuê, dọn dẹp và sửa chữa từng căn", en: "Letting, cleaning and repair status of each unit" } },
   { prefix: "/rental", title: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, subtitle: { vi: "Tòa nhà, căn hộ, thiết bị và phiếu sửa chữa", en: "Properties, units, assets and repair tasks" } },
   { prefix: "/personnel", title: { vi: "Nhân sự", en: "Personnel" }, subtitle: { vi: "Hồ sơ, lịch làm việc và nghỉ phép", en: "Staff, schedules and leave" } },
   { prefix: "/users", title: { vi: "Tài khoản và phân quyền", en: "Accounts and access" }, subtitle: { vi: "Quản lý quyền truy cập theo vai trò", en: "Role-based access management" } },
@@ -235,7 +238,7 @@ export function AppShell() {
   }
 
   return (
-    <div className={`app-frame service-workspace ${collapsed ? "sidebar-collapsed" : ""} ${user?.role === "requester" ? "student-workspace" : "staff-workspace"}`}>
+    <div className={`app-frame service-workspace ${collapsed ? "sidebar-collapsed" : ""} ${user?.role === "requester" ? "resident-workspace" : "staff-workspace"}`}>
       <aside ref={sidebarRef} className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`} id="workspace-sidebar" inert={mobileViewport && !mobileOpen} role={mobileViewport && mobileOpen ? "dialog" : undefined} aria-modal={mobileViewport && mobileOpen ? true : undefined} aria-label={text("Menu chính", "Main menu")}>
         <div className="brand">
           <Link to="/overview" className="brand-link" onClick={() => setMobileOpen(false)}>

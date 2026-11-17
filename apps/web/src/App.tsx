@@ -9,6 +9,8 @@ import { ConfirmationProvider } from "./components/ConfirmationProvider";
 
 const LoginPage = lazy(async () => ({ default: (await import("./pages/LoginPage")).LoginPage }));
 const ResetPasswordPage = lazy(async () => ({ default: (await import("./pages/ResetPasswordPage")).ResetPasswordPage }));
+const UnitsPage = lazy(async () => ({ default: (await import("./pages/UnitsPage")).UnitsPage }));
+const QrReportPage = lazy(async () => ({ default: (await import("./pages/QrReportPage")).QrReportPage }));
 const OverviewPage = lazy(async () => ({ default: (await import("./pages/OverviewPage")).OverviewPage }));
 const CasesPage = lazy(async () => ({ default: (await import("./pages/CasesPage")).CasesPage }));
 const NewCasePage = lazy(async () => ({ default: (await import("./pages/NewCasePage")).NewCasePage }));
@@ -65,12 +67,14 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/r/:token" element={<QrReportPage />} />
         <Route element={<ProtectedRoutes />}>
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/overview" replace />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/rental" element={<IncidentRoute><RentalPage /></IncidentRoute>} />
+            <Route path="/units" element={<IncidentRoute><UnitsPage /></IncidentRoute>} />
             <Route path="/personnel" element={<IncidentRoute><PersonnelPage /></IncidentRoute>} />
             <Route path="/cases" element={<CasesPage />} />
             <Route path="/cases/new" element={<NewCasePage />} />

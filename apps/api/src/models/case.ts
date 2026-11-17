@@ -85,6 +85,19 @@ const caseSchema = new Schema(
     satisfactionComment: { type: String, default: "", maxlength: 1000 },
     satisfactionAt: { type: Date, default: null },
     customFields: { type: Map, of: String, default: {} },
+    // Unauthenticated QR intake: reporter details are unverified until staff confirm them.
+    intakeVerification: {
+      type: new Schema({
+        status: { type: String, enum: ["pending", "verified", "rejected"], required: true },
+        reporterName: { type: String, default: "", maxlength: 80 },
+        reporterPhone: { type: String, default: "", maxlength: 16 },
+        verifiedAt: { type: Date, default: null },
+        verifiedById: { type: Schema.Types.ObjectId, ref: "User", default: null },
+        verifiedByName: { type: String, default: "" },
+        note: { type: String, default: "", maxlength: 500 }
+      }, { _id: false }),
+      default: undefined
+    },
     propertyCode: { type: String },
     unitCode: { type: String },
     assetCode: { type: String },
@@ -154,6 +167,9 @@ caseSchema.index({ organizationId: 1, requesterId: 1, idempotencyKeyHash: 1 }, {
   partialFilterExpression: { idempotencyKeyHash: { $type: "string" } }
 });
 caseSchema.index({ organizationId: 1, status: 1, dueAt: 1 });
+caseSchema.index({ organizationId: 1, "intakeVerification.reporterPhone": 1, createdAt: -1 }, {
+  partialFilterExpression: { "intakeVerification.status": { $type: "string" } }
+});
 caseSchema.index({ organizationId: 1, "ai.riskScore": -1 });
 caseSchema.index({ organizationId: 1, assigneeId: 1, status: 1 });
 caseSchema.index({ code: "text", title: "text", description: "text" });

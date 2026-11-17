@@ -1,0 +1,193 @@
+/* QR intake: public report page, unit QR management and staff verification. */
+
+.qr-report-panel {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 18px;
+}
+
+.qr-unit {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.qr-unit strong {
+  color: var(--ink);
+}
+
+.qr-emergency {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.qr-emergency p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.qr-done {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--success-border);
+  border-radius: 8px;
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.qr-done h2,
+.qr-done p {
+  margin: 0;
+}
+
+.qr-done p {
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.qr-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.unit-qr-panel,
+.intake-panel {
+  padding-bottom: 20px;
+}
+
+/* Panels pad only their heading; give the body the same inset. */
+.unit-qr-panel > :not(.panel-heading),
+.intake-panel > :not(.panel-heading) {
+  margin-inline: 20px;
+}
+
+.intake-panel > .intake-summary:first-child {
+  margin-top: 16px;
+}
+
+.unit-qr-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.unit-qr-panel > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.unit-qr-pickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.unit-qr-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.unit-qr-image {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.unit-qr-meta {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.unit-qr-meta p {
+  margin: 0;
+}
+
+.unit-qr-url code {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface-muted);
+}
+
+.unit-qr-actions,
+.intake-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intake-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.intake-pending {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.intake-panel > p,
+.intake-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.intake-summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.intake-contact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.intake-contact dt {
+  color: var(--subtle);
+  font-size: 12px;
+}
+
+.intake-contact dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.intake-contact a {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.intake-flag {
+  color: var(--warning);
+  font-weight: 600;
+}

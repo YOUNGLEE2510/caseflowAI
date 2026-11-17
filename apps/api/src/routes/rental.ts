@@ -1,14 +1,17 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { z } from "zod";
 import { requireRoles } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { CaseRecord, User } from "../models.js";
 import { RentalProperty, RentalUnit, RentalAsset, MaintenanceTask } from "../models/rental.js";
 import { maintenanceRouter } from "./maintenance.js";
+import { rentalUnitsRouter } from "./rentalUnits.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
+import { signQrToken } from "../services/qrIntake.js";
 
 export const rentalRouter = Router();
 rentalRouter.use(maintenanceRouter);
+rentalRouter.use(rentalUnitsRouter);
 const manage = requireRoles("manager", "org_admin", "platform_admin");
 const code = z.string().trim().regex(/^[a-z\d-]{1,32}$/i).transform(value => value.toUpperCase());
 const id = z.string().regex(/^[a-f\d]{24}$/i);
@@ -61,6 +64,43 @@ rentalRouter.put("/rental/catalog", manage, async (req, res) => {
     throw error;
   }
   await logAudit({ ...actor, action: "rental.catalog.update", resource: kind, changes: { code: item.code } }, req);
+  res.status(204).end();
+});
+
+/* ── QR intake codes per unit ── */
+
+async function findUnit(req: Request) {
+  const unit = await RentalUnit.findOne({ organizationId: req.auth!.organizationId, propertyCode: code.parse(String(req.params.property)), code: code.parse(String(req.params.code)) })
+    .select("_id organizationId propertyCode code qrEnabled qrVersion qrIssuedAt").lean<{ _id: { toString(): string }; organizationId: { toString(): string };
+      propertyCode: string; code: string; qrEnabled?: boolean; qrVersion?: number; qrIssuedAt?: Date | null }>();
+  if (!unit) throw new HttpError(404, "Không tìm thấy căn hộ.");
+  return unit;
+}
+const presentQr = (unit: Awaited<ReturnType<typeof findUnit>>) => ({
+  propertyCode: unit.propertyCode, unitCode: unit.code, enabled: Boolean(unit.qrEnabled && unit.qrVersion), issuedAt: unit.qrIssuedAt || null,
+  path: unit.qrEnabled && unit.qrVersion ? `/r/${signQrToken(String(unit.organizationId), String(unit._id), unit.qrVersion)}` : null
+});
+
+rentalRouter.get("/rental/units/:property/:code/qr", manage, async (req, res) => {
+  res.json(presentQr(await findUnit(req)));
+});
+
+// Issue a new code. Any code printed earlier for this unit stops working.
+rentalRouter.post("/rental/units/:property/:code/qr", manage, async (req, res) => {
+  const unit = await findUnit(req);
+  const updated = await RentalUnit.findOneAndUpdate({ _id: unit._id, organizationId: req.auth!.organizationId },
+    { $inc: { qrVersion: 1 }, $set: { qrEnabled: true, qrIssuedAt: new Date() } }, { new: true })
+    .select("_id organizationId propertyCode code qrEnabled qrVersion qrIssuedAt").lean<Awaited<ReturnType<typeof findUnit>>>();
+  await logAudit({ ...auditFromReq(req), action: "rental.qr.issue", resource: "unit", resourceId: String(unit._id),
+    changes: { propertyCode: unit.propertyCode, unitCode: unit.code, version: updated!.qrVersion } }, req);
+  res.status(201).json(presentQr(updated!));
+});
+
+rentalRouter.delete("/rental/units/:property/:code/qr", manage, async (req, res) => {
+  const unit = await findUnit(req);
+  await RentalUnit.updateOne({ _id: unit._id, organizationId: req.auth!.organizationId }, { $set: { qrEnabled: false } });
+  await logAudit({ ...auditFromReq(req), action: "rental.qr.disable", resource: "unit", resourceId: String(unit._id),
+    changes: { propertyCode: unit.propertyCode, unitCode: unit.code } }, req);
   res.status(204).end();
 });
 

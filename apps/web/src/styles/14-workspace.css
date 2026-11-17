@@ -55,15 +55,15 @@
 
 .service-workspace .case-link { white-space: nowrap; }
 
-.student-workspace .requester-home { max-width: 960px; margin: 0 auto; }
+.resident-workspace .requester-home { max-width: 960px; margin: 0 auto; }
 
-.student-workspace .requester-welcome h1 { font-size: 30px; }
+.resident-workspace .requester-welcome h1 { font-size: 30px; }
 
-.student-workspace .requester-ai-card { background: #f0f5f8; border-radius: 4px; border: 0; border-left: 3px solid #37688e; box-shadow: none; }
+.resident-workspace .requester-ai-card { background: #f0f5f8; border-radius: 4px; border: 0; border-left: 3px solid #37688e; box-shadow: none; }
 
-.student-workspace .requester-summary-grid article { background: transparent; border: 0; border-radius: 0; border-bottom: 1px solid #dce1e5; }
+.resident-workspace .requester-summary-grid article { background: transparent; border: 0; border-radius: 0; border-bottom: 1px solid #dce1e5; }
 
-.student-workspace .requester-case-list a { border-radius: 0; box-shadow: none; }
+.resident-workspace .requester-case-list a { border-radius: 0; box-shadow: none; }
 
 .login-screen { min-height: 100dvh; }
 

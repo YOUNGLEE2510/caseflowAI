@@ -11,7 +11,7 @@ def test_redact_pii_removes_identifiers():
 
 def test_prepare_dataset_redacts_deduplicates_and_keeps_groups_together(tmp_path):
     source = tmp_path / "source.csv"
-    labels = ["it_access", "academic_records", "student_services", "facilities", "finance", "general_support"]
+    labels = ["water", "electrical", "internet", "appliances", "access_security", "general_support"]
     rows = []
     for index in range(36):
         rows.append({"text": f"Ye u cau ho tro {index} voi noi dung day du SV12345678", "label": labels[index % len(labels)], "group_id": f"case-{index // 2}", "created_at": f"2026-01-{index % 28 + 1:02d}"})

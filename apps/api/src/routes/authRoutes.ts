@@ -36,7 +36,7 @@ authRouter.get("/auth/providers", (_req, res) => {
     microsoft: Boolean(config.MICROSOFT_OAUTH_CLIENT_ID && config.MICROSOFT_OAUTH_CLIENT_SECRET && config.MICROSOFT_OAUTH_REDIRECT_URI) });
 });
 authRouter.get("/auth/organizations", async (req, res) => {
-  const { domain } = z.object({ domain: z.enum(["education", "rental"]).optional() }).parse(req.query);
+  const { domain } = z.object({ domain: z.enum(["rental"]).optional() }).parse(req.query);
   const organizations = await Organization.find({ status: "active", ...(domain ? { "settings.serviceDomain": domain } : {}) }).select("name slug -_id").sort({ name: 1 }).limit(100).lean();
   res.json({ organizations });
 });

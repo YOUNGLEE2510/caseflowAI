@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
@@ -11,7 +11,7 @@ async function login(page: Page, email: string) {
 
 test("U01: CSAT no-data text fits in at most two desktop lines", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   const value = page.locator(".progress-widget header strong").filter({ hasText: "Chưa có dữ liệu" });
   await expect(value).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -20,14 +20,14 @@ test("U01: CSAT no-data text fits in at most two desktop lines", async ({ page }
 });
 
 test("U07: Vietnamese profile has no untranslated Show button", async ({ page }) => {
-  await login(page, "agent@caseflow.local");
+  await login(page, "tran.khoi@canho-demo.local");
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "Hồ sơ cá nhân", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show", exact: true })).toHaveCount(0);
 });
 
 test("overview progress widgets remain readable on desktop and mobile", async ({ page }, testInfo) => {
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.evaluate(() => document.fonts.ready);
@@ -48,7 +48,7 @@ test("overview progress widgets remain readable on desktop and mobile", async ({
 });
 
 test("case queue shows a recoverable error after temporary API failure", async ({ page }) => {
-  await login(page, "manager@caseflow.local");
+  await login(page, "pham.ha@canho-demo.local");
   const endpoint = "**/api/cases?*";
   await page.route(endpoint, route => route.fulfill({ status: 503, json: { message: "Audit temporary outage" } }));
   await page.goto("/cases");

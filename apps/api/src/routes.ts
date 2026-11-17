@@ -17,6 +17,7 @@ import { notificationRouter } from "./routes/notifications.js";
 import { systemRouter } from "./routes/system.js";
 import { recommendationsRouter } from "./routes/recommendations.js";
 import { authenticatedRateLimit } from "./middleware/userRateLimit.js";
+import { publicIntakeRouter } from "./routes/publicIntake.js";
 
 export const apiRouter = Router();
 
@@ -35,6 +36,10 @@ apiRouter.get("/health", async (_req, res) => {
 /* ── Auth (mixed: login is public, logout needs auth) ── */
 
 apiRouter.use(authRouter);
+
+/* ── Public QR intake (signed unit token, own rate limits in app.ts) ── */
+
+apiRouter.use(publicIntakeRouter);
 
 /* ── Authenticated sub-routers ── */
 

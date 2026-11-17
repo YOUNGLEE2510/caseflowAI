@@ -1,17 +1,17 @@
 import { test, expect } from "@playwright/test";
 
 for (const [role, email, routes, denied] of [
-  ["requester", "student@caseflow.local", ["/overview", "/cases", "/cases/new", "/knowledge", "/profile"], ["/api/users", "/api/incidents"]],
-  ["agent", "agent@caseflow.local", ["/overview", "/cases", "/incidents", "/rental", "/profile"], []],
-  ["manager", "manager@caseflow.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
-  ["org_admin", "admin@caseflow.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
+  ["requester", "nguyen.anh@cudan.canho-demo.local", ["/overview", "/cases", "/cases/new", "/knowledge", "/profile"], ["/api/users", "/api/incidents"]],
+  ["agent", "tran.khoi@canho-demo.local", ["/overview", "/cases", "/incidents", "/rental", "/profile"], []],
+  ["manager", "pham.ha@canho-demo.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
+  ["org_admin", "tran.khoa@canho-demo.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
   ["platform_admin", "platform@caseflow.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []]
 ] as const) {
   test(`${role} navigates allowed screens and respects API restrictions`, async ({ page, request }, info) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("response", response => { if (response.url().includes("/api/") && response.status() >= 500) errors.push(`HTTP ${response.status()}`); });
-    const login = await request.post("/api/auth/login", { data: { organizationSlug: "minh-khai-university", email, password: "Demo123!" } });
+    const login = await request.post("/api/auth/login", { data: { organizationSlug: "caseflow-rental-local", email, password: "Demo123!" } });
     expect(login.ok()).toBe(true);
     const { token } = await login.json();
     for (const path of denied) expect((await request.get(path, { headers: { Authorization: `Bearer ${token}` } })).status()).toBe(403);
@@ -24,7 +24,7 @@ for (const [role, email, routes, denied] of [
       expect((await request.post("/api/users", { headers: { Authorization: `Bearer ${token}` }, data: {} })).status()).toBe(403);
     }
     await page.goto("/login");
-    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
     await page.getByLabel("Email tài khoản", { exact: true }).fill(email);
     await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

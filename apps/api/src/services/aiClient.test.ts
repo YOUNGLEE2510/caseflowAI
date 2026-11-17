@@ -12,15 +12,15 @@ vi.mock("../config.js", () => ({
 import { fallbackClassify } from "./aiClient.js";
 
 describe("fallbackClassify", () => {
-  it("routes login problems to IT access", () => {
-    const result = fallbackClassify("Em không đăng nhập được tài khoản sinh viên và quên mật khẩu");
-    expect(result.label).toBe("it_access");
+  it("routes water problems to plumbing", () => {
+    const result = fallbackClassify("Nước yếu ở tất cả vòi và ống nước dưới bồn rửa bị rò");
+    expect(result.label).toBe("water");
     expect(result.confidence).toBeLessThan(0.55);
     expect(result.provider).toBe("fallback");
   });
 
-  it("routes transcript problems to academic records", () => {
-    const result = fallbackClassify("Em cần xin bảng điểm và kiểm tra điểm học phần");
-    expect(result.label).toBe("academic_records");
+  it("routes appliance problems to appliances", () => {
+    const result = fallbackClassify("Điều hòa và máy giặt trong căn đều không chạy");
+    expect(result.label).toBe("appliances");
   });
 });

@@ -10,7 +10,7 @@ async function confirmAction(page: Page, title: string) {
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("minh-khai-university");
+  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
@@ -59,8 +59,8 @@ test("password reset request is available without disclosing account existence",
   await page.getByRole("button", { name: "Quên mật khẩu?", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Đặt lại mật khẩu" });
   await expect(dialog).toBeVisible();
-  await dialog.getByLabel("Mã đơn vị vận hành").fill("minh-khai-university");
-  await dialog.getByLabel("Email tài khoản").fill("student@caseflow.local");
+  await dialog.getByLabel("Mã đơn vị vận hành").fill("caseflow-rental-local");
+  await dialog.getByLabel("Email tài khoản").fill("nguyen.anh@cudan.canho-demo.local");
   await dialog.getByRole("button", { name: "Gửi hướng dẫn", exact: true }).click();
   await confirmAction(page, "Gửi hướng dẫn đổi mật khẩu?");
   await expect(dialog.getByText("Nếu tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.", { exact: true })).toBeVisible();
@@ -69,7 +69,7 @@ test("password reset request is available without disclosing account existence",
 });
 
 test("knowledge drafting displays citations and retrieval fallback without external API calls", async ({ page }) => {
-  await login(page, "admin@caseflow.local");
+  await login(page, "tran.khoa@canho-demo.local");
   await page.route("**/api/knowledge/capabilities", (route) => route.fulfill({ json: { generation: true } }));
   let calls = 0;
   await page.route("**/api/knowledge/search", async (route) => {
@@ -93,7 +93,7 @@ test("knowledge drafting displays citations and retrieval fallback without exter
 });
 
 test("operational queues and workload suggestions render on desktop and mobile", async ({ page }) => {
-  await login(page, "admin@caseflow.local");
+  await login(page, "tran.khoa@canho-demo.local");
   await page.goto("/cases");
   await page.getByLabel("Hàng đợi công việc").selectOption("unassigned");
   await expect(page).toHaveURL(/queue=unassigned/);
@@ -114,13 +114,13 @@ test("operational queues and workload suggestions render on desktop and mobile",
 test("admin creates, edits and disables catalog/member records and publishes knowledge", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, "admin@caseflow.local");
+  await login(page, "tran.khoa@canho-demo.local");
   await page.goto("/services");
   await page.getByRole("button", { name: "Thêm dịch vụ", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Mã dịch vụ").fill("test_service");
   await dialog.getByLabel("Tên dịch vụ").fill("Dịch vụ kiểm thử");
-  await dialog.getByLabel("Đơn vị phụ trách").fill("Trung tâm CNTT");
+  await dialog.getByLabel("Đơn vị phụ trách").fill("Công nghệ thông tin");
   await dialog.getByRole("button", { name: "Lưu dịch vụ" }).click();
   await confirmAction(page, "Lưu dịch vụ?");
   await expect(dialog).not.toBeVisible();
@@ -154,7 +154,7 @@ test("admin creates, edits and disables catalog/member records and publishes kno
   await page.goto("/knowledge");
   await page.getByRole("button", { name: "Thêm tài liệu" }).click();
   await dialog.getByLabel("Tên tài liệu").fill("Quy trình kiểm thử tài khoản");
-  await dialog.getByLabel("Nội dung", { exact: true }).fill("Sinh viên liên hệ trung tâm hỗ trợ qua cổng dịch vụ khi không đăng nhập được tài khoản.");
+  await dialog.getByLabel("Nội dung", { exact: true }).fill("Người thuê liên hệ lễ tân qua cổng dịch vụ khi không đăng nhập được tài khoản.");
   await dialog.getByLabel("Nguồn ban hành").fill("Tài liệu kiểm thử");
   await dialog.getByLabel("Phê duyệt và công bố").check();
   await dialog.getByRole("button", { name: "Lưu tài liệu" }).click();
@@ -172,20 +172,20 @@ test("admin creates, edits and disables catalog/member records and publishes kno
 test("request intake, real file round-trip, staff review and private notes", async ({ page, browser }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, "student@caseflow.local");
+  await login(page, "nguyen.anh@cudan.canho-demo.local");
   await page.goto("/cases/new");
   await page.getByLabel("Tiêu đề", { exact: true }).fill("Hỗ trợ tài khoản kiểm thử");
   await page.getByRole("combobox", { name: "Cơ sở", exact: true }).selectOption("TOWER-A");
   await page.getByRole("combobox", { name: "Căn hộ", exact: true }).selectOption("A301");
-  await page.getByLabel("Mô tả chi tiết").fill("Em cần hỗ trợ khôi phục tài khoản cổng sinh viên để đăng ký học phần.");
-  await page.getByLabel("Dịch vụ", { exact: true }).selectOption("it_access");
-  await page.getByLabel("Mã sinh viên", { exact: true }).fill("SV2026001");
+  await page.getByLabel("Mô tả chi tiết").fill("Điều hòa phòng ngủ chạy nhưng không lạnh từ tối qua, nhờ kiểm tra giúp.");
+  await page.getByLabel("Dịch vụ", { exact: true }).selectOption("appliances");
+  await page.getByLabel("Vị trí trong căn", { exact: true }).fill("Phòng ngủ chính");
   const file = Buffer.from("%PDF-1.4\nTest file round-trip\n%%EOF");
   await page.locator('input[type="file"]').setInputFiles({ name: "request.pdf", mimeType: "application/pdf", buffer: file });
   await page.getByRole("button", { name: "Tạo hồ sơ" }).click();
   await confirmAction(page, "Gửi yêu cầu?");
   await expect(page).toHaveURL(/\/cases\/(?!new$)[^/]+$/);
-  await expect(page.getByText("SV2026001", { exact: true })).toBeVisible();
+  await expect(page.getByText("Phòng ngủ chính", { exact: true })).toBeVisible();
   const caseUrl = page.url();
   await expect(page.getByText("request.pdf", { exact: true })).toBeVisible();
   const downloadEvent = page.waitForEvent("download");
@@ -198,12 +198,12 @@ test("request intake, real file round-trip, staff review and private notes", asy
   const staffContext = await browser.newContext({ baseURL: "http://127.0.0.1:5188" });
   const staff = await staffContext.newPage();
   try {
-    await login(staff, "manager@caseflow.local");
+    await login(staff, "pham.ha@canho-demo.local");
     await staff.goto(caseUrl);
     await staff.getByRole("button", { name: "Xác nhận phân luồng" }).click();
     await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByRole("button", { name: "Xác nhận phân luồng" })).not.toBeVisible();
-    await staff.getByLabel("Người xử lý", { exact: true }).selectOption({ label: "Lê Hoàng Nam · Trung tâm CNTT" });
+    await staff.getByLabel("Người xử lý", { exact: true }).selectOption({ label: "Hoàng Gia Thư · Kỹ thuật điện lạnh" });
     await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByLabel("Trạng thái", { exact: true }).locator('option[value="in_progress"]')).toHaveCount(1);
     await staff.getByLabel("Trạng thái", { exact: true }).selectOption("in_progress");
@@ -224,7 +224,7 @@ test("request intake, real file round-trip, staff review and private notes", asy
 
 test("mobile admin dialogs, navigation and pagination stay within viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await login(page, "admin@caseflow.local");
+  await login(page, "tran.khoa@canho-demo.local");
   for (const route of ["/cases", "/users", "/services", "/knowledge", "/system"]) {
     await page.goto(route);
     await expect(page.locator(".page-stack")).toBeVisible();

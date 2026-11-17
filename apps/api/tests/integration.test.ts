@@ -23,7 +23,7 @@ vi.mock("../src/services/cloudinaryStorage.js", () => ({
 
 vi.mock("../src/services/aiClient.js", () => ({
   fallbackClassify: () => ({ modelVersion: "fallback-v1", label: "general_support", confidence: 0.3, summary: "Account support", extracted: {}, topCandidates: [], provider: "fallback" }),
-  classifyText: async () => ({ modelVersion: "test-model-v2", label: "it_access", confidence: 0.8, summary: "Account support", extracted: { location: "Building A" }, topCandidates: [], provider: "test" }),
+  classifyText: async () => ({ modelVersion: "test-model-v2", label: "internet", confidence: 0.8, summary: "Account support", extracted: { location: "Building A" }, topCandidates: [], provider: "test" }),
   findSimilarCases: async (_text: string, cases: any[]) => cases.map((item) => ({ id: item.id, title: item.title, score: 0.9 })),
   findRelatedCases: async (_source: unknown, cases: any[]) => cases.map((item) => ({ id: item.id, title: item.title, score: 0.9, signals: ["same_property"] })),
   predictSla: async () => ({ riskScore: 0.3, factors: [] }),
@@ -39,6 +39,7 @@ let server: Server;
 let base: string;
 let uploads: string;
 let models: typeof import("../src/models.js");
+const place = { propertyCode: "BASE", unitCode: "B101" };
 let org: any, requester: any, outsider: any, agent: any, admin: any, record: any;
 
 function token(user: any) {
@@ -79,8 +80,8 @@ beforeAll(async () => {
 beforeEach(async () => {
   cloudObjects.clear(); cloudFaults.uploadAfterWrite = false; cloudFaults.deletion = false;
   for (const collection of Object.values(mongoose.connection.collections)) await collection.deleteMany({});
-  org = await models.Organization.create({ name: "Test University", slug: "test-university" });
-  const otherOrg = await models.Organization.create({ name: "Other University", slug: "other-university" });
+  org = await models.Organization.create({ name: "Test Apartments", slug: "test-apartments" });
+  const otherOrg = await models.Organization.create({ name: "Other Apartments", slug: "other-apartments" });
   const passwordHash = await bcrypt.hash("TestPassword123!", 4);
   [requester, outsider, agent, admin] = await models.User.create([
     { organizationId: org._id, name: "Student", email: "student@test.local", passwordHash, role: "requester" },
@@ -90,9 +91,13 @@ beforeEach(async () => {
   ]);
   await models.ServiceDefinition.create([
     { organizationId: org._id, key: "general_support", name: "General", category: "general_support", team: "IT", slaHours: 24 },
-    { organizationId: org._id, key: "it_access", name: "IT", category: "it_access", team: "IT", slaHours: 24, requiredFields: ["Student ID"] }
+    { organizationId: org._id, key: "internet", name: "IT", category: "internet", team: "IT", slaHours: 24, requiredFields: ["Contract code"] }
   ]);
-  record = await models.CaseRecord.create({ organizationId: org._id, code: "TEST-01", title: "Test request", description: "A test request for help", serviceKey: "it_access", category: "it_access", requesterId: requester._id, requesterName: requester.name, team: "IT", dueAt: new Date(Date.now() + 3600000) });
+  // Every organization is a rental operator: requests name a property and a unit the requester lives in.
+  const { RentalProperty: Property, RentalUnit: Unit } = await import("../src/models/rental.js");
+  await Property.create({ organizationId: org._id, code: place.propertyCode, name: "Base fixture", active: true });
+  await Unit.create({ organizationId: org._id, propertyCode: place.propertyCode, code: place.unitCode, residentIds: [requester._id] });
+  record = await models.CaseRecord.create({ organizationId: org._id, code: "TEST-01", title: "Test request", description: "A test request for help", serviceKey: "internet", category: "internet", requesterId: requester._id, requesterName: requester.name, team: "IT", dueAt: new Date(Date.now() + 3600000) });
 });
 
 describe("request-driven AI triage", () => {
@@ -109,7 +114,7 @@ describe("request-driven AI triage", () => {
     const previous = config.CASE_TRIAGE_MODE;
     config.CASE_TRIAGE_MODE = "inline";
     try {
-      const result = await request("/cases", requester, "POST", { description: "Unable to access my account in Building A", serviceKey: "general_support" });
+      const result = await request("/cases", requester, "POST", { ...place, description: "Unable to access my account in Building A", serviceKey: "general_support" });
       expect(result.status).toBe(201);
       expect(result.body.case.ai.processingStatus).toBe("failed");
       expect(result.body.case.ai.reviewStatus).toBe("pending");
@@ -121,7 +126,7 @@ describe("request-driven AI triage", () => {
     config.CASE_TRIAGE_MODE = "inline";
     try {
       await models.CaseRecord.updateOne({ _id: record._id }, { $set: { "ai.processingStatus": "queued" } });
-      const result = await request("/cases", requester, "POST", {
+      const result = await request("/cases", requester, "POST", { ...place,
         title: "Request-driven analysis", description: "Unable to access my account in Building A", serviceKey: "general_support"
       });
       expect(result.status).toBe(201);
@@ -212,14 +217,14 @@ describe("shared rental incidents", () => {
     expect((await request("/rental/catalog", admin, "PUT", { kind: "asset", propertyCode: "TOWER-A",
       unitCode: "A302", code: "AC-302", name: "Air conditioner", category: "appliances" })).status).toBe(204);
     const catalog = await request("/rental/catalog");
-    expect(catalog.body.units.map((unit: { code: string }) => unit.code)).toEqual(["A301"]);
+    expect(catalog.body.units.map((unit: { code: string }) => unit.code)).toEqual(["B101", "A301"]);
     expect(catalog.body.assets).toHaveLength(0);
     expect(catalog.body.residents).toHaveLength(0);
     expect((await request("/rental/catalog", outsider)).body.properties).toHaveLength(0);
     const body = { title: "Repair request", description: "Water pressure is low today", propertyCode: "TOWER-A", unitCode: "A302" };
     expect((await request("/cases", requester, "POST", body)).status).toBe(403);
-    expect((await request("/cases", requester, "POST", { ...body, unitCode: "A301", assetCode: "AC-302" })).status).toBe(422);
-    expect((await request("/cases", requester, "POST", { ...body, unitCode: "A301" })).status).toBe(201);
+    expect((await request("/cases", requester, "POST", { ...place, ...body, unitCode: "A301", assetCode: "AC-302" })).status).toBe(422);
+    expect((await request("/cases", requester, "POST", { ...place, ...body, unitCode: "A301" })).status).toBe(201);
     expect((await request("/rental/assets/AC-302/history", requester)).status).toBe(403);
     expect(await models.AuditLog.countDocuments({ organizationId: org._id, action: "rental.catalog.update" })).toBe(4);
   });
@@ -227,8 +232,15 @@ describe("shared rental incidents", () => {
     await models.Incident.init();
     const resident = await models.User.create({ organizationId: org._id, name: "Resident",
       email: "resident@test.local", passwordHash: requester.passwordHash, role: "requester" });
+    const { RentalProperty: Property, RentalUnit: Unit } = await import("../src/models/rental.js");
+    for (const code of ["TOWER-A", "TOWER-B"]) await Property.create({ organizationId: org._id, code, name: code, active: true });
+    await Unit.create([
+      { organizationId: org._id, propertyCode: "TOWER-A", code: "A301", residentIds: [requester._id] },
+      { organizationId: org._id, propertyCode: "TOWER-A", code: "A302", residentIds: [resident._id] },
+      { organizationId: org._id, propertyCode: "TOWER-B", code: "B301", residentIds: [resident._id] }
+    ]);
     const createCase = (user: typeof requester, propertyCode: string, unitCode: string) =>
-      request("/cases", user, "POST", { title: "Nước yếu", description: "Nước yếu ở cả căn từ sáng nay", propertyCode, unitCode });
+      request("/cases", user, "POST", { ...place, title: "Nước yếu", description: "Nước yếu ở cả căn từ sáng nay", propertyCode, unitCode });
     const first = await createCase(requester, "tower-a", "A301");
     const second = await createCase(resident, "TOWER-A", "A302");
     const otherSite = await createCase(resident, "TOWER-B", "B301");
@@ -353,7 +365,7 @@ describe("personnel boundaries and leave workflow", () => {
   });
   it("does not expose future or expired published versions to requesters", async () => {
     for (const expired of [false, true]) {
-      const article = await models.KnowledgeArticle.create({ organizationId: org._id, title: "Visibility fixture", content: "Test only", sourceLabel: "Fixture", category: "it_access", status: "published", version: "1.0", effectiveAt: new Date(Date.now() + (expired ? -172800000 : 86400000)), expiresAt: expired ? new Date(Date.now() - 86400000) : null });
+      const article = await models.KnowledgeArticle.create({ organizationId: org._id, title: "Visibility fixture", content: "Test only", sourceLabel: "Fixture", category: "internet", status: "published", version: "1.0", effectiveAt: new Date(Date.now() + (expired ? -172800000 : 86400000)), expiresAt: expired ? new Date(Date.now() - 86400000) : null });
       expect((await request(`/knowledge/${article._id}/versions/1.0`, requester)).status).toBe(404);
       expect((await request(`/knowledge/${article._id}/versions/1.0`, admin)).status).toBe(200);
     }
@@ -428,7 +440,7 @@ describe("service completion boundaries", () => {
     expect(await EmailOutbox.countDocuments({ kind: "email" })).toBe(1);
   });
   it("paginates knowledge without exposing another organization or drafts", async () => {
-    const article = { organizationId: org._id, title: "Published guide", content: "Verified support guidance", category: "it_access", sourceLabel: "School", status: "published", effectiveAt: new Date(0) };
+    const article = { organizationId: org._id, title: "Published guide", content: "Verified support guidance", category: "internet", sourceLabel: "School", status: "published", effectiveAt: new Date(0) };
     await models.KnowledgeArticle.create([{ ...article, title: "First" }, { ...article, title: "Second" }, { ...article, status: "draft" }, { ...article, organizationId: outsider.organizationId }]);
     const first = await request("/knowledge?limit=1&page=1");
     const second = await request("/knowledge?limit=1&page=2");
@@ -478,7 +490,7 @@ describe("service completion boundaries", () => {
 describe("indexed search and duplicate merging", () => {
   async function duplicate(extra: Record<string, unknown> = {}) {
     return models.CaseRecord.create({ organizationId: org._id, code: `DUP-${randomBytes(6).toString("hex")}`,
-      title: "Duplicate request", description: "Repeated account support request", serviceKey: "it_access", category: "it_access",
+      title: "Duplicate request", description: "Repeated account support request", serviceKey: "internet", category: "internet",
       requesterId: requester._id, requesterName: requester.name, team: "IT", dueAt: new Date(Date.now() + 3600000), ...extra });
   }
   it("finds unaccented word prefixes through the compound search index", async () => {
@@ -488,7 +500,7 @@ describe("indexed search and duplicate merging", () => {
     expect((await request("/cases?search=.*")).body.total).toBe(0);
     expect((await request("/cases?search=ket", outsider)).body.total).toBe(0);
     const fixtures = Array.from({ length: 150 }, (_, index) => ({ organizationId: org._id, code: `NOISE-${index}`,
-      title: "Unrelated fixture", description: "Noise for index verification", serviceKey: "it_access", category: "it_access",
+      title: "Unrelated fixture", description: "Noise for index verification", serviceKey: "internet", category: "internet",
       requesterId: requester._id, requesterName: "Other fixture", team: "IT", dueAt: new Date() }));
     await models.CaseRecord.insertMany(fixtures);
     await models.CaseRecord.init();
@@ -534,7 +546,7 @@ describe("indexed search and duplicate merging", () => {
     expect((await request(path, admin, "POST", body)).status).toBe(422);
     source.requesterId = requester._id; source.serviceKey = "general_support"; await source.save();
     expect((await request(path, admin, "POST", body)).status).toBe(422);
-    source.serviceKey = "it_access"; await source.save();
+    source.serviceKey = "internet"; await source.save();
     expect((await request(path, admin, "POST", { ...body, targetId: String(source._id) })).status).toBe(422);
     expect((await request(`/cases/${record._id}/merge`, admin, "POST", { ...body, targetId: String(source._id) })).status).toBe(422);
     await models.CaseRecord.updateOne({ _id: record._id }, { $set: { status: "closed" } });
@@ -647,7 +659,7 @@ describe("tenant and privacy boundaries", () => {
   it("restricts the agent directory and normalizes requester priority", async () => {
     const users = await request("/users", agent);
     expect(users.body.users.every((user: { role: string; team: string }) => user.role === "agent" && user.team === agent.team)).toBe(true);
-    const result = await request("/cases", requester, "POST", { description: "Please help me with my service request", serviceKey: "general_support", priority: "urgent" });
+    const result = await request("/cases", requester, "POST", { ...place, description: "Please help me with my service request", serviceKey: "general_support", priority: "urgent" });
     expect(result.status).toBe(201);
     expect(result.body.case.priority).toBe("normal");
   });
@@ -707,8 +719,8 @@ describe("tenant and privacy boundaries", () => {
   it("rejects recommendations for another team and hides unpublished sources", async () => {
     await models.CaseRecord.updateOne({ _id: record._id }, { team: "Finance" });
     expect((await request("/recommendations", agent, "POST", { caseId: String(record._id) })).status).toBe(404);
-    await models.KnowledgeArticle.create({ organizationId: org._id, title: "Private test request", content: "Private account procedure", category: "it_access", sourceLabel: "Internal", status: "draft" });
-    const result = await request("/recommendations", requester, "POST", { text: "I need help with my account", serviceKey: "it_access" });
+    await models.KnowledgeArticle.create({ organizationId: org._id, title: "Private test request", content: "Private account procedure", category: "internet", sourceLabel: "Internal", status: "draft" });
+    const result = await request("/recommendations", requester, "POST", { text: "I need help with my account", serviceKey: "internet" });
     expect(result.status).toBe(200);
     expect(result.body.recommendation.citations).toEqual([]);
     expect(result.body.recommendation.items.some((item: { action: string }) => item.action === "draft_reply")).toBe(false);
@@ -724,7 +736,7 @@ describe("tenant and privacy boundaries", () => {
   });
   it("deduplicates simultaneous case submissions and rejects key reuse with changed content", async () => {
     await models.CaseRecord.init();
-    const body = { description: "I need assistance with my account", serviceKey: "general_support" };
+    const body = { ...place, description: "I need assistance with my account", serviceKey: "general_support" };
     const send = (user = requester, payload = body) => fetch(`${base}/api/cases`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token(user)}`, "Idempotency-Key": "test-idempotency-key-123" },
@@ -741,9 +753,9 @@ describe("tenant and privacy boundaries", () => {
     expect((await send(admin)).status).toBe(201);
   });
   it("rejects operator-shaped input and unknown fields", async () => {
-    const result = await request("/cases", requester, "POST", { description: "I need assistance with my account", unexpected: "field" });
+    const result = await request("/cases", requester, "POST", { ...place, description: "I need assistance with my account", unexpected: "field" });
     expect(result.status).toBe(400);
-    expect((await request("/cases", requester, "POST", { description: { $ne: null } })).status).toBe(400);
+    expect((await request("/cases", requester, "POST", { ...place, description: { $ne: null } })).status).toBe(400);
   });
   it("exchanges a Google login ticket once and rejects replay", async () => {
     const rawTicket = randomBytes(32).toString("hex");
@@ -941,12 +953,12 @@ describe("case workflow and validation", () => {
   it("validates explicit services and their required fields", async () => {
     const body = { description: "Cannot access student account", serviceKey: "missing" };
     expect((await request("/cases", requester, "POST", body)).status).toBe(422);
-    expect((await request("/cases", requester, "POST", { ...body, serviceKey: "it_access" })).status).toBe(422);
-    const valid = await request("/cases", requester, "POST", { ...body, serviceKey: "it_access", customFields: { "Student ID": "SV001" } });
+    expect((await request("/cases", requester, "POST", { ...place, ...body, serviceKey: "internet" })).status).toBe(422);
+    const valid = await request("/cases", requester, "POST", { ...place, ...body, serviceKey: "internet", customFields: { "Contract code": "SV001" } });
     expect(valid.status).toBe(201);
-    expect(valid.body.case.customFields).toEqual({ "Student ID": "SV001" });
-    expect((await request("/cases", requester, "POST", { ...body, serviceKey: "it_access", customFields: { "Student ID": "SV001", unknown: "value" } })).status).toBe(422);
-    expect((await request("/cases", requester, "POST", { ...body, serviceKey: "it_access", channel: "phone", customFields: { "Student ID": "SV001" } })).status).toBe(422);
+    expect(valid.body.case.customFields).toEqual({ "Contract code": "SV001" });
+    expect((await request("/cases", requester, "POST", { ...place, ...body, serviceKey: "internet", customFields: { "Contract code": "SV001", unknown: "value" } })).status).toBe(422);
+    expect((await request("/cases", requester, "POST", { ...place, ...body, serviceKey: "internet", channel: "phone", customFields: { "Contract code": "SV001" } })).status).toBe(422);
   });
   it("does not disable general intake or enable unsupported auto-assignment", async () => {
     const service = await models.ServiceDefinition.findOne({ key: "general_support" });
@@ -1126,15 +1138,15 @@ describe("knowledge governance and AI metrics", () => {
     } finally { config.STORAGE_PROVIDER = previous; cloudObjects.clear(); }
   });
   it("accepts staff proxy intake without transferring ownership to the operator", async () => {
-    const body = { description: "Student cannot access the student portal", serviceKey: "it_access", channel: "phone",
-      customFields: { "Student ID": "SV001" }, requesterId: String(requester._id) };
+    const body = { ...place, description: "Tenant cannot connect to the building Wi-Fi", serviceKey: "internet", channel: "phone",
+      customFields: { "Contract code": "SV001" }, requesterId: String(requester._id) };
     const created = await request("/cases", agent, "POST", body);
     expect(created.status).toBe(201);
     expect(created.body.case.requesterId).toBe(String(requester._id));
     expect(created.body.case.createdById).toBe(String(agent._id));
     expect((await request(`/cases/${created.body.case._id}`, requester)).status).toBe(200);
-    expect((await request("/cases", requester, "POST", { ...body, channel: "portal", requesterId: String(admin._id) })).status).toBe(403);
-    expect((await request("/cases", agent, "POST", { ...body, requesterId: String(outsider._id) })).status).toBe(422);
+    expect((await request("/cases", requester, "POST", { ...place, ...body, channel: "portal", requesterId: String(admin._id) })).status).toBe(403);
+    expect((await request("/cases", agent, "POST", { ...place, ...body, requesterId: String(outsider._id) })).status).toBe(422);
     const { processCaseDeliveries } = await import("../src/jobs/caseDelivery.js");
     await processCaseDeliveries();
     const count = await models.Notification.countDocuments({ relatedCaseId: created.body.case._id });
@@ -1149,7 +1161,7 @@ describe("knowledge governance and AI metrics", () => {
   it("persists validity dates and rejects contradictory partial updates", async () => {
     const created = await request("/knowledge", admin, "POST", {
       title: "Validity controlled guide", content: "Approved procedural guidance for students.",
-      category: "it_access", sourceLabel: "School", status: "published",
+      category: "internet", sourceLabel: "School", status: "published",
       effectiveAt: "2020-01-01T00:00:00.000Z", expiresAt: "2090-01-01T00:00:00.000Z"
     });
     expect(created.status).toBe(201);
@@ -1170,7 +1182,7 @@ describe("knowledge governance and AI metrics", () => {
     expect((await request("/auth/microsoft/link", requester, "POST", { currentPassword: "TestPassword123!" })).status).toBe(429);
   });
   it("requires review before documents reach users and retrieval", async () => {
-    const draft = await request("/knowledge", agent, "POST", { title: "Account policy", content: "This is a test policy with enough content.", category: "it_access", sourceLabel: "Test handbook" });
+    const draft = await request("/knowledge", agent, "POST", { title: "Account policy", content: "This is a test policy with enough content.", category: "internet", sourceLabel: "Test handbook" });
     expect(draft.status).toBe(201);
     expect((await request("/knowledge")).body.articles).toHaveLength(0);
     expect((await request("/knowledge/search", requester, "POST", { query: "account policy" })).body.citations).toHaveLength(0);
@@ -1199,14 +1211,14 @@ describe("knowledge governance and AI metrics", () => {
       passwordHash: await bcrypt.hash("TestPassword123!", 4), role: "agent", team: "IT"
     });
     const draft = await request("/knowledge", agent, "POST", {
-      title: "Private draft", content: "This document is a private draft long enough for validation.", category: "it_access", sourceLabel: "Draft"
+      title: "Private draft", content: "This document is a private draft long enough for validation.", category: "internet", sourceLabel: "Draft"
     });
     expect(draft.status).toBe(201);
     expect((await request("/knowledge", otherAgent)).body.articles).toHaveLength(0);
     expect((await request("/knowledge", agent)).body.articles).toHaveLength(1);
   });
   it("does not claim 100% accuracy for unreviewed AI predictions", async () => {
-    await models.CaseRecord.updateOne({ _id: record._id }, { "ai.classification": "it_access" });
+    await models.CaseRecord.updateOne({ _id: record._id }, { "ai.classification": "internet" });
     const result = await request("/analytics/ai-accuracy", admin);
     expect(result.body).toMatchObject({ total: 1, pending: 1, reviewed: 0, confirmationRate: null });
     expect(result.body).not.toHaveProperty("accuracy");
@@ -1377,7 +1389,7 @@ describe("security audit and distributed jobs", () => {
       const saved = await models.User.findById(requester._id).select("+microsoftObjectId +microsoftTenantId").lean<any>();
       expect(saved.microsoftObjectId).toBe("22222222-2222-4222-8222-222222222222");
       expect((await request("/profile")).body.profile.microsoftLinked).toBe(true);
-      const start = await fetch(`${base}/api/auth/microsoft?organization=test-university&remember=false`, { redirect: "manual" });
+      const start = await fetch(`${base}/api/auth/microsoft?organization=test-apartments&remember=false`, { redirect: "manual" });
       const startUrl = new URL(start.headers.get("location")!);
       const signIn = await fetch(`${base}/api/auth/microsoft/callback?state=${startUrl.searchParams.get("state")}&code=1234567890`, { headers: { Cookie: start.headers.get("set-cookie")!.split(";")[0] }, redirect: "manual" });
       const ticket = new URL(signIn.headers.get("location")!).searchParams.get("microsoftCode");
@@ -1386,7 +1398,7 @@ describe("security audit and distributed jobs", () => {
     } finally { spy.mockRestore(); }
   });
   it("does not auto-link an unbound Microsoft account by an email claim", async () => {
-    const start = await fetch(`${base}/api/auth/microsoft?organization=test-university`, { redirect: "manual" });
+    const start = await fetch(`${base}/api/auth/microsoft?organization=test-apartments`, { redirect: "manual" });
     const url = new URL(start.headers.get("location")!);
     const originalFetch = globalThis.fetch;
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, options) => String(url).startsWith("https://login.microsoftonline.com/") ? new Response(JSON.stringify({ id_token: "mock-token" })) : originalFetch(url, options));
@@ -1447,7 +1459,7 @@ describe("security audit and distributed jobs", () => {
     expect(typeof body.microsoft).toBe("boolean");
   });
   it("persists AI model provenance and extracted information", async () => {
-    const result = await request("/cases", requester, "POST", { title: "Need account assistance", description: "Unable to access my account in Building A", serviceKey: "general_support", priority: "normal", channel: "portal" });
+    const result = await request("/cases", requester, "POST", { ...place, title: "Need account assistance", description: "Unable to access my account in Building A", serviceKey: "general_support", priority: "normal", channel: "portal" });
     expect(result.status).toBe(201);
     expect(result.body.case.ai.processingStatus).toBe("queued");
     const { processCaseTriage } = await import("../src/jobs/caseTriage.js");

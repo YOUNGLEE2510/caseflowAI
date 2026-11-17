@@ -3,7 +3,7 @@ node_modules/
 apps/api/vercel-build/
 dist/
 .npm-cache/
-.venv/
+.venv*/
 __pycache__/
 .pytest_cache/
 *.pyc
