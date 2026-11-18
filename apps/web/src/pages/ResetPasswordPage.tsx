@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { api } from "../api";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { ThemeSwitcher } from "../components/ThemeSwitcher";
 import { useLocale } from "../i18n";
 import { useConfirmation } from "../components/ConfirmationProvider";
 
@@ -42,7 +43,7 @@ export function ResetPasswordPage() {
   }
 
   return <main className="login-reset-screen">
-    <div className="login-locale"><LocaleSwitcher /></div>
+    <div className="login-locale"><LocaleSwitcher /><ThemeSwitcher /></div>
     <section className="login-panel">
       <div className="login-heading">
         <span className="eyebrow">CaseFlow</span>

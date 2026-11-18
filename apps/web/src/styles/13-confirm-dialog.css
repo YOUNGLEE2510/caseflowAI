@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(23, 33, 30, 0.45);
+  background: var(--overlay);
   backdrop-filter: blur(3px);
   animation: confirm-fade-in 0.2s ease;
 }
@@ -44,7 +44,7 @@
   font-weight: 600;
 }
 
-.confirm-icon-danger { color: var(--red); }
+.confirm-icon-danger { color: var(--danger); }
 
 .confirm-body {
   padding: 1rem 1.25rem;
@@ -64,13 +64,13 @@
 
 .button-danger {
   background: var(--red);
-  color: #fff;
+  color: var(--on-brand);
   border-color: var(--red);
 }
 
 .button-danger:hover {
-  background: #9a3030;
-  border-color: #9a3030;
+  background: var(--danger-solid);
+  border-color: var(--danger-solid);
 }
 
 

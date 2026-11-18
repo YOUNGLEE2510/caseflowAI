@@ -247,7 +247,7 @@
 
 .admin-search:focus-within {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(20, 107, 87, 0.1);
+  box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 
 .admin-search input {
@@ -340,7 +340,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 1px 2px rgba(17, 26, 23, 0.12);
 }
 
@@ -350,7 +350,7 @@
 
 .permission-section > div.enabled .permission-toggle {
   justify-content: flex-end;
-  background: var(--brand);
+  background: var(--brand-solid);
 }
 
 .permission-note {

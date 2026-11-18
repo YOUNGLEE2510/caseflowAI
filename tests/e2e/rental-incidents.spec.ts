@@ -49,6 +49,7 @@ test("manager creates catalog and completes a repair task", async ({ page, reque
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
   await page.goto("/rental");
+  await page.getByRole("tab", { name: "Danh mục" }).click();
   await page.getByLabel("Mã", { exact: true }).fill("E2E-TOWER");
   await page.getByLabel("Tên", { exact: true }).fill("Co so kiem thu");
   await page.getByRole("button", { name: "Lưu danh mục", exact: true }).click();
@@ -62,6 +63,7 @@ test("manager creates catalog and completes a repair task", async ({ page, reque
     data: { kind: "asset", propertyCode: "E2E-TOWER", code: "E2E-PUMP", name: "Bom kiem thu", category: "water" } });
   expect(asset.ok()).toBe(true);
   await page.reload();
+  await page.getByRole("tab", { name: "Phiếu sửa chữa" }).click();
   await page.getByLabel("Nội dung sửa chữa").fill("Kiem tra bom cap nuoc");
   await page.getByRole("combobox", { name: "Thiết bị", exact: true }).selectOption("E2E-PUMP");
   await page.getByRole("combobox", { name: "Kỹ thuật viên", exact: true }).selectOption({ index: 1 });

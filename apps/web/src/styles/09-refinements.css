@@ -1,22 +1,5 @@
 /* Human-centered visual refresh */
 
-:root {
-  --ink: #17201d;
-  --muted: #52605b;
-  --subtle: #74817c;
-  --canvas: #f4f6f5;
-  --surface-soft: #f8faf9;
-  --border: #dfe5e2;
-  --border-strong: #cbd5d1;
-  --brand: #176b57;
-  --brand-dark: #115241;
-  --brand-subtle: #eaf5f0;
-  --selected: #dcefe8;
-  --ai: #6b4c78;
-  --ai-bg: #faf7fb;
-  --ai-border: #a98ab5;
-}
-
 body,
 button,
 input,
@@ -62,7 +45,7 @@ h3,
 }
 
 .panel-heading {
-  border-bottom-color: rgba(203, 213, 209, 0.72);
+  border-bottom-color: var(--border-subtle);
 }
 
 .locale-switcher {
@@ -96,12 +79,12 @@ h3,
 
 .locale-switcher button:hover {
   color: var(--ink);
-  background: #edf1ef;
+  background: var(--surface-muted);
 }
 
 .locale-switcher button.active {
   color: var(--brand-dark);
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 1px 3px rgba(23, 32, 29, 0.12);
 }
 

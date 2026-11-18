@@ -20,22 +20,22 @@
 }
 
 .operations-overview .metric-card:nth-child(1) {
-  background: #eef7f3;
+  background: var(--brand-subtle);
 }
 
 .operations-overview .metric-card:nth-child(2) .metric-icon {
-  color: #8a5d18;
-  background: #fff3d9;
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .operations-overview .metric-card:nth-child(3) .metric-icon {
-  color: #2f6382;
-  background: #e8f3fa;
+  color: var(--info);
+  background: var(--info-bg);
 }
 
 .operations-overview .metric-card:nth-child(4) .metric-icon {
-  color: #8b4747;
-  background: #faecec;
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .priority-queue-panel .panel-heading,
@@ -63,13 +63,13 @@
 
 .case-description {
   border-color: var(--border);
-  border-left: 3px solid #7fa6bb;
+  border-left: 3px solid var(--info-solid);
 }
 
 .config-ai-note,
 .permission-note {
-  border-left: 3px solid #7fb18b;
-  background: #f8fbf8;
+  border-left: 3px solid var(--success-solid);
+  background: var(--surface-soft);
 }
 
 .incident-grid {
@@ -83,13 +83,13 @@
 }
 
 .incident-card:nth-child(3n + 2) .incident-icon {
-  color: #2f6382;
-  background: #e8f3fa;
+  color: var(--info);
+  background: var(--info-bg);
 }
 
 .incident-card:nth-child(3n + 3) .incident-icon {
-  color: #744f7f;
-  background: #f4ebf7;
+  color: var(--ai);
+  background: var(--ai-bg);
 }
 
 .article-list > article,

@@ -1,6 +1,6 @@
 export function Avatar({
   name,
-  color = "#155c4d",
+  color = "var(--brand-solid)",
   size = "medium"
 }: {
   name: string;

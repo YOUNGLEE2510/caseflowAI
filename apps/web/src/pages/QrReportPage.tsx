@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { CheckCircle2, Send, TriangleAlert } from "lucide-react";
 import { api } from "../api";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { ThemeSwitcher } from "../components/ThemeSwitcher";
 import { useLocale } from "../i18n";
 
 type UnitInfo = { organizationName: string; propertyName: string; unitCode: string; categories: { key: string; name: string }[] };
@@ -40,7 +41,7 @@ export function QrReportPage() {
   }
 
   return <main className="login-reset-screen qr-report-screen">
-    <div className="login-locale"><LocaleSwitcher /></div>
+    <div className="login-locale"><LocaleSwitcher /><ThemeSwitcher /></div>
     <section className="login-panel qr-report-panel">
       <div className="login-heading">
         <span className="eyebrow">{info?.organizationName || "CaseFlow"}</span>

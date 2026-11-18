@@ -271,7 +271,7 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 2px;
-    background: rgba(255, 255, 255, 0.98);
+    background: color-mix(in srgb, var(--surface) 98%, transparent);
     backdrop-filter: blur(12px);
   }
 
@@ -536,7 +536,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.98);
+    background: color-mix(in srgb, var(--surface) 98%, transparent);
   }
 
   .form-actions .button-secondary {

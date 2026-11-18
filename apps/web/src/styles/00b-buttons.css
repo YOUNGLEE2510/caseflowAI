@@ -27,18 +27,18 @@
 }
 
 .button-primary {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+  background: var(--brand-solid);
+  border-color: var(--brand-solid);
+  color: var(--on-brand);
 }
 
 .button-primary:hover:not(:disabled) {
-  background: var(--brand-dark);
-  border-color: var(--brand-dark);
+  background: var(--brand-solid-hover);
+  border-color: var(--brand-solid-hover);
 }
 
 .button-secondary {
-  background: #fff;
+  background: var(--surface);
   border-color: var(--border-strong);
   color: var(--ink);
 }
@@ -67,7 +67,7 @@
 }
 
 .icon-button:hover {
-  background: rgba(21, 92, 77, 0.08);
+  background: var(--focus-ring-soft);
   color: var(--brand);
 }
 
@@ -75,7 +75,7 @@
   width: 17px;
   height: 17px;
   display: inline-block;
-  border: 2px solid #cbd5d1;
+  border: 2px solid var(--border-strong);
   border-top-color: var(--brand);
   border-radius: 50%;
   animation: spin 700ms linear infinite;

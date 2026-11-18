@@ -1,45 +1,291 @@
-/* CaseFlow 2026 design system */
-
+/*
+ * CaseFlow design tokens — the single source of colour, type, spacing,
+ * radius, elevation and motion. Light is the default; dark follows the
+ * system unless the user picks a theme (html[data-theme="light|dark"]).
+ * Components must use these variables instead of literal colours.
+ */
 :root {
-  color: #111a17;
-  background: #f6f8f7;
-  --ink: #111a17;
-  --muted: #4b5954;
-  --subtle: #697771;
-  --canvas: #f6f8f7;
-  --surface: #ffffff;
-  --surface-soft: #fbfcfb;
-  --surface-muted: #edf1ef;
-  --border: #dce3e0;
-  --border-strong: #c7d1cd;
-  --brand: #146b57;
-  --brand-dark: #0f5545;
-  --brand-text: #115646;
-  --brand-subtle: #ecf7f3;
-  --selected: #d6eee6;
-  --info: #1f506f;
-  --info-bg: #edf6fc;
-  --info-border: #80badf;
-  --warning: #80510d;
-  --warning-bg: #fff8e8;
-  --warning-border: #ecae33;
-  --danger: #8a302a;
-  --danger-bg: #fff1f0;
-  --danger-border: #eb7770;
-  --success: #285e31;
-  --success-bg: #eef8ef;
-  --success-border: #70c17b;
-  --ai: #624075;
-  --ai-bg: #f8f1fc;
-  --ai-border: #c790e3;
-  --blue: #2f6d91;
-  --amber: #b7791f;
-  --red: #b13b3b;
+  color-scheme: light;
+
+  /* Brand scale (refined from #146b57) */
+  --brand-50: #eef8f4;
+  --brand-100: #d5eee4;
+  --brand-200: #abdcc9;
+  --brand-300: #74c2a6;
+  --brand-400: #3fa283;
+  --brand-500: #1d846a;
+  --brand-600: #146b57;
+  --brand-700: #0f5646;
+  --brand-800: #0c4439;
+  --brand-900: #0a352d;
+
+  /* Neutral scale, lightly tinted toward the brand */
+  --gray-0: #ffffff;
+  --gray-25: #fafcfb;
+  --gray-50: #f4f7f5;
+  --gray-100: #eaf0ed;
+  --gray-200: #d8e1dc;
+  --gray-300: #bfccc6;
+  --gray-400: #92a29b;
+  --gray-500: #64746d;
+  --gray-600: #4d5e58;
+  --gray-700: #374641;
+  --gray-800: #222f2b;
+  --gray-900: #12201c;
+
+  /* Surfaces and text */
+  --canvas: var(--gray-50);
+  --surface: var(--gray-0);
+  --surface-soft: var(--gray-25);
+  --surface-muted: var(--gray-100);
+  --surface-raised: var(--gray-0);
+  --surface-sunken: #eef3f0;
+  --overlay: rgba(10, 24, 20, 0.48);
+  --topbar-bg: rgba(255, 255, 255, 0.94);
+  --ink: var(--gray-900);
+  --muted: var(--gray-600);
+  --subtle: var(--gray-500);
+  --placeholder: #7b8a84;
+  --border: var(--gray-200);
+  --border-subtle: #e4ebe7;
+  --border-strong: var(--gray-300);
+
+  /* Brand roles */
+  --brand: var(--brand-600);
+  --brand-hover: var(--brand-700);
+  --brand-dark: var(--brand-700);
+  --brand-solid: var(--brand-600);
+  --brand-solid-hover: var(--brand-700);
+  --brand-text: var(--brand-700);
+  --brand-subtle: var(--brand-50);
+  --brand-border: var(--brand-200);
+  --selected: var(--brand-100);
+  --on-brand: #ffffff;
+  --focus-ring: rgba(20, 107, 87, 0.45);
+  --focus-ring-soft: rgba(20, 107, 87, 0.14);
+
+  /* Status roles: text / background / border / solid fill */
+  --info: #175b80;
+  --info-bg: #eaf5fa;
+  --info-border: #a8d1e3;
+  --info-solid: #2f6d91;
+  --warning: #82500c;
+  --warning-bg: #fff5df;
+  --warning-border: #f0c36d;
+  --warning-solid: #b7791f;
+  --danger: #a13832;
+  --danger-bg: #fff0ee;
+  --danger-border: #efaaa4;
+  --danger-solid: #b13b3b;
+  --success: #236c43;
+  --success-bg: #e9f7ee;
+  --success-border: #9bd3ae;
+  --success-solid: #3f8a57;
+  --ai: #5b4473;
+  --ai-bg: #f5f0fa;
+  --ai-border: #cdb8e0;
+  --neutral-solid: #8a9199;
+
+  /* Legacy accent aliases kept for older selectors */
+  --blue: var(--info-solid);
+  --amber: var(--warning-solid);
+  --red: var(--danger-solid);
   --purple: #73558d;
-  --green: #4f7a55;
-  --sidebar: #ffffff;
-  --sidebar-muted: #697771;
-  --shadow: 0 8px 24px rgba(17, 26, 23, 0.06);
+  --green: var(--success-solid);
+
+  /* Navigation rail (dark in both themes) */
+  --sidebar: #102d28;
+  --sidebar-ink: #eef7f3;
+  --sidebar-muted: #a5b8b1;
+  --sidebar-label: #8fa49c;
+  --sidebar-hover: #1f5246;
+  --sidebar-active: #276857;
+  --sidebar-accent: #b7f0d7;
+  --sidebar-chip: #d5efe4;
+  --sidebar-chip-ink: #0e332b;
+  --sidebar-border: rgba(202, 225, 215, 0.16);
+
+  /* Charts */
+  --chart-1: #2b8c6f;
+  --chart-2: #4d8fb8;
+  --chart-3: #c2872a;
+  --chart-4: #6a7fc1;
+  --chart-5: #c2522a;
+  --chart-6: #5a9a62;
+  --chart-7: #8a9199;
+  --chart-grid: #e4e9e6;
+  --chart-axis: #64746d;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(18, 34, 31, 0.05);
+  --shadow-sm: 0 1px 3px rgba(18, 34, 31, 0.06), 0 1px 2px rgba(18, 34, 31, 0.04);
+  --shadow: 0 10px 24px rgba(18, 34, 31, 0.07);
+  --shadow-lg: 0 24px 56px rgba(18, 34, 31, 0.16);
+
+  /* Shape, space, type, motion, layers */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-body: "Open Sans", "Segoe UI", Arial, sans-serif;
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --z-sticky: 20;
+  --z-drawer: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}
+
+/* Dark theme: follows the system unless the user picked light, or forced with data-theme="dark". */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --gray-0: #151e1b;
+    --gray-25: #18221f;
+    --gray-50: #0f1714;
+    --gray-100: #1e2a26;
+    --gray-200: #2c3a35;
+    --gray-300: #3d4d47;
+    --gray-400: #6d7f78;
+    --gray-500: #92a39c;
+    --gray-600: #b1beb9;
+    --gray-700: #cbd5d1;
+    --gray-800: #dde5e1;
+    --gray-900: #e9f0ed;
+    --surface-sunken: #121a17;
+    --overlay: rgba(0, 0, 0, 0.62);
+    --topbar-bg: rgba(21, 30, 27, 0.92);
+    --placeholder: #7f908a;
+    --border-subtle: #24312d;
+    --brand: #4cc29c;
+    --brand-hover: #6fd3b0;
+    --brand-dark: #3aa886;
+    --brand-solid: #1d7f64;
+    --brand-solid-hover: #239174;
+    --brand-text: #74d4b2;
+    --brand-subtle: #13302a;
+    --brand-border: #2a5d4f;
+    --selected: #1b4137;
+    --focus-ring: rgba(92, 205, 166, 0.6);
+    --focus-ring-soft: rgba(92, 205, 166, 0.18);
+    --info: #8ecbec;
+    --info-bg: #10273a;
+    --info-border: #2d5876;
+    --info-solid: #3d82ad;
+    --warning: #f2c46e;
+    --warning-bg: #2d2411;
+    --warning-border: #6c5322;
+    --warning-solid: #c58a2b;
+    --danger: #f4a59e;
+    --danger-bg: #351a18;
+    --danger-border: #7a3832;
+    --danger-solid: #c04a45;
+    --success: #92d9aa;
+    --success-bg: #10291c;
+    --success-border: #2f6a45;
+    --success-solid: #4c9c66;
+    --ai: #cdb4ec;
+    --ai-bg: #251c33;
+    --ai-border: #574475;
+    --neutral-solid: #7c858d;
+    --purple: #a88bc4;
+    --sidebar: #0b1c18;
+    --sidebar-hover: #173e35;
+    --sidebar-active: #1f5446;
+    --sidebar-border: rgba(202, 225, 215, 0.12);
+    --chart-1: #4cc29c;
+    --chart-2: #6fb0d8;
+    --chart-3: #e0a64a;
+    --chart-4: #8f9fe0;
+    --chart-5: #e0784f;
+    --chart-6: #7fc287;
+    --chart-7: #9aa3ab;
+    --chart-grid: #26332f;
+    --chart-axis: #92a39c;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --gray-0: #151e1b;
+  --gray-25: #18221f;
+  --gray-50: #0f1714;
+  --gray-100: #1e2a26;
+  --gray-200: #2c3a35;
+  --gray-300: #3d4d47;
+  --gray-400: #6d7f78;
+  --gray-500: #92a39c;
+  --gray-600: #b1beb9;
+  --gray-700: #cbd5d1;
+  --gray-800: #dde5e1;
+  --gray-900: #e9f0ed;
+  --surface-sunken: #121a17;
+  --overlay: rgba(0, 0, 0, 0.62);
+  --topbar-bg: rgba(21, 30, 27, 0.92);
+  --placeholder: #7f908a;
+  --border-subtle: #24312d;
+  --brand: #4cc29c;
+  --brand-hover: #6fd3b0;
+  --brand-dark: #3aa886;
+  --brand-solid: #1d7f64;
+  --brand-solid-hover: #239174;
+  --brand-text: #74d4b2;
+  --brand-subtle: #13302a;
+  --brand-border: #2a5d4f;
+  --selected: #1b4137;
+  --focus-ring: rgba(92, 205, 166, 0.6);
+  --focus-ring-soft: rgba(92, 205, 166, 0.18);
+  --info: #8ecbec;
+  --info-bg: #10273a;
+  --info-border: #2d5876;
+  --info-solid: #3d82ad;
+  --warning: #f2c46e;
+  --warning-bg: #2d2411;
+  --warning-border: #6c5322;
+  --warning-solid: #c58a2b;
+  --danger: #f4a59e;
+  --danger-bg: #351a18;
+  --danger-border: #7a3832;
+  --danger-solid: #c04a45;
+  --success: #92d9aa;
+  --success-bg: #10291c;
+  --success-border: #2f6a45;
+  --success-solid: #4c9c66;
+  --ai: #cdb4ec;
+  --ai-bg: #251c33;
+  --ai-border: #574475;
+  --neutral-solid: #7c858d;
+  --purple: #a88bc4;
+  --sidebar: #0b1c18;
+  --sidebar-hover: #173e35;
+  --sidebar-active: #1f5446;
+  --sidebar-border: rgba(202, 225, 215, 0.12);
+  --chart-1: #4cc29c;
+  --chart-2: #6fb0d8;
+  --chart-3: #e0a64a;
+  --chart-4: #8f9fe0;
+  --chart-5: #e0784f;
+  --chart-6: #7fc287;
+  --chart-7: #9aa3ab;
+  --chart-grid: #26332f;
+  --chart-axis: #92a39c;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5);
 }
 
 body {
@@ -212,9 +458,9 @@ h3 {
   bottom: 0;
   width: 8px;
   height: 8px;
-  border: 1px solid #fff;
+  border: 1px solid var(--surface);
   border-radius: 50%;
-  background: #76c889;
+  background: var(--success-solid);
   content: "";
 }
 

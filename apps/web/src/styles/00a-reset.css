@@ -1,27 +1,9 @@
 :root {
   font-family: "Open Sans", "Segoe UI", Arial, sans-serif;
-  color: #17211e;
-  background: #f2f5f3;
+  color: var(--ink);
+  background: var(--canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --ink: #17211e;
-  --muted: #65736e;
-  --subtle: #87928e;
-  --canvas: #f2f5f3;
-  --surface: #ffffff;
-  --surface-soft: #f7f9f8;
-  --border: #dce3e0;
-  --border-strong: #c9d3cf;
-  --brand: #155c4d;
-  --brand-dark: #10473c;
-  --blue: #2f6d91;
-  --amber: #b7791f;
-  --red: #b13b3b;
-  --purple: #73558d;
-  --green: #4f7a55;
-  --sidebar: #17211e;
-  --sidebar-muted: #aebbb6;
-  --shadow: 0 8px 22px rgba(26, 42, 36, 0.06);
 }
 
 * {

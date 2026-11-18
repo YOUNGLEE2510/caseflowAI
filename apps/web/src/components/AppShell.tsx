@@ -25,6 +25,7 @@ import { useAuth } from "../auth";
 import { useLocale } from "../i18n";
 import type { NotificationRecord, Role } from "../types";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 import { Avatar, formatRelative } from "./ui";
 import { useConfirmation } from "./ConfirmationProvider";
 
@@ -356,6 +357,7 @@ export function AppShell() {
 
           <div className="topbar-actions">
             <LocaleSwitcher compact />
+            <ThemeSwitcher />
             <div className="notification-center" ref={notificationRef}>
               <button
                 className="icon-button notification-button"

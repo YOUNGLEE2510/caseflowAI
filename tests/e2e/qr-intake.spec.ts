@@ -13,6 +13,7 @@ test("tenant without an account reports through a unit QR code and staff verify 
 
   // Manager issues the printable code for unit A301.
   await page.goto("/rental");
+  await page.getByRole("tab", { name: "Mã QR theo căn" }).click();
   const panel = page.locator(".unit-qr-panel");
   await panel.getByRole("combobox").nth(0).selectOption("TOWER-A");
   await panel.getByRole("combobox").nth(1).selectOption("A301");

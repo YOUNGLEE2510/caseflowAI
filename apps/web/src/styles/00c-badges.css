@@ -22,49 +22,49 @@
 }
 
 .badge-new {
-  color: #2f6d91;
-  background: #e8f1f7;
+  color: var(--info);
+  background: var(--info-bg);
 }
 
 .badge-triaged {
-  color: #73558d;
-  background: #f0eaf5;
+  color: var(--ai);
+  background: var(--ai-bg);
 }
 
 .badge-in_progress {
-  color: #8a5c14;
-  background: #f8eedc;
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .badge-waiting {
-  color: #805a45;
-  background: #f3ebe6;
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .badge-resolved,
 .badge-closed {
-  color: #37633d;
-  background: #e9f2ea;
+  color: var(--success);
+  background: var(--success-bg);
 }
 
 .badge-priority {
-  background: #f1f4f3;
-  color: #56625e;
+  background: var(--surface-muted);
+  color: var(--muted);
 }
 
 .priority-high {
-  color: #9b6214;
-  background: #fbefdc;
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .priority-urgent {
-  color: #a73131;
-  background: #fae8e8;
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .priority-low {
-  color: #55706a;
-  background: #eaf0ee;
+  color: var(--muted);
+  background: var(--surface-muted);
 }
 
 .risk-badge {
@@ -80,7 +80,7 @@
 }
 
 .risk-high {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .risk-high .risk-dot {
@@ -88,7 +88,7 @@
 }
 
 .risk-medium {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .risk-medium .risk-dot {
@@ -96,7 +96,7 @@
 }
 
 .risk-low {
-  color: var(--green);
+  color: var(--success);
 }
 
 .risk-low .risk-dot {
@@ -108,7 +108,7 @@
   place-items: center;
   line-height: 1;
   flex: 0 0 auto;
-  color: #fff;
+  color: var(--on-brand);
   border-radius: 50%;
   font-weight: 750;
 }
@@ -148,9 +148,9 @@
   min-height: 58px;
   padding: 14px 18px;
   justify-content: flex-start;
-  color: #8f3030;
-  background: #fff9f9;
-  border-color: #efcdcd;
+  color: var(--danger);
+  background: var(--surface-soft);
+  border-color: var(--danger-border);
 }
 
 .state-error .button {
@@ -181,10 +181,10 @@
 }
 
 .form-error {
-  border: 1px solid #efcdcd;
+  border: 1px solid var(--danger-border);
   border-radius: 6px;
   padding: 10px 12px;
-  color: #923737;
-  background: #fff7f7;
+  color: var(--danger);
+  background: var(--surface-soft);
   font-size: 13px;
 }

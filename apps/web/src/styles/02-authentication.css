@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  color: #fff;
+  color: var(--on-brand);
 }
 
 .login-brand > span:last-child {
@@ -54,7 +54,7 @@
   width: 44px;
   height: 44px;
   color: var(--brand-text);
-  background: #fff;
+  background: var(--sidebar-chip);
 }
 
 .login-visual-copy {

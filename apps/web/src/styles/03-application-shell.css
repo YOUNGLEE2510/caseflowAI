@@ -30,8 +30,8 @@
   height: 36px;
   flex: 0 0 36px;
   border-radius: 8px;
-  color: #fff;
-  background: var(--brand);
+  color: var(--sidebar-ink);
+  background: var(--brand-solid);
 }
 
 .brand-copy {
@@ -154,7 +154,7 @@
 .topbar {
   height: 64px;
   padding: 0 24px;
-  background: rgba(255, 255, 255, 0.98);
+  background: color-mix(in srgb, var(--surface) 98%, transparent);
 }
 
 .topbar-title strong {
@@ -184,7 +184,7 @@
 
 .global-search:focus-within {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(20, 107, 87, 0.1);
+  box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 
 .global-search input {
@@ -207,7 +207,7 @@
 }
 
 .notification-dot {
-  background: var(--brand);
+  background: var(--brand-solid);
 }
 
 .user-summary {

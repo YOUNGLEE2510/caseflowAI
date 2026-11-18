@@ -45,19 +45,19 @@
 
 .toast-success { border-left: 3px solid var(--green); }
 
-.toast-success > svg { color: var(--green); }
+.toast-success > svg { color: var(--success); }
 
 .toast-error { border-left: 3px solid var(--red); }
 
-.toast-error > svg { color: var(--red); }
+.toast-error > svg { color: var(--danger); }
 
 .toast-warning { border-left: 3px solid var(--amber); }
 
-.toast-warning > svg { color: var(--amber); }
+.toast-warning > svg { color: var(--warning); }
 
 .toast-info { border-left: 3px solid var(--blue); }
 
-.toast-info > svg { color: var(--blue); }
+.toast-info > svg { color: var(--info); }
 
 @media (max-width: 640px) {
   .toast-container {

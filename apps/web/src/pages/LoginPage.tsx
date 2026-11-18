@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 import { api, apiUrl } from "../api";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { ThemeSwitcher } from "../components/ThemeSwitcher";
 import { Modal } from "../components/Modal";
 import { useLocale } from "../i18n";
 import { useConfirmation } from "../components/ConfirmationProvider";
@@ -150,7 +151,7 @@ export function LoginPage() {
       </aside>
 
       <main className="login-form-area">
-        <div className="login-locale"><LocaleSwitcher /></div>
+        <div className="login-locale"><LocaleSwitcher /><ThemeSwitcher /></div>
         <section className="login-panel">
           <div className="login-heading">
             <span className="eyebrow">CaseFlow</span>

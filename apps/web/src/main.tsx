@@ -14,6 +14,7 @@ import "@fontsource/be-vietnam-pro/vietnamese-600.css";
 import "@fontsource/be-vietnam-pro/latin-700.css";
 import "@fontsource/be-vietnam-pro/vietnamese-700.css";
 import "./styles.css";
+import "./theme";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -1,4 +1,4 @@
-.dashboard-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; border-bottom: 1px solid #dce1e5; padding-bottom: 24px; }
+.dashboard-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
 .dashboard-charts figure { min-width: 0; margin: 0; }
 .dashboard-charts figcaption { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
 .dashboard-chart { height: 280px; min-width: 0; }
