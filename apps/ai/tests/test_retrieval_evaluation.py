@@ -10,16 +10,16 @@ from apps.ai.evaluate_retrieval import evaluate
 def test_retrieval_evaluation_reports_hits_and_refusal(tmp_path):
     articles = tmp_path / "knowledge.json"
     articles.write_text(json.dumps([
-        {"id": "it", "title": "Khoi phuc tai khoan", "content": "Mo cong SIS va chon dat lai mat khau.", "category": "it_access", "sourceLabel": "IT"},
-        {"id": "finance", "title": "Hoc phi", "content": "Cung cap ma giao dich de doi soat hoc phi.", "category": "finance", "sourceLabel": "Finance"},
+        {"id": "card", "title": "Cap lai the ra vao", "content": "Khoa the cu va xac minh nguoi thue truoc khi cap the moi.", "category": "access_security", "sourceLabel": "An ninh"},
+        {"id": "ac", "title": "Dieu hoa khong lanh", "content": "Kiem tra che do Cool va ve sinh luoi loc dieu hoa.", "category": "appliances", "sourceLabel": "Dien lanh"},
     ]), encoding="utf-8")
     questions = tmp_path / "questions.csv"
     with questions.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=["query", "expected_ids", "answerable"])
         writer.writeheader()
         writer.writerows([
-            {"query": "dat lai mat khau SIS", "expected_ids": "it", "answerable": "true"},
-            {"query": "quy dinh noi tru ky tuc xa", "expected_ids": "", "answerable": "false"},
+            {"query": "cap lai the ra vao bi mat", "expected_ids": "card", "answerable": "true"},
+            {"query": "gui xe may tang ham", "expected_ids": "", "answerable": "false"},
         ])
 
     report = evaluate(articles, questions)
@@ -33,11 +33,11 @@ def test_retrieval_evaluation_reports_hits_and_refusal(tmp_path):
 def test_retrieval_evaluation_rejects_invalid_ground_truth(tmp_path):
     articles = tmp_path / "knowledge.json"
     articles.write_text(json.dumps([
-        {"id": "it", "title": "Tai khoan", "content": "Dat lai mat khau.", "category": "it_access", "sourceLabel": "IT"},
+        {"id": "card", "title": "The ra vao", "content": "Khoa the cu khi mat the.", "category": "access_security", "sourceLabel": "An ninh"},
     ]), encoding="utf-8")
     questions = tmp_path / "questions.csv"
     questions.write_text(
-        "id,query,expected_ids,answerable\nq1,dat lai mat khau,missing,true\n",
+        "id,query,expected_ids,answerable\nq1,khoa the cu,missing,true\n",
         encoding="utf-8",
     )
 
@@ -45,13 +45,13 @@ def test_retrieval_evaluation_rejects_invalid_ground_truth(tmp_path):
         evaluate(articles, questions)
 
 
-def test_retrieval_demo_fixture_exercises_refusal_path():
-    fixtures = Path(__file__).parent / "fixtures"
-    report = evaluate(
-        fixtures / "retrieval_demo_articles.json",
-        fixtures / "retrieval_demo_questions.csv",
-    )
+def test_rental_knowledge_benchmark_guards_retrieval_and_abstention():
+    # Locked test questions; the score threshold was chosen on the separate dev set.
+    data = Path(__file__).resolve().parents[1] / "data"
+    report = evaluate(data / "rental_knowledge.json", data / "rental_retrieval_questions.csv")
 
-    assert report["metadata"]["question_count"] == 15
-    assert report["metrics"]["unanswerable_questions"] == 3
-    assert report["metrics"]["refusal_rate"] == 1
+    assert report["metadata"]["article_count"] == 28
+    assert report["metadata"]["question_count"] == 64
+    assert report["metrics"]["unanswerable_questions"] == 12
+    assert report["metrics"]["hit_at_3"] >= 0.8
+    assert report["metrics"]["refusal_rate"] >= 0.5

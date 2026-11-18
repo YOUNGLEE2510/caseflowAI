@@ -70,7 +70,7 @@ Quản lý mở chi tiết phản ánh để xem gợi ý **Có thể liên quan
 
 Sau khi triage lưu thành công một kết quả liên quan, cờ gợi ý được bật cho cả hồ sơ mới và hồ sơ ứng viên còn mở tại cùng cơ sở/đội/tổ chức. Cờ là dấu hiệu bất đồng bộ, không phải danh sách liên kết có hiệu lực; có thể cũ khi tình huống thay đổi. API chi tiết luôn truy vấn lại ứng viên, và badge không hiển thị trên hồ sơ đã giải quyết/đóng.
 
-Model profile căn hộ dùng 60 câu mô phỏng, chưa có dữ liệu thực tế. Không quản lý hợp đồng hay tiền thuê. Tổ chức `caseflow-rental-isolation-demo` là đối chứng cách ly, không phải khách hàng thật.
+Model profile căn hộ dùng 300 câu mô phỏng, chưa có dữ liệu thực tế. Không quản lý hợp đồng hay tiền thuê. Tổ chức `caseflow-rental-isolation-demo` là đối chứng cách ly, không phải khách hàng thật.
 
 ### Báo sự cố qua mã QR theo căn (không cần tài khoản)
 

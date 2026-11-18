@@ -6,6 +6,7 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from typing import Callable
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -60,6 +61,39 @@ def training_rows() -> tuple[list[str], list[str]]:
     return texts, labels
 
 
+class MajorityBaseline:
+    """Always predicts the most frequent training label (lower bound)."""
+    def fit(self, texts: list[str], labels: list[str]):
+        self.label = Counter(labels).most_common(1)[0][0]
+        return self
+
+    def predict(self, texts: list[str]):
+        import numpy as np
+        return np.array([self.label] * len(texts))
+
+
+class KeywordBaseline:
+    """Mirror of the API fallback rules (apps/api/src/services/aiClient.ts): first matching keyword group wins."""
+    GROUPS = {
+        "water": ["nước yếu", "mất nước", "rò nước", "ống nước", "tắc", "thoát nước", "bồn cầu"],
+        "electrical": ["mất điện", "rò điện", "tia lửa", "mùi khét", "aptomat", "ổ điện", "ổ cắm"],
+        "internet": ["wifi", "internet", "đường truyền", "modem", "mất mạng"],
+        "appliances": ["điều hòa", "máy lạnh", "máy giặt", "tủ lạnh", "bình nóng", "tivi", "bếp từ"],
+        "access_security": ["thẻ từ", "khóa", "chìa", "người lạ", "thoát hiểm", "cổng"],
+    }
+
+    def fit(self, texts: list[str], labels: list[str]):
+        return self
+
+    def predict(self, texts: list[str]):
+        import numpy as np
+        out = []
+        for text in texts:
+            lowered = text.casefold()
+            out.append(next((label for label, words in self.GROUPS.items() if any(word in lowered for word in words)), "general_support"))
+        return np.array(out)
+
+
 def model_factories() -> dict[str, Callable[[], Pipeline]]:
     import sys
     if str(ROOT) not in sys.path:
@@ -69,6 +103,8 @@ def model_factories() -> dict[str, Callable[[], Pipeline]]:
         max_iter=1_000, class_weight="balanced", C=20.0, random_state=42
     )
     return {
+        "majority_baseline": MajorityBaseline,
+        "keyword_rules": KeywordBaseline,
         "hybrid_tfidf_logreg": lambda: classifier_pipeline("hybrid"),
         "word_tfidf_svm": lambda: Pipeline([
             ("tfidf", TfidfVectorizer(lowercase=True, ngram_range=(1, 2), sublinear_tf=True)),
@@ -107,7 +143,9 @@ def evaluate(dataset: Path) -> tuple[dict, list[dict[str, str]], list[str]]:
     for name, factory in model_factories().items():
         model = factory()
         model.fit(train_texts, train_labels)
+        started = perf_counter()
         predicted = model.predict(test_texts).tolist()
+        latency_ms = (perf_counter() - started) * 1000 / max(1, len(test_texts))
         report = classification_report(expected, predicted, labels=labels, output_dict=True, zero_division=0)
         results[name] = {
             "accuracy": round(float(accuracy_score(expected, predicted)), 4),
@@ -126,6 +164,7 @@ def evaluate(dataset: Path) -> tuple[dict, list[dict[str, str]], list[str]]:
             },
             "confusionMatrix": confusion_matrix(expected, predicted, labels=labels).tolist(),
             "errorCount": sum(a != b for a, b in zip(expected, predicted, strict=True)),
+            "latencyMsPerSample": round(latency_ms, 3),
         }
         predictions.extend(
             {"model": name, "text": text, "expected": actual, "predicted": prediction, "correct": str(actual == prediction).lower()}

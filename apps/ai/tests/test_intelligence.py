@@ -14,7 +14,8 @@ def test_training_taxonomy_matches_rental_service_catalog():
         "access_security",
         "general_support",
     }
-    assert sum(len(samples) for samples in TRAINING_EXAMPLES.values()) == 60
+    assert sum(len(samples) for samples in TRAINING_EXAMPLES.values()) == 300
+    assert all(len(samples) == 50 for samples in TRAINING_EXAMPLES.values())
 
 
 def test_classifies_internet_request():
@@ -37,7 +38,7 @@ def test_classifies_appliance_request_with_location():
 def test_classifies_representative_requests():
     samples = {
         "water": "Ống nước dưới bồn rửa bị rò ra sàn",
-        "electrical": "Aptomat tổng tự ngắt khi bật bếp từ",
+        "electrical": "Cầu dao nhảy liên tục, cả căn mất điện",
         "access_security": "Thẻ từ không mở được cửa căn",
         "general_support": "Tôi cần ban quản lý hướng dẫn thủ tục gia hạn hợp đồng",
     }

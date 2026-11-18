@@ -2,7 +2,7 @@
 
 Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI hỗ trợ. Hướng ứng dụng hiện tại là tiếp nhận phản ánh và điều phối sửa chữa cho chuỗi căn hộ cho thuê: quản lý cơ sở/căn/thiết bị, quyền gửi theo căn, liên kết phản ánh vào sự cố chung, giao kỹ thuật và lịch hẹn. Sản phẩm chỉ còn một miền nghiệp vụ là căn hộ cho thuê; chế độ trường học đã được gỡ khỏi mã, dữ liệu và test.
 
-Bộ phân loại dùng TF-IDF + Logistic Regression huấn luyện từ 60 câu mô phỏng viết tay, không phải dữ liệu khách thuê thật. Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
+Bộ phân loại dùng TF-IDF + Logistic Regression huấn luyện từ 300 câu mô phỏng (60 câu nhóm tự viết và 240 câu do AI hỗ trợ soạn), không phải dữ liệu khách thuê thật. Kết quả đánh giá và phần cần người thật thực hiện nằm trong [EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md). Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
 
 ## Giá trị chính
 
@@ -129,7 +129,7 @@ Tài liệu OpenAPI của dịch vụ AI: `http://127.0.0.1:8001/docs`.
 
 Chuẩn bị dữ liệu phân loại đã được phép sử dụng: `python -m apps.ai.prepare_caseflow_dataset --input path/to/reviewed.csv --output artifacts/caseflow-dataset`. CSV đầu vào cần `text,label`; có thể thêm `group_id,created_at`. Pipeline ẩn email, số điện thoại, mã sinh viên phổ biến, loại bản ghi trùng và chia tập không làm rò rỉ cùng nhóm hồ sơ.
 
-Đánh giá truy xuất RAG: `npm run evaluate:retrieval` chạy fixture tái lập và ghi kết quả tại `artifacts/ai-evaluation/retrieval_demo_report.json`. Với dữ liệu pilot, dùng `python -m apps.ai.evaluate_retrieval --articles path/to/knowledge.json --questions path/to/questions.csv --output artifacts/retrieval-evaluation.json`. Bộ câu hỏi dùng cột `id,query,expected_ids,answerable`; `expected_ids` là các mã tài liệu, phân cách bằng dấu `;`. Fixture demo chỉ kiểm tra pipeline, không phải chỉ số chất lượng thực tế.
+Đánh giá truy xuất RAG: `npm run evaluate:retrieval` chạy bộ 28 quy trình và 64 câu hỏi căn hộ, ghi kết quả tại `artifacts/ai-evaluation/rental_retrieval_report.json`. `npm run evaluate:priority` đánh giá gợi ý mức ưu tiên trên 60 tình huống. Với dữ liệu pilot, dùng `python -m apps.ai.evaluate_retrieval --articles path/to/knowledge.json --questions path/to/questions.csv --output artifacts/retrieval-evaluation.json`. Bộ câu hỏi dùng cột `id,query,expected_ids,answerable`; `expected_ids` là các mã tài liệu, phân cách bằng dấu `;`. Fixture demo chỉ kiểm tra pipeline, không phải chỉ số chất lượng thực tế.
 
 
 `npm run seed` chỉ tạo dữ liệu demo ở local. `seed:force` bị vô hiệu hóa; khi cần làm mới hãy dùng database demo dùng một lần, không dùng database thật.
@@ -151,7 +151,7 @@ Requester có thể xác nhận đóng, mở lại hồ sơ đã giải quyết 
 
 ## Luồng demo đề xuất
 
-Model căn hộ 60 mẫu và bộ kịch bản liên kết đều là dữ liệu mô phỏng, không chứng minh chất lượng thực tế. Huấn luyện bằng dữ liệu vận hành thật vẫn chờ nguồn phù hợp được duyệt; xem [AI_AND_DATA.md](docs/AI_AND_DATA.md).
+Model căn hộ 300 mẫu và bộ kịch bản liên kết đều là dữ liệu mô phỏng, không chứng minh chất lượng thực tế. Huấn luyện bằng dữ liệu vận hành thật vẫn chờ nguồn phù hợp được duyệt; xem [AI_AND_DATA.md](docs/AI_AND_DATA.md).
 
 1. Dùng phản ánh ở A301/A302/A303 cùng cơ sở TOWER-A; giữ ca TOWER-B làm đối chứng. Người thuê chỉ gửi cho căn được gán.
 2. Chạy phân loại; quản lý xác nhận hoặc sửa nhãn, xem gợi ý liên quan ở chi tiết hồ sơ.

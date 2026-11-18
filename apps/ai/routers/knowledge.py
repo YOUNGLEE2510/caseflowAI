@@ -1,3 +1,4 @@
+import os
 import re
 from functools import lru_cache
 
@@ -8,6 +9,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from ..schemas import KnowledgeRequest
 
 router = APIRouter()
+
+# Minimum TF-IDF cosine for a passage to count as evidence. 0.15 was chosen on the
+# dev question set (apps/ai/data/rental_retrieval_dev.csv), never on the test set;
+# below it the service abstains instead of citing weakly related documents.
+MIN_RETRIEVAL_SCORE = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.15"))
 
 # These high-frequency Vietnamese function words otherwise create weak matches
 # for out-of-domain queries (for example, a question only sharing "trường").
@@ -82,7 +88,7 @@ def retrieve_knowledge(request: KnowledgeRequest) -> dict:
     for position in ranked:
         article_id, title, _, source_label, passage, is_title = entries[position]
         score = float(scores[position])
-        if score <= 0.03:
+        if score <= MIN_RETRIEVAL_SCORE:
             break
         if article_id in seen:
             continue

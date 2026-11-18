@@ -16,9 +16,14 @@ CATEGORY_NAMES = {
     "general_support": "Hỗ trợ chung",
 }
 
-# Mẫu mô phỏng viết tay (xem data/SOURCES.md), không phải dữ liệu khách thuê thật.
+# Mẫu mô phỏng (xem data/SOURCES.md), không phải dữ liệu khách thuê thật:
+# rental_demo.json = 60 câu nhóm tự viết; rental_train_extra.json = 240 câu do AI hỗ trợ soạn.
 _data_dir = Path(__file__).parent / "data"
 TRAINING_EXAMPLES = json.loads((_data_dir / "rental_demo.json").read_text(encoding="utf-8"))
+_extra = json.loads((_data_dir / "rental_train_extra.json").read_text(encoding="utf-8"))
+for _label, _examples in _extra.items():
+    if not _label.startswith("_"):
+        TRAINING_EXAMPLES[_label] = TRAINING_EXAMPLES[_label] + _examples
 
 # Chỉ còn một miền nghiệp vụ; biến môi trường giữ lại để cấu hình cũ không lỗi.
 DOMAIN_PROFILE = os.getenv("DOMAIN_PROFILE", "rental")

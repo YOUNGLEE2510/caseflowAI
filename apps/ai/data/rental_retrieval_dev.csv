@@ -1,0 +1,37 @@
+id,query,expected_ids,answerable
+d01,Vòi sen chỉ nhỏ giọt dù mở hết cỡ,kb-water-low-pressure,true
+d02,Đường ống sau bồn cầu bị rỉ nước liên tục,kb-water-leak,true
+d03,Thoát sàn nhà tắm bị nghẹt nước đọng,kb-water-clog,true
+d04,Mưa lớn là trần phòng khách loang ố,kb-seepage,true
+d05,Bật lò vi sóng thì cầu dao ngắt,kb-elec-breaker,true
+d06,Điện lực cắt điện cả khu thì tòa nhà làm gì,kb-elec-outage,true
+d07,Ổ điện cạnh tủ lạnh bị cháy đen,kb-elec-socket-burn,true
+d08,Máy lạnh phòng khách chạy cả tiếng vẫn nóng,kb-ac-not-cold,true
+d09,Ống thoát nước của máy lạnh bị tắc,kb-ac-leak,true
+d10,Đèn báo bình nước nóng không sáng,kb-water-heater,true
+d11,Máy giặt rung lắc rất mạnh khi vắt,kb-washer-fridge,true
+d12,Laptop hay rớt kết nối wifi buổi tối,kb-wifi-unit,true
+d13,Cả hành lang tầng 5 không ai vào được mạng,kb-wifi-floor-outage,true
+d14,Khóa thẻ cũ vì làm rơi mất thẻ,kb-access-card-lost,true
+d15,Khóa từ quẹt mãi mới mở,kb-door-lock,true
+d16,Đối tượng khả nghi đứng trước cửa căn hộ,kb-stranger-security,true
+d17,Ngửi thấy mùi khói cháy ở tầng hầm,kb-fire-emergency,true
+d18,Thang máy báo lỗi và không nhận nút gọi,kb-elevator-stuck,true
+d19,Hàng xóm khoan đục tường lúc nửa đêm,kb-noise,true
+d20,Nhờ phun thuốc diệt kiến trong căn,kb-cleaning-pest,true
+d21,Bàn giao chìa khóa khi kết thúc hợp đồng,kb-move-out,true
+d22,Biên bản hiện trạng khi bắt đầu thuê,kb-move-in,true
+d23,Người gửi qua QR không nghe máy khi gọi xác minh,kb-qr-intake,true
+d24,Thời hạn xử lý được tính theo giờ hành chính?,kb-sla-priority,true
+d25,Thợ sửa chữa vào nhà khi tôi không ở nhà,kb-entry-permission,true
+d26,Đánh giá sao sau khi sửa xong,kb-reopen-feedback,true
+d27,Gỡ liên kết phản ánh bị gắn nhầm vào sự cố,kb-shared-incident,true
+d28,Máy phát điện dự phòng được chạy thử khi nào,kb-maintenance-schedule,true
+v01,Tiền điện mỗi số giá bao nhiêu?,,false
+v02,Có cho thuê theo ngày không?,,false
+v03,Gửi xe máy ở đâu?,,false
+v04,Tòa nhà có cho hút thuốc trên ban công không?,,false
+v05,Có dịch vụ giặt ủi theo ký không?,,false
+v06,Gia hạn hợp đồng thuê cần giấy tờ gì?,,false
+v07,Tôi muốn đổi sang căn có view hồ,,false
+v08,Ban quản lý làm việc chủ nhật không?,,false

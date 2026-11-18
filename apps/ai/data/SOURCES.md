@@ -19,6 +19,18 @@ Không có dữ liệu trực tuyến nào được tự động đưa vào mode
 
 Dataset mở không cung cấp nhãn SLA thực của CaseFlow. Không suy diễn thời hạn xử lý hoặc kết quả quá hạn từ câu văn để làm ground truth.
 
+## Dữ liệu mô phỏng miền căn hộ (đang dùng)
+
+| Tệp | Nội dung | Người soạn | Dùng cho |
+|---|---|---|---|
+| `rental_demo.json` | 60 câu phản ánh, 10/nhãn | Nhóm thực hiện tự viết | Huấn luyện |
+| `rental_train_extra.json` | 240 câu phản ánh, 40/nhãn | Trợ lý AI (Claude) soạn ngày 2026-11-18, ghi trong trường `_provenance` | Huấn luyện |
+| `rental_knowledge.json` | 28 quy trình vận hành căn hộ | Quy trình mô phỏng do nhóm soạn với trợ lý AI; không phải quy định của đơn vị thật | Kho tri thức, đánh giá truy xuất |
+| `rental_retrieval_dev.csv` | 36 câu hỏi | Như trên | Chỉ hiệu chỉnh ngưỡng truy xuất |
+| `rental_retrieval_questions.csv` | 64 câu hỏi | Như trên, khóa trước khi hiệu chỉnh | Kiểm tra truy xuất |
+
+Không có câu nào lấy từ hội thoại hay phản ánh thật của người thuê. Điểm đánh giá trên các bộ này chỉ để so sánh tương đối; kết quả báo cáo cuối cần tập kiểm tra do người thật viết theo `docs/study/README.md`.
+
 ## Quy tắc nhập nguồn
 
 1. Lưu URL gốc, đơn vị phát hành, ngày truy cập, phiên bản và license.

@@ -1,0 +1,65 @@
+id,query,expected_ids,answerable
+q01,Nước trong căn chảy rất yếu ở tất cả các vòi thì xử lý thế nào?,kb-water-low-pressure,true
+q02,Cả tầng bị mất nước có phải kiểm tra bơm không?,kb-water-low-pressure,true
+q03,Ống nước dưới bồn rửa bị rò ra sàn cần làm gì trước?,kb-water-leak,true
+q04,nuoc tran ra san gan o dien thi phai lam sao,kb-water-leak,true
+q05,Bồn cầu bị tắc không xả được,kb-water-clog,true
+q06,Nhiều căn cùng trục bị trào ngược nước thải,kb-water-clog,true
+q07,Tường phòng ngủ bị thấm mỗi khi trời mưa,kb-seepage,true
+q08,Trần nhà tầng trên cùng bị dột,kb-seepage,true
+q09,Aptomat cứ nhảy khi bật bếp từ,kb-elec-breaker,true
+q10,cau dao nhay lien tuc ca khi tat het thiet bi,kb-elec-breaker,true
+q11,Cả tòa nhà mất điện thì thang máy và bơm chạy bằng gì?,kb-elec-outage,true
+q12,Mất điện cả tầng thì kiểm tra ở đâu?,kb-elec-outage,true
+q13,Ổ cắm có mùi khét và nóng,kb-elec-socket-burn,true
+q14,Thấy tia lửa ở ổ điện trong bếp,kb-elec-socket-burn,true
+q15,Điều hòa chạy mà không mát,kb-ac-not-cold,true
+q16,may lanh phong ngu thoi gio khong lanh,kb-ac-not-cold,true
+q17,Dàn lạnh điều hòa nhỏ nước xuống tường,kb-ac-leak,true
+q18,Điều hòa bị chảy nước thì có cần tắt máy không?,kb-ac-leak,true
+q19,Bình nóng lạnh bật lâu mà nước vẫn lạnh,kb-water-heater,true
+q20,Đáy bình nước nóng bị rỉ nước,kb-water-heater,true
+q21,Máy giặt báo lỗi không xả được nước,kb-washer-fridge,true
+q22,Tủ lạnh trong căn không lạnh,kb-washer-fridge,true
+q23,Wifi trong phòng ngủ rất yếu,kb-wifi-unit,true
+q24,Điện thoại của tôi không vào được wifi căn hộ,kb-wifi-unit,true
+q25,Ba căn cùng tầng báo mất mạng một lúc,kb-wifi-floor-outage,true
+q26,Mất internet cả tầng thì có tạo sự cố chung không?,kb-wifi-floor-outage,true
+q27,Tôi bị mất thẻ ra vào tối qua,kb-access-card-lost,true
+q28,Muốn làm thêm thẻ cho người ở cùng,kb-access-card-lost,true
+q29,Khóa cửa kêu bíp báo pin yếu,kb-door-lock,true
+q30,Bị khóa ngoài lúc nửa đêm vì khóa không nhận thẻ,kb-door-lock,true
+q31,Có người lạ đi theo tôi vào thang máy,kb-stranger-security,true
+q32,Thấy người lạ lảng vảng ngoài hành lang,kb-stranger-security,true
+q33,Phát hiện khói trong hành lang phải làm gì?,kb-fire-emergency,true
+q34,Chuông báo cháy kêu thì thoát bằng đường nào?,kb-fire-emergency,true
+q35,Có người bị kẹt trong thang máy,kb-elevator-stuck,true
+q36,Thang máy dừng giữa tầng không chạy,kb-elevator-stuck,true
+q37,Căn bên cạnh mở nhạc to sau 11 giờ đêm,kb-noise,true
+q38,Tiếng máy bơm kêu ầm ầm ban đêm,kb-noise,true
+q39,Phòng rác tầng tôi bốc mùi,kb-cleaning-pest,true
+q40,Trong bếp có nhiều gián,kb-cleaning-pest,true
+q41,Tôi muốn trả căn cuối tháng thì thủ tục thế nào?,kb-move-out,true
+q42,Sau khi khách trả căn thì căn được dọn và kiểm tra ra sao?,kb-move-out,true
+q43,Người thuê mới nhận căn cần những bước gì?,kb-move-in,true
+q44,Phản ánh gửi qua mã QR có được xử lý ngay không?,kb-qr-intake,true
+q45,Mã QR dán trong căn bị người ngoài chụp lại thì sao?,kb-qr-intake,true
+q46,Trường hợp nào được xếp mức ưu tiên khẩn cấp?,kb-sla-priority,true
+q47,Thời hạn xử lý có tính cả lúc chờ linh kiện không?,kb-sla-priority,true
+q48,Kỹ thuật có được vào căn khi tôi đi vắng không?,kb-entry-permission,true
+q49,Sửa xong mà lỗi lại xuất hiện thì làm sao?,kb-reopen-feedback,true
+q50,Khách không xác nhận đóng hồ sơ sau một tuần,kb-reopen-feedback,true
+q51,Nhiều căn báo cùng một lỗi thì có gộp hồ sơ lại không?,kb-shared-incident,true
+q52,Bao lâu thì thang máy và máy bơm được bảo trì?,kb-maintenance-schedule,true
+u01,Giá thuê căn hai phòng ngủ là bao nhiêu?,,false
+u02,Tôi muốn đóng tiền thuê qua thẻ tín dụng,,false
+u03,Có được nuôi chó mèo trong căn hộ không?,,false
+u04,Bãi đỗ xe ô tô giá bao nhiêu một tháng?,,false
+u05,Thuê dài hạn một năm có được giảm giá không?,,false
+u06,Tòa nhà có hồ bơi và phòng gym không?,,false
+u07,Làm sao xuất hóa đơn đỏ cho công ty?,,false
+u08,Có dịch vụ đưa đón sân bay không?,,false
+u09,Hợp đồng thuê có cần công chứng không?,,false
+u10,Khu vực xung quanh có trường mẫu giáo nào?,,false
+u11,Tôi có thể sơn lại tường theo màu mình thích?,,false
+u12,Tiền cọc được hoàn trong bao nhiêu ngày?,,false
