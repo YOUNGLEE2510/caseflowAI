@@ -8,27 +8,10 @@
   color: var(--on-brand);
 }
 
-.login-brand {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  justify-self: start;
-}
-
 .login-brand > div,
 .brand > div {
   display: flex;
   flex-direction: column;
-}
-
-.login-brand strong {
-  font-size: 18px;
-}
-
-.login-brand span {
-  color: var(--placeholder);
-  font-size: 11px;
 }
 
 .brand-mark {

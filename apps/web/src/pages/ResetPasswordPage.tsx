@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { api } from "../api";
+import { BrandLogo } from "../components/BrandLogo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { ThemeSwitcher } from "../components/ThemeSwitcher";
 import { useLocale } from "../i18n";
@@ -46,7 +47,7 @@ export function ResetPasswordPage() {
     <div className="login-locale"><LocaleSwitcher /><ThemeSwitcher /></div>
     <section className="login-panel">
       <div className="login-heading">
-        <span className="eyebrow">CaseFlow</span>
+        <span className="auth-page-logo"><BrandLogo size={36} tagline={text("Vận hành căn hộ", "Apartment operations")} /></span>
         <h1>{text("Đặt lại mật khẩu", "Reset your password")}</h1>
         <p>{text("Chọn mật khẩu mới cho tài khoản của bạn.", "Choose a new password for your account.")}</p>
       </div>

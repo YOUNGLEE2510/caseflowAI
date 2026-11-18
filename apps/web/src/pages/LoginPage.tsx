@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, Eye, EyeOff, Network, ShieldCheck } from "lucide-react";
+import { ArrowRight, Building2, Check, Eye, EyeOff, QrCode, ShieldCheck, Sparkles, Timer, Wrench } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 import { api, apiUrl } from "../api";
+import { BrandLogo } from "../components/BrandLogo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { ThemeSwitcher } from "../components/ThemeSwitcher";
 import { Modal } from "../components/Modal";
@@ -131,30 +132,47 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-screen">
-      <aside className="login-visual" aria-label={text("Dịch vụ vận hành chuỗi căn hộ", "Rental apartment operations")}>
-        <div className="login-visual-overlay" />
-        <div className="login-brand">
-          <span className="brand-mark brand-mark-light">
-            <Network size={22} />
-          </span>
-          <span>
-            <strong>CaseFlow</strong>
-            <small>{text("Vận hành căn hộ", "Apartment operations")}</small>
-          </span>
+    <div className="login-screen auth-screen">
+      <aside className="auth-showcase" aria-label={text("Giới thiệu CaseFlow", "About CaseFlow")}>
+        <BrandLogo tone="inverse" size={40} tagline={text("Vận hành căn hộ", "Apartment operations")} />
+        <div className="auth-showcase-copy">
+          <span className="auth-kicker">{text("Nền tảng vận hành căn hộ cho thuê", "Operations for rental apartments")}</span>
+          <h2>{text("Mọi phản ánh của cư dân,", "Every resident request,")} <em>{text("một luồng xử lý rõ ràng.", "one clear path to done.")}</em></h2>
+          <p>{text("Tiếp nhận qua ứng dụng hoặc mã QR, AI gợi ý phân loại và mức ưu tiên, kỹ thuật viên cập nhật tiến độ cho tới khi hoàn tất.", "Take reports in the app or by QR code, let AI suggest the category and priority, and track technicians until the job is done.")}</p>
         </div>
-        <div className="login-visual-copy">
-          <span className="eyebrow">{text("Quản lý phản ánh và sửa chữa", "Maintenance requests and repairs")}</span>
-          <h1>{text("Tiếp nhận phản ánh,", "Receive requests,")}<br />{text("phối hợp xử lý sự cố.", "coordinate incident response.")}</h1>
-          <p>{text("Kết nối cư dân, đội kỹ thuật và quản lý cơ sở trong quá trình tiếp nhận, sửa chữa và cập nhật tiến độ.", "Connect residents, technicians and property managers from reporting to repair and progress updates.")}</p>
+        <div className="auth-preview" aria-hidden="true">
+          <div className="auth-ticket">
+            <div className="auth-ticket-head">
+              <span className="auth-ticket-unit">A301</span>
+              <span className="auth-chip auth-chip-progress">{text("Đang xử lý", "In progress")}</span>
+            </div>
+            <strong>{text("Điều hòa phòng ngủ không lạnh", "Bedroom air conditioner not cooling")}</strong>
+            <span className="auth-ticket-meta"><Wrench size={14} />{text("Kỹ thuật điện lạnh · hạn 15:00 hôm nay", "HVAC team · due 15:00 today")}</span>
+            <ol className="auth-steps">
+              <li className="done">{text("Tiếp nhận", "Received")}</li>
+              <li className="done">{text("Điều phối", "Assigned")}</li>
+              <li className="current">{text("Sửa chữa", "Repair")}</li>
+              <li>{text("Hoàn tất", "Done")}</li>
+            </ol>
+          </div>
+          <div className="auth-float auth-float-ai"><Sparkles size={16} /><span><small>{text("AI gợi ý", "AI suggestion")}</small>{text("Thiết bị · Ưu tiên cao", "Appliances · High priority")}</span></div>
+          <div className="auth-float auth-float-sla"><Timer size={16} /><span><small>{text("Đúng hạn SLA", "On-time SLA")}</small>94%</span></div>
         </div>
+        <ul className="auth-points">
+          <li><QrCode size={18} />{text("Cư dân báo sự cố bằng mã QR, không cần tài khoản", "Residents report by QR code, no account needed")}</li>
+          <li><Building2 size={18} />{text("Theo dõi căn hộ, thiết bị và lịch sửa chữa", "Track units, assets and repair schedules")}</li>
+          <li><ShieldCheck size={18} />{text("Phân quyền theo vai trò, nhật ký kiểm toán đầy đủ", "Role-based access with a full audit log")}</li>
+        </ul>
+        <svg className="auth-skyline" viewBox="0 0 640 160" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <path d="M0 160V96h52V60h46v36h30V34h64v126m0 0V78h40V48h58v30h34V20h70v140m0 0V88h44V58h52v30h30V44h60v116m0 0V70h40v90" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
       </aside>
 
       <main className="login-form-area">
         <div className="login-locale"><LocaleSwitcher /><ThemeSwitcher /></div>
         <section className="login-panel">
           <div className="login-heading">
-            <span className="eyebrow">CaseFlow</span>
+            <span className="auth-mobile-logo"><BrandLogo size={36} tagline={text("Vận hành căn hộ", "Apartment operations")} /></span>
             <h1>{text("Chào mừng trở lại", "Welcome back")}</h1>
             <p>{text("Đăng nhập để gửi phản ánh và theo dõi việc xử lý tại căn hộ của bạn.", "Sign in to report an issue and track repairs at your apartment.")}</p>
           </div>

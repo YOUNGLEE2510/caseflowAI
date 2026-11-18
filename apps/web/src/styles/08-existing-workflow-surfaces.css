@@ -94,53 +94,6 @@
     background: var(--surface);
   }
 
-  .login-visual {
-    min-height: 236px;
-    height: 236px;
-    background-position: center 46%;
-  }
-
-  .login-brand {
-    top: 20px;
-    left: 20px;
-    gap: 12px;
-  }
-
-  .login-brand .brand-mark-light {
-    width: 36px;
-    height: 36px;
-  }
-
-  .login-brand strong {
-    font-size: 16px;
-  }
-
-  .login-visual-copy {
-    right: 20px;
-    bottom: 14px;
-    left: 20px;
-  }
-
-  .login-visual-copy .eyebrow {
-    display: none;
-  }
-
-  .login-visual-copy h1 {
-    margin: 0;
-    font-size: 23px;
-    line-height: 1.18;
-  }
-
-  .login-visual-copy p {
-    margin-top: 4px;
-    overflow: hidden;
-    font-size: 11px;
-    line-height: 15px;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
   .login-form-area {
     padding: 18px 24px 12px;
     display: block;

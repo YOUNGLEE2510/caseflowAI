@@ -224,8 +224,6 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .requester-case-list > a:hover { border-color: var(--brand); background: var(--surface-soft); }
 
 .login-screen { grid-template-columns: minmax(460px, 52%) minmax(440px, 48%); background: var(--surface); }
-.login-visual { background-position: center; }
-.login-visual-overlay { background: rgba(10, 42, 35, 0.48); }
 .login-form-area { padding: 52px clamp(44px, 8vw, 132px) 36px; }
 .login-panel { max-width: 440px; }
 .login-heading h1 { font-weight: 750; }
@@ -262,7 +260,6 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
   .filter-row { padding: 12px; }
   .requester-create { width: 100%; }
   .login-screen { display: block; }
-  .login-visual { display: none; }
   .login-form-area { min-height: 100dvh; padding: 52px 24px 28px; }
 }
 

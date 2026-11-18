@@ -11,7 +11,6 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  Network,
   Search,
   Siren,
   Users,
@@ -26,6 +25,7 @@ import { useLocale } from "../i18n";
 import type { NotificationRecord, Role } from "../types";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { LogoMark } from "./BrandLogo";
 import { Avatar, formatRelative } from "./ui";
 import { useConfirmation } from "./ConfirmationProvider";
 
@@ -243,8 +243,8 @@ export function AppShell() {
       <aside ref={sidebarRef} className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`} id="workspace-sidebar" inert={mobileViewport && !mobileOpen} role={mobileViewport && mobileOpen ? "dialog" : undefined} aria-modal={mobileViewport && mobileOpen ? true : undefined} aria-label={text("Menu chính", "Main menu")}>
         <div className="brand">
           <Link to="/overview" className="brand-link" onClick={() => setMobileOpen(false)}>
-            <span className="brand-mark">
-              <Network size={19} />
+            <span className="brand-mark brand-mark-logo">
+              <LogoMark size={38} />
             </span>
             <span className="brand-copy">
               <strong>CaseFlow</strong>
@@ -252,7 +252,7 @@ export function AppShell() {
             </span>
           </Link>
           <button className="sidebar-collapse icon-button" type="button" onClick={toggleSidebar} aria-expanded={!collapsed} aria-label={collapsed ? text("Mở rộng sidebar", "Expand sidebar") : text("Thu gọn sidebar", "Collapse sidebar")} title={collapsed ? text("Mở rộng sidebar", "Expand sidebar") : text("Thu gọn sidebar", "Collapse sidebar")}>
-            <span className="collapsed-brand-mark" aria-hidden="true"><Network size={19} /></span>
+            <span className="collapsed-brand-mark" aria-hidden="true"><LogoMark size={30} /></span>
             {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </button>
           <button

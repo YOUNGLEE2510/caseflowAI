@@ -67,8 +67,6 @@
 
 .login-screen { min-height: 100dvh; }
 
-.login-visual-copy { display: none; }
-
 .login-form-area { padding: 48px 32px; }
 
 .login-panel { width: 100%; max-width: 420px; }

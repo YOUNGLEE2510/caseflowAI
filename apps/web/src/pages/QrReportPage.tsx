@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CheckCircle2, Send, TriangleAlert } from "lucide-react";
 import { api } from "../api";
+import { BrandLogo } from "../components/BrandLogo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { ThemeSwitcher } from "../components/ThemeSwitcher";
 import { useLocale } from "../i18n";
@@ -44,7 +45,7 @@ export function QrReportPage() {
     <div className="login-locale"><LocaleSwitcher /><ThemeSwitcher /></div>
     <section className="login-panel qr-report-panel">
       <div className="login-heading">
-        <span className="eyebrow">{info?.organizationName || "CaseFlow"}</span>
+        <span className="auth-page-logo"><BrandLogo size={36} tagline={info?.organizationName || text("Vận hành căn hộ", "Apartment operations")} /></span>
         <h1>{text("Báo sự cố căn hộ", "Report a problem")}</h1>
       </div>
       {info ? <p className="qr-unit">{info.propertyName} · {text("Căn", "Unit")} <strong>{info.unitCode}</strong></p> : null}

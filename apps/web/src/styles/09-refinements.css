@@ -108,15 +108,6 @@ h3,
   right: 32px;
 }
 
-.login-visual-overlay {
-  background: rgba(15, 39, 32, 0.43);
-}
-
-.login-visual-copy {
-  padding-left: 18px;
-  border-left: 3px solid rgba(255, 255, 255, 0.78);
-}
-
 .segment-switcher {
   border: 1px solid var(--border);
   border-radius: 8px;
