@@ -44,7 +44,7 @@ Nếu `MFA_ENCRYPTION_KEY` trước đây vắng mặt, ứng dụng local dùng
 
 ## Kết quả triển khai ngày 17/11/2026
 
-- Production: https://caseflow-rental-demo.vercel.app — READY, project `caseflow-rental-demo`, team `yl-25`, gói Hobby.
+- Production: https://caseflow-rental.vercel.app — READY, project `caseflow-rental`, team `yl-25`, gói Hobby.
 - Deployment kiểm tra: `dpl_9pqTqsKjnLt1DAwT2QJPPENaewbg`. Source là working tree đã khôi phục, chưa push GitHub; không đại diện cho một commit sạch.
 - Health 200, MongoDB connected; đăng nhập manager 200; catalog căn hộ, danh sách yêu cầu, kho tri thức đều 200. Chưa đăng nhập truy cập yêu cầu trả 401.
 - AI intake qua binding riêng trả 200, nhãn `water`, provider `ml-service`. Chưa kiểm thử toàn bộ vòng đời ghi yêu cầu, phân quyền chéo tenant hoặc luồng email/OAuth.
