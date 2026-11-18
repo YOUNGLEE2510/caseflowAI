@@ -29,3 +29,33 @@ text,label
 "Tôi muốn hỏi thủ tục đăng ký tạm trú",general_support
 "Cửa tủ quần áo bị lệch bản lề",general_support
 "Nhờ ban quản lý phun thuốc diệt côn trùng",general_support
+"Nước trong căn có mùi clo rất nặng",water
+"Vòi bồn tắm vặn không chặt, nước chảy hoài",water
+"Sàn bếp bị ngập do ống xả bồn rửa bung ra",water
+"Trần hành lang nhỏ giọt nước sau mưa",water
+"Căn tôi không có nước dù các căn khác vẫn có",water
+"Ổ cắm gần bồn rửa bị chập khi có nước bắn vào",electrical
+"Đèn phòng tắm bật lên là tắt luôn",electrical
+"Toàn bộ căn mất điện sau khi cắm nồi cơm",electrical
+"Công tắc cầu thang bị vỡ nắp lộ dây",electrical
+"Điện trong căn lúc mạnh lúc yếu làm quạt chạy chậm",electrical
+"Modem wifi không lên đèn nguồn",internet
+"Gọi Zalo video bị rớt liên tục vì mạng",internet
+"Wifi tòa nhà đòi đăng nhập lại mỗi ngày",internet
+"Mạng cáp quang trong căn bị đứt",internet
+"Chỉ máy tính bàn không vào được mạng",internet
+"Máy giặt đang giặt thì dừng và báo lỗi E3",appliances
+"Điều hòa có tiếng nước chảy róc rách",appliances
+"Bếp từ không bật được nguồn",appliances
+"Máy lạnh bật lên một lúc là bốc mùi khét",appliances
+"Bình nóng lạnh rò nước ở van an toàn",appliances
+"Cửa sảnh không nhận thẻ của tôi từ sáng",access_security
+"Ổ khóa cửa ban công bị hỏng không chốt được",access_security
+"Tôi thấy người lạ chụp ảnh các cửa căn hộ",access_security
+"Cần làm lại thẻ vì thẻ cũ bị gãy",access_security
+"Cửa chống cháy cầu thang không tự đóng",access_security
+"Tôi muốn hỏi khi nào có lịch vệ sinh kính cửa sổ",general_support
+"Căn trên kéo bàn ghế ồn ào lúc sáng sớm",general_support
+"Thang máy chở hàng đang bị khóa không dùng được",general_support
+"Xin đổi lịch hẹn sửa sang cuối tuần",general_support
+"Bàn làm việc trong căn bị gãy chân",general_support

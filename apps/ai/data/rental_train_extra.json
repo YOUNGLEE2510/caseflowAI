@@ -1,0 +1,75 @@
+{
+  "_provenance": "240 câu mô phỏng do trợ lý AI (Claude) soạn ngày 2026-11-18 để mở rộng tập huấn luyện; không phải phản ánh thật của người thuê. Không dùng làm tập kiểm tra cuối.",
+  "water": [
+    "Vòi nước bồn rửa mặt chảy rỉ rả cả đêm", "Nước máy hôm nay có màu đục và mùi tanh", "Bồn cầu xả nước không ngừng, phải khóa van", "Nhà tắm thoát nước chậm, tắm xong đọng cả vũng",
+    "Ống thoát máy giặt bị bung ra ngoài ban công", "Mất nước hoàn toàn từ 6 giờ sáng", "Nước nóng lạnh đều yếu ở cả bếp lẫn phòng tắm", "Chậu rửa chén bị nghẹt, nước không xuống",
+    "Có nước rỉ ra từ chân tường nhà vệ sinh", "Trần phòng tắm có vệt nước loang, nghi căn trên bị rò", "nuoc yeu qua khong du de tam", "voi bep bi ri nuoc lien tuc",
+    "Bồn cầu bị trào ngược khi căn trên xả nước", "Van tổng của căn bị kẹt không vặn được", "Đường ống dưới bồn rửa bị nứt, nước chảy ra tủ bếp", "Nước có nhiều cặn trắng làm tắc đầu vòi",
+    "Bình chứa nước của bồn cầu bị nứt", "Sàn nhà vệ sinh lúc nào cũng ẩm và có mùi", "Ống nước ngoài ban công bị vỡ, nước phun ra", "Vòi sen chảy nước nóng lúc có lúc không",
+    "Nước rò từ trần thang bộ xuống hành lang tầng", "Phòng giặt chung bị ngập nước", "nha ve sinh bi tac khong xa duoc", "Cả dãy căn bên trái không có nước từ trưa",
+    "Mỗi lần mưa nước lại thấm vào chân tường phòng ngủ", "Tường bếp bị thấm ố vàng", "Vòi xịt vệ sinh bị gãy, nước phun liên tục", "Ống thoát sàn bốc mùi hôi khó chịu",
+    "Nước chảy ra từ dưới máy lọc nước dùng chung", "Bồn rửa mặt bị lỏng, nước rò xuống sàn", "Áp lực nước tầng 9 rất yếu vào giờ cao điểm", "Khóa van nước bị rò mỗi khi mở",
+    "Nước từ căn tầng trên nhỏ xuống trần phòng khách", "Đường thoát nước mưa ban công bị tắc lá cây", "Ống mềm cấp nước bồn cầu bị phồng sắp vỡ", "Nước trong bồn cầu cứ tự chảy xuống rồi tự cấp lại",
+    "Không có nước để rửa chén, mở vòi chỉ nghe tiếng khí", "Hố ga trước sảnh tràn nước bẩn", "Bồn tắm thoát nước rất chậm", "Phòng tắm bị ngập vì thoát sàn không ăn nước"
+  ],
+  "electrical": [
+    "Mất điện riêng phòng ngủ, các phòng khác vẫn có", "Cứ cắm bàn ủi là cầu dao ngắt", "Ổ cắm cạnh giường bị lỏng, cắm vào không ăn điện", "Đèn bếp chớp tắt liên tục",
+    "Nghe tiếng lách tách trong ổ điện phòng khách", "Ổ cắm nhà tắm bị nóng lên khi dùng máy sấy", "Căn hộ mất điện một nửa sau trận mưa", "Công tắc quạt trần không có tác dụng",
+    "cau dao tong nhay khi bat may lanh", "Đèn hành lang trước cửa tắt cả tuần nay", "Đèn cầu thang bộ tầng 6 không sáng", "Ổ điện trong bếp có vết cháy đen",
+    "Chạm vào tủ lạnh bị giật nhẹ", "Đồng hồ điện của căn không chạy", "Điện áp yếu, đèn mờ vào buổi tối", "Bóng đèn phòng khách vừa thay đã cháy",
+    "Ổ cắm nối dài của căn bị chảy nhựa", "Dây điện sau tivi bị chuột cắn", "Đèn chiếu sáng thoát hiểm hành lang không sáng", "Mất điện cả tầng 4 từ 20 giờ",
+    "Aptomat nhánh bếp bị nóng và có mùi", "mat dien ca can tu toi qua", "Công tắc đèn nhà tắm bị nước vào", "Ổ cắm chạm vào thấy tê tay",
+    "Điện chập chờn làm hỏng sạc điện thoại", "Ổ điện ban công bị mưa hắt ướt sũng", "Đèn ngủ cứ tự bật tắt", "Hộp điện tầng kêu ù ù và có mùi khét",
+    "Cầu dao chống giật nhảy liên tục khi trời ẩm", "Không bật được đèn phòng làm việc", "Dây điện hở lõi gần cửa thang máy", "Máy phát dự phòng không chạy khi mất điện lưới",
+    "Bật máy nước nóng là mất điện cả căn", "Ổ cắm phòng ngủ chỉ còn một lỗ có điện", "Đèn LED trần bị nhấp nháy khó chịu", "Điện trong căn yếu, máy giặt không khởi động được",
+    "Dây điện chạy qua trần bị chảy nước", "Có tia lửa khi rút phích cắm", "Cột điện trước cổng tòa nhà bị chập", "Bảng điện trong căn bị bung nắp"
+  ],
+  "internet": [
+    "Wifi báo đã kết nối nhưng không có internet", "Mạng rớt mỗi tối khoảng 9 giờ", "Không xem video được vì mạng quá chậm", "Router trong căn đèn đỏ nhấp nháy",
+    "Phòng ngủ trong cùng không bắt được sóng wifi", "Mạng dây LAN không hoạt động", "Ping cao, chơi game giật liên tục", "Mật khẩu wifi căn hộ không đúng",
+    "wifi cham qua khong lam viec duoc", "Nhiều thiết bị không kết nối được mạng cùng lúc", "Tivi thông minh không vào được internet", "Mạng mất từ trưa đến giờ chưa có lại",
+    "Cả tầng 7 bị rớt mạng", "Họp trực tuyến bị đứng hình liên tục", "Tên wifi của căn tự nhiên biến mất", "Tốc độ tải xuống chỉ vài trăm kb",
+    "Router kêu nóng và tự khởi động lại", "Không kết nối được wifi sau khi đổi điện thoại", "Wifi sảnh tòa nhà không vào được", "Mạng chập chờn khi trời mưa",
+    "Điểm phát wifi hành lang không lên đèn", "Laptop nhận wifi nhưng không ra trang web", "Mạng internet bị chặn một số trang làm việc", "Cáp mạng cắm tường bị lỏng",
+    "mat mang ca toi khong co lai", "Camera an ninh trong căn mất kết nối wifi", "Đường truyền rất yếu từ khi có hàng xóm mới", "Cần tăng tốc độ mạng cho nhu cầu làm việc tại nhà",
+    "Không đăng nhập được trang xác thực wifi", "Wifi tự ngắt mỗi 10 phút", "Kết nối mạng bị mất sau khi mất điện", "Máy in không kết nối được wifi căn hộ",
+    "Đèn internet trên modem tắt", "Mạng tầng hầm không có sóng", "Hệ thống mạng tầng 3 đang bị lỗi", "Không gọi video được vì mạng giật",
+    "Wifi phòng khách mạnh nhưng phòng ngủ mất sóng", "Đầu mạng âm tường không có tín hiệu", "Bị rớt mạng khi nhiều người dùng buổi tối", "Kết nối internet không ổn định cả tuần"
+  ],
+  "appliances": [
+    "Điều hòa kêu to như máy cày khi chạy", "Máy lạnh tự tắt sau vài phút", "Điều hòa có mùi hôi khi bật", "Dàn nóng điều hòa không quay",
+    "Máy giặt không cấp nước vào lồng", "Máy giặt báo lỗi cửa không đóng", "Tủ lạnh kêu lạch cạch suốt đêm", "Ngăn đá tủ lạnh bị đóng tuyết dày",
+    "Bình nóng lạnh có tiếng nổ lách tách", "Nước nóng có mùi lạ", "Bếp từ một vùng nấu không nóng", "Lò vi sóng quay nhưng không làm nóng",
+    "dieu hoa phong khach khong mat", "may giat khong quay", "Máy hút mùi bếp không chạy", "Quạt trần quay lắc lư",
+    "Remote máy lạnh bấm không phản hồi", "Điều hòa thổi ra gió nóng", "Máy lạnh chảy nước ra ổ cắm bên dưới", "Tủ lạnh rò nước ra sàn bếp",
+    "Máy sấy quần áo không nóng", "Máy lọc nước trong căn không ra nước", "Bình nóng lạnh không ngắt khi đủ nhiệt", "Tivi có tiếng nhưng không có hình",
+    "Đèn báo lỗi trên máy giặt nhấp nháy liên tục", "Máy giặt rò nước dưới đáy", "Điều hòa đóng băng ở dàn lạnh", "Bếp từ tự tắt khi đang nấu",
+    "Tủ lạnh ngăn mát bị đông đá", "Điều hòa không nhận lệnh từ điều khiển", "Máy lạnh có tiếng rít khi khởi động", "Quạt hút nhà tắm không hút được hơi",
+    "Máy nước nóng năng lượng không cho nước nóng", "Bàn ủi của căn hộ bị hỏng", "Máy giặt kêu ầm ầm khi vắt", "Lò nướng không lên nhiệt",
+    "may lanh nho nuoc tung giot", "Tủ lạnh mất điện dù ổ cắm vẫn có điện", "Điều hòa phòng ngủ cần vệ sinh vì bám bụi", "Bình nước nóng chỉ ấm chứ không nóng"
+  ],
+  "access_security": [
+    "Thẻ thang máy không quẹt được lên tầng của tôi", "Tôi đánh rơi thẻ ra vào ở siêu thị", "Cửa căn không khóa được từ bên ngoài", "Khóa vân tay không nhận dấu vân tay",
+    "Cần đăng ký thẻ cho người giúp việc", "Cửa cổng chính bị kẹt không mở được", "Có người lạ bấm chuông căn nhiều lần lúc nửa đêm", "Camera hành lang tầng tôi bị che lại",
+    "the tu het han khong vao duoc toa nha", "Cửa sổ căn không chốt được", "Chốt cửa ban công bị gãy", "Tay nắm cửa chính bị lỏng",
+    "Tôi để quên chìa khóa trong căn", "Mất điện nên khóa điện tử không mở", "Hàng xóm báo có người đi theo vào tòa nhà", "Cửa thoát hiểm tầng 5 bị khóa trái",
+    "Barie bãi xe không nhận thẻ", "Cần khóa thẻ của người thuê cũ đã chuyển đi", "Khách đến chơi không vào được sảnh", "Thẻ bị khử từ không dùng được nữa",
+    "Đèn cảm biến an ninh hành lang không sáng", "Có tiếng cạy cửa căn bên cạnh", "Bị mất đồ để trước cửa căn", "Khóa cửa phòng ngủ bị kẹt",
+    "Chìa khóa dự phòng cần được bàn giao lại", "Nút bấm mở cửa sảnh bị hỏng", "Camera sảnh không ghi hình mấy ngày nay", "Người lạ ngủ ở cầu thang bộ",
+    "Cửa từ hầm xe đóng sập rất nguy hiểm", "Khóa cửa chính báo lỗi khi nhập mã", "mat the ra vao can khoa gap", "Chuông cửa căn không kêu",
+    "Có người dùng thẻ của tôi để vào tòa nhà", "Cần cấp quyền ra vào cho thợ sửa", "Lối thoát hiểm bị chất đồ chắn", "Cửa kính sảnh bị nứt",
+    "Khóa tủ đồ khu gym chung bị hỏng", "Bảo vệ không có mặt tại chốt buổi tối", "Cổng phụ để mở cả đêm", "Thẻ ra vào bị từ chối dù vẫn còn hạn"
+  ],
+  "general_support": [
+    "Tôi muốn hẹn lại giờ kỹ thuật đến căn", "Cho hỏi số điện thoại lễ tân trực đêm", "Tôi đã gửi phản ánh ba ngày chưa ai liên hệ", "Muốn khen nhân viên kỹ thuật làm việc chu đáo",
+    "Căn bên cạnh nói chuyện ồn ào sau nửa đêm", "Hành lang tầng tôi có rác chưa dọn", "Xin lịch phun thuốc muỗi định kỳ", "Tôi muốn biết thủ tục trả căn",
+    "can hoi lich bao tri thang may", "Thang máy dừng không chạy cả buổi sáng", "Thang máy có tiếng kêu lạ khi di chuyển", "Tôi cần xác nhận cư trú để làm giấy tờ",
+    "Có mùi sơn rất nặng ở hành lang", "Khu sinh hoạt chung bừa bộn sau tiệc", "Tôi muốn đặt lịch dọn dẹp căn hộ", "Cần hướng dẫn phân loại rác",
+    "Muốn góp ý về giờ hoạt động của khu giặt", "Tôi muốn hủy phản ánh đã gửi nhầm", "Cho hỏi khi nào kỹ thuật đến sửa", "Tủ quần áo bị lệch cánh",
+    "Rèm cửa phòng khách bị rơi", "Có tiếng khoan đục từ công trình bên cạnh", "Xin cấp lại hướng dẫn sử dụng căn hộ", "Ghế sofa trong căn bị hỏng chân",
+    "Tôi cần nhận bưu kiện khi đi vắng", "Thang máy số 2 không dừng đúng tầng", "Gián xuất hiện nhiều trong tủ bếp", "Muốn phản ánh thái độ của bảo vệ",
+    "Cho hỏi nội quy giờ giấc yên tĩnh", "Cần thêm thùng rác ở tầng", "Phòng rác chung có chuột", "Tôi muốn đổi khung giờ hẹn sang buổi chiều",
+    "hanh lang co mui hoi kho chiu", "Có người hút thuốc ở hành lang", "Xin hỗ trợ mượn xe đẩy chuyển đồ", "Tôi cần biết tiến độ xử lý phản ánh",
+    "Muốn đăng ký sử dụng phòng sinh hoạt chung", "Hàng xóm để xe đạp chắn lối đi", "Thông báo của ban quản lý dán sai tầng", "Cần người hỗ trợ khiêng đồ khi chuyển vào"
+  ]
+}

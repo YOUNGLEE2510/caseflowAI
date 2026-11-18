@@ -150,6 +150,16 @@ try {
       content: "Ghi cơ sở, căn, thời điểm bắt đầu và phạm vi ảnh hưởng. Không kết luận cùng nguyên nhân chỉ vì mô tả giống nhau. Có dấu hiệu ngập gần điện thì chuyển đầu mối khẩn, không hướng dẫn người thuê tiếp cận vùng nguy hiểm. Kỹ thuật kiểm tra, ghi kết quả từng vị trí; khôi phục sự cố chung không tự đóng phản ánh riêng.",
       tags: ["nước", "tiếp nhận"], version: "demo-1"
     } }, { upsert: true });
+    // Operating procedures shared with the retrieval benchmark (apps/ai/data/rental_knowledge.json).
+    const procedures = JSON.parse(await readFile(new URL("../../ai/data/rental_knowledge.json", import.meta.url), "utf8")) as
+      Array<{ title: string; content: string; category: Category; sourceLabel: string }>;
+    for (const article of procedures) {
+      await KnowledgeArticle.updateOne({ organizationId, title: article.title }, { $setOnInsert: {
+        organizationId, title: article.title, content: article.content, category: article.category, sourceLabel: article.sourceLabel,
+        status: "published", reviewedByName: STAFF.find(member => member.key === "head_ops")!.name, reviewedAt: new Date(),
+        effectiveAt: new Date(), tags: [], version: "1.0"
+      } }, { upsert: true });
+    }
     const isolationSlug = "caseflow-rental-isolation-demo";
     const isolation = await Organization.findOne({ slug: isolationSlug }) || await Organization.create({
       slug: isolationSlug, name: "Căn hộ Demo - Đối chứng cách ly", settings: { serviceDomain: "rental" }

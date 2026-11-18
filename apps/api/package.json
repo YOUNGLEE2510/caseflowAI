@@ -11,6 +11,7 @@
     "seed": "tsx src/seed.ts",
     "seed:force": "tsx src/seed.ts --force",
     "rental:dataset": "tsx src/rentalDatasetSetup.ts",
+    "evaluate:priority": "tsx src/evaluation/evaluatePriority.ts",
     "test": "vitest run",
     "test:audit": "vitest run --config vitest.audit.config.ts"
   },
