@@ -6,8 +6,8 @@ const fitsWidth = (page: import("@playwright/test").Page) =>
 test("tenant without an account reports through a unit QR code and staff verify it", async ({ page, browser }, info) => {
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
-  await page.getByLabel("Email tài khoản").fill("pham.ha@canho-demo.local");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Email tài khoản").fill("pham.ha@canho.local");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
 

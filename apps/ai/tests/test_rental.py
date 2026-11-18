@@ -7,8 +7,8 @@ from apps.ai.models.classifier import classifier_pipeline
 from apps.ai.models.text_utils import extract_entities
 
 
-def test_rental_demo_taxonomy_and_training():
-    examples = json.loads((Path(__file__).resolve().parents[1] / "data" / "rental_demo.json").read_text(encoding="utf-8"))
+def test_rental_taxonomy_and_training():
+    examples = json.loads((Path(__file__).resolve().parents[1] / "data" / "rental_core.json").read_text(encoding="utf-8"))
     assert set(examples) == {"water", "electrical", "internet", "appliances", "access_security", "general_support"}
     texts = [text for rows in examples.values() for text in rows]
     labels = [label for label, rows in examples.items() for _ in rows]

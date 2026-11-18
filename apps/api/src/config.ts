@@ -78,7 +78,7 @@ const envSchema = z.object({
     if (!value.WEB_ORIGIN.startsWith("https://")) ctx.addIssue({ code: "custom", path: ["WEB_ORIGIN"], message: "Pilot web origin must use HTTPS" });
     if (!value.MFA_ENCRYPTION_KEY) ctx.addIssue({ code: "custom", path: ["MFA_ENCRYPTION_KEY"], message: "Pilot MFA encryption key is required" });
     if (!value.EMAIL_ENCRYPTION_KEY) ctx.addIssue({ code: "custom", path: ["EMAIL_ENCRYPTION_KEY"], message: "Pilot email encryption key is required" });
-    if (value.AUTO_SEED) ctx.addIssue({ code: "custom", path: ["AUTO_SEED"], message: "Pilot deployments must not seed demo users" });
+    if (value.AUTO_SEED) ctx.addIssue({ code: "custom", path: ["AUTO_SEED"], message: "Pilot deployments must not seed sample users" });
     if (!value.AI_INTERNAL_TOKEN) ctx.addIssue({ code: "custom", path: ["AI_INTERNAL_TOKEN"], message: "Pilot AI authentication is required" });
     if (!new URL(value.MONGODB_URI).username) ctx.addIssue({ code: "custom", path: ["MONGODB_URI"], message: "Pilot Mongo authentication is required" });
     if (value.MALWARE_SCAN_MODE === "disabled") ctx.addIssue({ code: "custom", path: ["MALWARE_SCAN_MODE"], message: "Pilot attachment scanning is required" });

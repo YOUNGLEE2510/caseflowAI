@@ -60,7 +60,7 @@ def load_or_train(variant: str, directory: Path) -> tuple[Pipeline, dict]:
     model = build_classifier(variant)
     metadata = {"version": version, "variant": variant, "datasetSha256": DATASET_SHA256,
                 "sklearnVersion": sklearn.__version__, "trainingSamples": len(training_rows()[0]),
-                "trainedAt": datetime.now(timezone.utc).isoformat(), "datasetKind": "demo",
+                "trainedAt": datetime.now(timezone.utc).isoformat(), "datasetKind": "sample",
                 "domainProfile": DOMAIN_PROFILE, "confidenceCalibrated": False}
     temporary = directory / f".{version}-{uuid4().hex}.tmp"
     temp_manifest = temporary.with_suffix(".json.tmp")

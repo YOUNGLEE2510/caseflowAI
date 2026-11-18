@@ -229,8 +229,8 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .login-form-area { padding: 52px clamp(44px, 8vw, 132px) 36px; }
 .login-panel { max-width: 440px; }
 .login-heading h1 { font-weight: 750; }
-.demo-switcher { border-radius: 9px; }
-.demo-switcher button { min-height: 38px; border-radius: 7px; }
+.segment-switcher { border-radius: 9px; }
+.segment-switcher button { min-height: 38px; border-radius: 7px; }
 .login-help { border-radius: 9px; }
 
 @media (max-width: 1180px) {

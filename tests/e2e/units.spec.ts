@@ -5,7 +5,7 @@ async function login(page: Page, email: string) {
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
 }
@@ -13,7 +13,7 @@ async function login(page: Page, email: string) {
 test("housekeeping marks a returned unit clean and the manager lets it again", async ({ page: housekeeping, browser }, info) => {
   let page = housekeeping;
   // Housekeeping staff may report cleaning but cannot change the letting status.
-  await login(page, "le.mai@canho-demo.local");
+  await login(page, "le.mai@canho.local");
   await page.goto("/units");
   await page.locator(".unit-chip").filter({ hasText: "Chờ dọn" }).click();
   await page.locator(".unit-tile").filter({ hasText: "A303" }).click();
@@ -29,7 +29,7 @@ test("housekeeping marks a returned unit clean and the manager lets it again", a
   // The manager works in a separate browser session.
   const managerContext = await browser.newContext({ baseURL: "http://127.0.0.1:5188" });
   page = await managerContext.newPage();
-  await login(page, "pham.ha@canho-demo.local");
+  await login(page, "pham.ha@canho.local");
   await page.goto("/units");
   // Let the session refresh finish before reloading (refresh tokens are single-use).
   await expect(page.locator(".unit-tile").first()).toBeVisible();

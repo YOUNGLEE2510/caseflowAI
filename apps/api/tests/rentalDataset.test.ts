@@ -7,8 +7,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DATASET_RESIDENT_CODE_PREFIX, DATASET_TAG, generateRentalDataset } from "../src/demo/rentalDataset.js";
-import { DEPARTMENTS, RESIDENT_EMAIL_DOMAIN, STAFF, STAFF_EMAIL_DOMAIN, TEAM_BY_CATEGORY, emailLocalPart } from "../src/demo/rentalOrg.js";
+import { DATASET_RESIDENT_CODE_PREFIX, DATASET_TAG, generateRentalDataset } from "../src/sampleData/rentalDataset.js";
+import { DEPARTMENTS, RESIDENT_EMAIL_DOMAIN, STAFF, STAFF_EMAIL_DOMAIN, TEAM_BY_CATEGORY, emailLocalPart } from "../src/sampleData/rentalOrg.js";
 
 const now = new Date("2026-11-17T03:00:00.000Z");
 const dataset = generateRentalDataset({ now });
@@ -19,7 +19,7 @@ describe("synthetic rental dataset", () => {
     expect(JSON.stringify(generateRentalDataset({ now, seed: "other" }))).not.toBe(JSON.stringify(dataset));
   });
 
-  it("has the medium demo scale", () => {
+  it("has the medium sample scale", () => {
     expect(dataset.properties).toHaveLength(3);
     expect(dataset.units).toHaveLength(120);
     expect(dataset.assets.length).toBeGreaterThan(350);
@@ -111,7 +111,7 @@ describe("rental dataset setup tool", () => {
     env = { ...process.env, NODE_ENV: "test", DEPLOYMENT_MODE: "local", AUTO_SEED: "false", MONGODB_URI: database.getUri(),
       MONGODB_DB: "rental_dataset_test", JWT_SECRET: "rental-dataset-test-secret-not-for-deployment",
       RENTAL_CREDENTIALS_FILE: join(directory, "credentials.json"), RENTAL_DATASET_NOW: now.toISOString() };
-    await run(process.execPath, ["--import", "tsx", script("rentalSetup.ts")], { env: { ...env, RENTAL_SETUP_CONFIRM: "caseflow-rental-demo" }, timeout: 60000 });
+    await run(process.execPath, ["--import", "tsx", script("rentalSetup.ts")], { env: { ...env, RENTAL_SETUP_CONFIRM: "caseflow-rental" }, timeout: 60000 });
   }, 180000);
   afterAll(async () => {
     await mongoose.disconnect();
@@ -121,15 +121,15 @@ describe("rental dataset setup tool", () => {
 
   it("dry-runs by default, writes once on confirmation and replaces only synthetic records", async () => {
     const db = mongoose.connection.db!;
-    const org = await db.collection("organizations").findOne({ slug: "caseflow-rental-demo" });
-    const isolation = await db.collection("organizations").findOne({ slug: "caseflow-rental-isolation-demo" });
+    const org = await db.collection("organizations").findOne({ slug: "caseflow-rental" });
+    const isolation = await db.collection("organizations").findOne({ slug: "caseflow-rental-isolation" });
     const baselineCases = await db.collection("caserecords").countDocuments();
 
     const dry = await run(process.execPath, ["--import", "tsx", script("rentalDatasetSetup.ts")], { env, timeout: 60000 });
     expect(JSON.parse(dry.stdout).mode).toBe("dry-run");
     expect(await db.collection("caserecords").countDocuments()).toBe(baselineCases);
 
-    const confirmed = { ...env, RENTAL_DATASET_CONFIRM: "caseflow-rental-demo" };
+    const confirmed = { ...env, RENTAL_DATASET_CONFIRM: "caseflow-rental" };
     await run(process.execPath, ["--import", "tsx", script("rentalDatasetSetup.ts")], { env: confirmed, timeout: 120000 });
     const synthetic = await db.collection("caserecords").countDocuments({ organizationId: org!._id, tags: DATASET_TAG });
     expect(synthetic).toBe(dataset.cases.length);
@@ -145,7 +145,7 @@ describe("rental dataset setup tool", () => {
     expect(credentials.filter(item => item.email.endsWith(`@${STAFF_EMAIL_DOMAIN}`))).toHaveLength(STAFF.length);
     expect(credentials.some(item => item.email.endsWith(`@${RESIDENT_EMAIL_DOMAIN}`) && item.email.startsWith("dang.quan"))).toBe(true);
 
-    await db.collection("caserecords").updateOne({ organizationId: org!._id, code: "RENTAL-DEMO-001" }, { $set: { title: "Hand-edited demo case" } });
+    await db.collection("caserecords").updateOne({ organizationId: org!._id, code: "RENTAL-001" }, { $set: { title: "Hand-edited sample case" } });
     await expect(run(process.execPath, ["--import", "tsx", script("rentalDatasetSetup.ts")], { env: confirmed, timeout: 60000 })).rejects.toThrow();
     expect(await db.collection("caserecords").countDocuments({ organizationId: org!._id, tags: DATASET_TAG })).toBe(synthetic);
 
@@ -163,7 +163,7 @@ describe("rental dataset setup tool", () => {
       if (unit.occupancyStatus === "vacant") expect(unit.residentIds).toHaveLength(0);
     }
     expect(new Set(board.map(unit => unit.readinessStatus)).size).toBeGreaterThanOrEqual(3);
-    expect((await db.collection("caserecords").findOne({ code: "RENTAL-DEMO-001" }))!.title).toBe("Hand-edited demo case");
-    expect(await db.collection("caserecords").countDocuments({ organizationId: org!._id, code: /^RENTAL-DEMO-/ })).toBe(10);
+    expect((await db.collection("caserecords").findOne({ code: "RENTAL-001" }))!.title).toBe("Hand-edited sample case");
+    expect(await db.collection("caserecords").countDocuments({ organizationId: org!._id, code: /^RENTAL-/ })).toBe(10);
   }, 300000);
 });

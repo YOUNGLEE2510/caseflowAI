@@ -12,7 +12,7 @@ async function login(page: Page, email: string) {
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
 }
@@ -60,7 +60,7 @@ test("password reset request is available without disclosing account existence",
   const dialog = page.getByRole("dialog", { name: "Đặt lại mật khẩu" });
   await expect(dialog).toBeVisible();
   await dialog.getByLabel("Mã đơn vị vận hành").fill("caseflow-rental-local");
-  await dialog.getByLabel("Email tài khoản").fill("nguyen.anh@cudan.canho-demo.local");
+  await dialog.getByLabel("Email tài khoản").fill("nguyen.anh@cudan.canho.local");
   await dialog.getByRole("button", { name: "Gửi hướng dẫn", exact: true }).click();
   await confirmAction(page, "Gửi hướng dẫn đổi mật khẩu?");
   await expect(dialog.getByText("Nếu tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.", { exact: true })).toBeVisible();
@@ -69,7 +69,7 @@ test("password reset request is available without disclosing account existence",
 });
 
 test("knowledge drafting displays citations and retrieval fallback without external API calls", async ({ page }) => {
-  await login(page, "tran.khoa@canho-demo.local");
+  await login(page, "tran.khoa@canho.local");
   await page.route("**/api/knowledge/capabilities", (route) => route.fulfill({ json: { generation: true } }));
   let calls = 0;
   await page.route("**/api/knowledge/search", async (route) => {
@@ -93,7 +93,7 @@ test("knowledge drafting displays citations and retrieval fallback without exter
 });
 
 test("operational queues and workload suggestions render on desktop and mobile", async ({ page }) => {
-  await login(page, "tran.khoa@canho-demo.local");
+  await login(page, "tran.khoa@canho.local");
   await page.goto("/cases");
   await page.getByLabel("Hàng đợi công việc").selectOption("unassigned");
   await expect(page).toHaveURL(/queue=unassigned/);
@@ -114,7 +114,7 @@ test("operational queues and workload suggestions render on desktop and mobile",
 test("admin creates, edits and disables catalog/member records and publishes knowledge", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, "tran.khoa@canho-demo.local");
+  await login(page, "tran.khoa@canho.local");
   await page.goto("/services");
   await page.getByRole("button", { name: "Thêm dịch vụ", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -172,7 +172,7 @@ test("admin creates, edits and disables catalog/member records and publishes kno
 test("request intake, real file round-trip, staff review and private notes", async ({ page, browser }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, "nguyen.anh@cudan.canho-demo.local");
+  await login(page, "nguyen.anh@cudan.canho.local");
   await page.goto("/cases/new");
   await page.getByLabel("Tiêu đề", { exact: true }).fill("Hỗ trợ tài khoản kiểm thử");
   await page.getByRole("combobox", { name: "Cơ sở", exact: true }).selectOption("TOWER-A");
@@ -198,7 +198,7 @@ test("request intake, real file round-trip, staff review and private notes", asy
   const staffContext = await browser.newContext({ baseURL: "http://127.0.0.1:5188" });
   const staff = await staffContext.newPage();
   try {
-    await login(staff, "pham.ha@canho-demo.local");
+    await login(staff, "pham.ha@canho.local");
     await staff.goto(caseUrl);
     await staff.getByRole("button", { name: "Xác nhận phân luồng" }).click();
     await confirmAction(staff, "Cập nhật hồ sơ?");
@@ -224,7 +224,7 @@ test("request intake, real file round-trip, staff review and private notes", asy
 
 test("mobile admin dialogs, navigation and pagination stay within viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await login(page, "tran.khoa@canho-demo.local");
+  await login(page, "tran.khoa@canho.local");
   for (const route of ["/cases", "/users", "/services", "/knowledge", "/system"]) {
     await page.goto(route);
     await expect(page.locator(".page-stack")).toBeVisible();

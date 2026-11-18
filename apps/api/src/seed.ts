@@ -6,7 +6,7 @@ import { config } from "./config.js";
 import { connectDatabase } from "./db.js";
 import { CaseRecord, Incident, KnowledgeArticle, Organization, ServiceDefinition, User } from "./models.js";
 import { RentalAsset, RentalProperty, RentalUnit } from "./models/rental.js";
-import { RESIDENT_EMAIL_DOMAIN, SERVICE_NAMES, STAFF, STAFF_EMAILS, TEAM_BY_CATEGORY, type Category } from "./demo/rentalOrg.js";
+import { RESIDENT_EMAIL_DOMAIN, SERVICE_NAMES, STAFF, STAFF_EMAILS, TEAM_BY_CATEGORY, type Category } from "./sampleData/rentalOrg.js";
 
 export const LOCAL_ORGANIZATION_SLUG = "caseflow-rental-local";
 /** Local test residents; staff use STAFF_EMAILS from the shared organisation chart. */
@@ -22,9 +22,9 @@ const REQUIRED_FIELDS: Partial<Record<Category, string[]>> = { appliances: ["Vá»
 const SLA_HOURS: Record<Category, number> = { water: 8, electrical: 8, internet: 12, appliances: 24, access_security: 4, general_support: 48 };
 
 export async function seedDatabase(force = false) {
-  if (config.DEPLOYMENT_MODE !== "local") throw new Error("Demo seeding is disabled outside local environments.");
-  if (force) throw new Error("Destructive seed reset is disabled. Use a separate disposable demo database.");
-  if (config.MONGODB_URI.startsWith("mongodb+srv://")) throw new Error("Demo seeding is disabled for Atlas. Use a disposable local database.");
+  if (config.DEPLOYMENT_MODE !== "local") throw new Error("Sample seeding is disabled outside local environments.");
+  if (force) throw new Error("Destructive seed reset is disabled. Use a separate disposable sample database.");
+  if (config.MONGODB_URI.startsWith("mongodb+srv://")) throw new Error("Sample seeding is disabled for Atlas. Use a disposable local database.");
   const existing = await Organization.findOne({ slug: LOCAL_ORGANIZATION_SLUG });
   if (existing) return existing;
 
@@ -33,7 +33,7 @@ export async function seedDatabase(force = false) {
     settings: { serviceDomain: "rental", locale: "vi-VN", timezone: "Asia/Ho_Chi_Minh" }
   });
   const organizationId = organization._id;
-  const passwordHash = await bcrypt.hash("Demo123!", 10);
+  const passwordHash = await bcrypt.hash("Canho123!", 10);
   const staffDocs = await User.insertMany(STAFF.map(member => ({
     organizationId, name: member.name, email: STAFF_EMAILS[member.key], passwordHash, role: member.role, team: member.team,
     title: member.title, skills: member.skills, personnelManager: Boolean(member.personnelManager), employeeCode: member.employeeCode,
@@ -137,7 +137,7 @@ async function run() {
   const force = process.argv.includes("--force");
   await connectDatabase();
   await seedDatabase(force);
-  console.log("CaseFlow demo data is ready.");
+  console.log("CaseFlow sample data is ready.");
   process.exit(0);
 }
 

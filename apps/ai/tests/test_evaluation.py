@@ -5,7 +5,7 @@ import pytest
 from apps.ai.evaluate import DEFAULT_DATASET, evaluate, load_evaluation_rows
 
 
-def test_demo_evaluation_compares_two_reproducible_baselines():
+def test_sample_evaluation_compares_two_reproducible_baselines():
     report, predictions, labels = evaluate(DEFAULT_DATASET)
     assert set(report["models"]) == {"majority_baseline", "keyword_rules", "word_tfidf_logreg", "char_tfidf_logreg", "word_tfidf_svm", "hybrid_tfidf_logreg"}
     assert report["metadata"]["evaluationSamples"] == 60

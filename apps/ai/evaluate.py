@@ -29,7 +29,7 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DATASET = Path(__file__).with_name("tests") / "fixtures" / "evaluation_demo.csv"
+DEFAULT_DATASET = Path(__file__).with_name("tests") / "fixtures" / "evaluation_sample.csv"
 DEFAULT_OUTPUT = ROOT / "artifacts" / "ai-evaluation"
 
 
@@ -174,11 +174,11 @@ def evaluate(dataset: Path) -> tuple[dict, list[dict[str, str]], list[str]]:
     metadata = {
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "dataset": str(dataset.resolve()),
-        "datasetKind": "demo_holdout" if dataset.resolve() == DEFAULT_DATASET.resolve() else "external",
+        "datasetKind": "sample_holdout" if dataset.resolve() == DEFAULT_DATASET.resolve() else "external",
         "trainingSamples": len(train_texts),
         "evaluationSamples": len(rows),
         "labelDistribution": dict(Counter(expected)),
-        "warning": "Demo holdout metrics validate the evaluation pipeline only; they are not evidence of production quality." if dataset.resolve() == DEFAULT_DATASET.resolve() else "Verify anonymization, labeling protocol, and train/test independence before reporting these metrics.",
+        "warning": "Sample holdout metrics validate the evaluation pipeline only; they are not evidence of production quality." if dataset.resolve() == DEFAULT_DATASET.resolve() else "Verify anonymization, labeling protocol, and train/test independence before reporting these metrics.",
     }
     return {"metadata": metadata, "models": results}, predictions, labels
 

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("manager creates and schedules a shared rental incident", async ({ page, request }, info) => {
   const login = await request.post("/api/auth/login", { data: {
-    organizationSlug: "caseflow-rental-local", email: "nguyen.anh@cudan.canho-demo.local", password: "Demo123!"
+    organizationSlug: "caseflow-rental-local", email: "nguyen.anh@cudan.canho.local", password: "Canho123!"
   } });
   expect(login.ok()).toBe(true);
   const { token } = await login.json();
@@ -14,8 +14,8 @@ test("manager creates and schedules a shared rental incident", async ({ page, re
   const source = (await create.json()).case;
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
-  await page.getByLabel("Email tài khoản").fill("pham.ha@canho-demo.local");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Email tài khoản").fill("pham.ha@canho.local");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
   await page.goto("/incidents");
@@ -44,8 +44,8 @@ test("manager creates and schedules a shared rental incident", async ({ page, re
 test("manager creates catalog and completes a repair task", async ({ page, request }, info) => {
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
-  await page.getByLabel("Email tài khoản").fill("pham.ha@canho-demo.local");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Email tài khoản").fill("pham.ha@canho.local");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
   await page.goto("/rental");
@@ -56,7 +56,7 @@ test("manager creates catalog and completes a repair task", async ({ page, reque
   await page.getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Đã lưu.");
   const managerLogin = await request.post("/api/auth/login", { data: {
-    organizationSlug: "caseflow-rental-local", email: "pham.ha@canho-demo.local", password: "Demo123!"
+    organizationSlug: "caseflow-rental-local", email: "pham.ha@canho.local", password: "Canho123!"
   } });
   const managerToken = (await managerLogin.json()).token;
   const asset = await request.put("/api/rental/catalog", { headers: { Authorization: `Bearer ${managerToken}` },

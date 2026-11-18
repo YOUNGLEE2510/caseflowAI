@@ -205,7 +205,7 @@ describe("shared rental incidents", () => {
   });
   it("validates catalog ownership, resident access and asset location", async () => {
     await models.Organization.updateOne({ _id: org._id }, { $set: { "settings.serviceDomain": "rental" } });
-    const property = { kind: "property", code: "tower-a", name: "Demo Tower A" };
+    const property = { kind: "property", code: "tower-a", name: "Sample Tower A" };
     expect((await request("/rental/catalog", requester, "PUT", property)).status).toBe(403);
     expect((await request("/rental/catalog", admin, "PUT", property)).status).toBe(204);
     expect((await request("/rental/catalog", admin, "PUT", { kind: "unit", propertyCode: "TOWER-A",

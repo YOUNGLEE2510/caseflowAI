@@ -1,6 +1,6 @@
-# Chạy Demo Nhanh
+# Chạy nhanh
 
-Tài liệu này dành cho giảng viên hoặc thành viên nhóm muốn chạy bản demo trong vài phút. Dữ liệu demo hoàn toàn cục bộ; không cần dùng Atlas để chạy integration test hoặc E2E.
+Tài liệu này dành cho giảng viên hoặc thành viên nhóm muốn chạy bản mẫu trong vài phút. Dữ liệu mẫu hoàn toàn cục bộ; không cần dùng Atlas để chạy integration test hoặc E2E.
 
 ## 1. Cài đặt một lần
 
@@ -12,24 +12,24 @@ python -m pip install -r apps/ai/requirements.txt
 if (-not (Test-Path apps/api/.env)) { Copy-Item apps/api/.env.example apps/api/.env }
 ```
 
-Điền `MONGODB_URI` trỏ Mongo local dùng riêng cho demo và `JWT_SECRET` trong `apps/api/.env`; giữ `DEPLOYMENT_MODE=local`. Không seed Atlas hay database chứa dữ liệu thật. Không commit file này. Nếu chỉ muốn xem code và chạy test, không cần cấu hình Google OAuth hay Gmail SMTP.
+Điền `MONGODB_URI` trỏ Mongo local dùng riêng cho bản chạy thử và `JWT_SECRET` trong `apps/api/.env`; giữ `DEPLOYMENT_MODE=local`. Không seed Atlas hay database chứa dữ liệu thật. Không commit file này. Nếu chỉ muốn xem code và chạy test, không cần cấu hình Google OAuth hay Gmail SMTP.
 
 ## 2. Tạo dữ liệu và mở hệ thống
 
 ```powershell
-$env:RENTAL_SETUP_CONFIRM="caseflow-rental-demo"
+$env:RENTAL_SETUP_CONFIRM="caseflow-rental"
 npx --workspace @caseflow/api tsx src/rentalSetup.ts
 Remove-Item Env:RENTAL_SETUP_CONFIRM
 npm run dev
 ```
 
-Mở `http://127.0.0.1:5173`, đăng nhập với mã tổ chức `caseflow-rental-demo` bằng tài khoản cư dân/quản lý vừa được tạo trong tệp thông tin đăng nhập cục bộ do `rentalSetup.ts` sinh ra. (Lưu ý: `npm run seed` chỉ tạo tổ chức thử nghiệm local `caseflow-rental-local` với mật khẩu `Demo123!`, dùng cho test tự động.)
+Mở `http://127.0.0.1:5173`, đăng nhập với mã tổ chức `caseflow-rental` bằng tài khoản cư dân/quản lý vừa được tạo trong tệp thông tin đăng nhập cục bộ do `rentalSetup.ts` sinh ra. (Lưu ý: `npm run seed` chỉ tạo tổ chức thử nghiệm local `caseflow-rental-local` với mật khẩu `Canho123!`, dùng cho test tự động.)
 
 Seed in ra đường dẫn tệp thông tin đăng nhập trong thư mục tạm của hệ điều hành (`$env:TEMP` trên Windows, `/tmp` trong container). Có thể chỉ định `RENTAL_CREDENTIALS_FILE` tới một tệp riêng trong thư mục đã tồn tại. Tệp có cả tài khoản quản trị đơn vị vận hành; không đưa vào Git hoặc chia sẻ công khai. Chạy lại chỉ thêm dữ liệu còn thiếu, không đặt lại mật khẩu hay sửa hồ sơ hiện có.
 
 Dịch vụ AI chỉ còn taxonomy căn hộ (6 nhóm: nước, điện, internet, thiết bị, ra vào/an ninh, hỗ trợ chung). `DOMAIN_PROFILE` mặc định là `rental` và không nhận giá trị khác.
 
-## 3. Luồng demo sáu phút
+## 3. Luồng trình bày sáu phút
 
 1. Tạo một yêu cầu mất nước, hỏng điện hoặc sự cố WiFi theo cơ sở/căn hộ bằng tiếng Việt tự nhiên.
 2. Chọn phân tích AI, xem nhãn đề xuất, độ tin cậy, thực thể và hồ sơ tương tự.
@@ -38,7 +38,7 @@ Dịch vụ AI chỉ còn taxonomy căn hộ (6 nhóm: nước, điện, interne
 5. Mở trang Vận hành bằng tài khoản quản lý để xem SLA, hàng đợi và cảnh báo.
 6. Tìm trong Kho tri thức, kiểm tra citation trước khi dùng nội dung để phản hồi.
 
-Không dùng tài khoản demo cục bộ cho môi trường pilot hoặc dữ liệu thật.
+Không dùng tài khoản mẫu cục bộ cho môi trường pilot hoặc dữ liệu thật.
 
 ## 4. Kiểm tra chất lượng
 
@@ -50,15 +50,15 @@ npm run evaluate:retrieval
 npm run test:e2e
 ```
 
-`npm run test:e2e` tự dựng MongoDB tạm, API và web server; không chạy `seed:force` với cơ sở dữ liệu đang dùng. `evaluate:ai` và `evaluate:retrieval` dùng fixture demo để kiểm thử tính tái lập của pipeline, không phải kết quả chất lượng triển khai thực tế.
+`npm run test:e2e` tự dựng MongoDB tạm, API và web server; không chạy `seed:force` với cơ sở dữ liệu đang dùng. `evaluate:ai` và `evaluate:retrieval` dùng fixture mẫu để kiểm thử tính tái lập của pipeline, không phải kết quả chất lượng triển khai thực tế.
 
-Với bản Docker đã cấu hình Atlas/Cloudinary, chạy `npm run release:check -- --smtp` trước buổi demo. Có thể kiểm thử snapshot metadata hiện tại bằng `npm run docker:verify-snapshot -- --live`; thao tác đọc Atlas rồi khôi phục vào Mongo tạm, không ghi đè dữ liệu thật. Cloudinary và consent OAuth thật được kiểm tra riêng theo [DEPLOYMENT.md](DEPLOYMENT.md) và [OAUTH_SETUP.md](OAUTH_SETUP.md).
+Với bản Docker đã cấu hình Atlas/Cloudinary, chạy `npm run release:check -- --smtp` trước buổi trình bày. Có thể kiểm thử snapshot metadata hiện tại bằng `npm run docker:verify-snapshot -- --live`; thao tác đọc Atlas rồi khôi phục vào Mongo tạm, không ghi đè dữ liệu thật. Cloudinary và consent OAuth thật được kiểm tra riêng theo [DEPLOYMENT.md](DEPLOYMENT.md) và [OAUTH_SETUP.md](OAUTH_SETUP.md).
 
 ## 5. Thử luồng sự cố chung cho căn hộ
 
-Chạy trong môi trường demo hoặc tổ chức thử nghiệm, không chạy seed lại trên dữ liệu đang sử dụng.
+Chạy trong môi trường mẫu hoặc tổ chức thử nghiệm, không chạy seed lại trên dữ liệu đang sử dụng.
 
-1. Dùng ba hồ sơ mô phỏng `RENTAL-DEMO-001`, `RENTAL-DEMO-002`, `RENTAL-DEMO-005` ở A301/A302/A303, cùng bơm PUMP-A. Hồ sơ `RENTAL-DEMO-003` thuộc TOWER-B là ca đối chứng không được liên kết.
+1. Dùng ba hồ sơ mô phỏng `RENTAL-001`, `RENTAL-002`, `RENTAL-005` ở A301/A302/A303, cùng bơm PUMP-A. Hồ sơ `RENTAL-003` thuộc TOWER-B là ca đối chứng không được liên kết.
 2. Với tài khoản quản lý, vào **Sự cố → Tạo sự cố** và nhập mã hồ sơ gốc. Vào **Điều phối** để xem ứng viên cùng cơ sở trong khoảng 48 giờ quanh thời điểm ghi nhận sự cố, rồi xác nhận liên kết. Điểm tương đồng là tín hiệu xếp hạng, không xác nhận cùng nguyên nhân. Có thể liên kết bằng mã hồ sơ hoặc gỡ liên kết nhầm.
 3. Chọn kỹ thuật viên cùng đội, đặt lịch và lưu trạng thái. Khi đã kiểm tra và xử lý, ghi kết quả rồi đánh dấu sự cố đã giải quyết. Người thuê liên quan nhận thông báo trong ứng dụng; hồ sơ riêng không tự đóng.
 
@@ -70,7 +70,7 @@ Quản lý mở chi tiết phản ánh để xem gợi ý **Có thể liên quan
 
 Sau khi triage lưu thành công một kết quả liên quan, cờ gợi ý được bật cho cả hồ sơ mới và hồ sơ ứng viên còn mở tại cùng cơ sở/đội/tổ chức. Cờ là dấu hiệu bất đồng bộ, không phải danh sách liên kết có hiệu lực; có thể cũ khi tình huống thay đổi. API chi tiết luôn truy vấn lại ứng viên, và badge không hiển thị trên hồ sơ đã giải quyết/đóng.
 
-Model profile căn hộ dùng 300 câu mô phỏng, chưa có dữ liệu thực tế. Không quản lý hợp đồng hay tiền thuê. Tổ chức `caseflow-rental-isolation-demo` là đối chứng cách ly, không phải khách hàng thật.
+Model profile căn hộ dùng 300 câu mô phỏng, chưa có dữ liệu thực tế. Không quản lý hợp đồng hay tiền thuê. Tổ chức `caseflow-rental-isolation` là đối chứng cách ly, không phải khách hàng thật.
 
 ### Báo sự cố qua mã QR theo căn (không cần tài khoản)
 
@@ -94,15 +94,15 @@ Bảo vệ đi kèm:
 
 ```powershell
 npm run rental:dataset                                              # chỉ kiểm kê, không ghi
-$env:RENTAL_DATASET_CONFIRM = "caseflow-rental-demo"; npm run rental:dataset
+$env:RENTAL_DATASET_CONFIRM = "caseflow-rental"; npm run rental:dataset
 ```
 
 Bộ dữ liệu gồm 3 cơ sở, 120 căn, khoảng 430 thiết bị, khoảng 160 người thuê (có người đã chuyển đi), 12 nhân viên, khoảng 850–950 phản ánh trong 6 tháng tính đến thời điểm chạy, 15 sự cố chung và khoảng 165 phiếu bảo trì. Phản ánh thay đổi theo mùa và giờ trong ngày, thiết bị cũ hỏng nhiều hơn, có ca trễ SLA, mở lại, chuyển người xử lý, chờ linh kiện, báo nhầm và đánh giá 1–5 sao.
 
-- Seed cố định (`RENTAL_DATASET_SEED`, mặc định `sim-rental-v1`): cùng seed và thời điểm cho cùng dữ liệu. Tên và địa chỉ đều giả lập, email người thuê dạng `ho.ten@cudan.canho-demo.local`, mã cư dân `SIM-CD…`; không có số điện thoại.
-- Chạy lại khi đã có dữ liệu mô phỏng sẽ bị từ chối. Để sinh lại đến hôm nay, đặt thêm `RENTAL_DATASET_REPLACE=sim-rental-v1`; công cụ chỉ xóa bản ghi do chính nó tạo (mã `SIM-`, thẻ `sim-rental-v1`), không đụng hồ sơ `RENTAL-DEMO-*` hay dữ liệu nhập tay.
+- Seed cố định (`RENTAL_DATASET_SEED`, mặc định `sim-rental-v1`): cùng seed và thời điểm cho cùng dữ liệu. Tên và địa chỉ đều giả lập, email người thuê dạng `ho.ten@cudan.canho.local`, mã cư dân `SIM-CD…`; không có số điện thoại.
+- Chạy lại khi đã có dữ liệu mô phỏng sẽ bị từ chối. Để sinh lại đến hôm nay, đặt thêm `RENTAL_DATASET_REPLACE=sim-rental-v1`; công cụ chỉ xóa bản ghi do chính nó tạo (mã `SIM-`, thẻ `sim-rental-v1`), không đụng hồ sơ `RENTAL-*` hay dữ liệu nhập tay.
 - Nhân sự lấy từ cơ cấu chung do `rentalSetup.ts` tạo (chạy trước); bộ dữ liệu chỉ thêm người thuê mô phỏng (không đăng nhập được) và giao việc theo đúng bộ phận phụ trách từng nhóm dịch vụ. Trạng thái căn (trống, đặt cọc, đang thuê, sắp trả; chờ dọn, đã dọn, tu sửa, sẵn sàng) được sinh nhất quán với người thuê.
-- Công cụ từ chối chạy khi `DEPLOYMENT_MODE=pilot`. Chỉ dùng cho database demo; không chạy trên dữ liệu đang vận hành.
-- Đây là dữ liệu để demo và kiểm thử hệ thống quản lý, không dùng để huấn luyện hoặc báo cáo độ chính xác AI.
+- Công cụ từ chối chạy khi `DEPLOYMENT_MODE=pilot`. Chỉ dùng cho database mẫu; không chạy trên dữ liệu đang vận hành.
+- Đây là dữ liệu để trình bày và kiểm thử hệ thống quản lý, không dùng để huấn luyện hoặc báo cáo độ chính xác AI.
 
-Tổ chức demo trên Atlas có slug `caseflow-rental-demo`, được thêm riêng. Công cụ quản trị `apps/api/src/rentalSetup.ts` mặc định chỉ kiểm kê; chỉ ghi dữ liệu khi biến `RENTAL_SETUP_CONFIRM=caseflow-rental-demo` được đặt rõ ràng. Chạy lại không đặt lại mật khẩu hay ghi đè hồ sơ. Tài khoản mới dùng mật khẩu ngẫu nhiên lưu riêng vào tệp cục bộ, không đưa vào Git hoặc README.
+Tổ chức mẫu trên Atlas có slug `caseflow-rental`, được thêm riêng. Công cụ quản trị `apps/api/src/rentalSetup.ts` mặc định chỉ kiểm kê; chỉ ghi dữ liệu khi biến `RENTAL_SETUP_CONFIRM=caseflow-rental` được đặt rõ ràng. Chạy lại không đặt lại mật khẩu hay ghi đè hồ sơ. Tài khoản mới dùng mật khẩu ngẫu nhiên lưu riêng vào tệp cục bộ, không đưa vào Git hoặc README.

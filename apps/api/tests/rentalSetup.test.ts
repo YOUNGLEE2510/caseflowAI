@@ -23,11 +23,11 @@ afterAll(async () => {
 });
 it("seeds portable credentials, an admin and chronological cases without overwriting existing data", async () => {
   const credentialsFile = join(directory, "credentials.json");
-  const env = { ...process.env, NODE_ENV: "test", DEPLOYMENT_MODE: "local", AUTO_SEED: "false", MONGODB_URI: database.getUri(), MONGODB_DB: "rental_seed_test", JWT_SECRET: "rental-seed-test-secret-not-for-deployment", RENTAL_SETUP_CONFIRM: "caseflow-rental-demo", RENTAL_CREDENTIALS_FILE: credentialsFile };
+  const env = { ...process.env, NODE_ENV: "test", DEPLOYMENT_MODE: "local", AUTO_SEED: "false", MONGODB_URI: database.getUri(), MONGODB_DB: "rental_seed_test", JWT_SECRET: "rental-seed-test-secret-not-for-deployment", RENTAL_SETUP_CONFIRM: "caseflow-rental", RENTAL_CREDENTIALS_FILE: credentialsFile };
   const script = fileURLToPath(new URL("../src/rentalSetup.ts", import.meta.url));
   await run(process.execPath, ["--import", "tsx", script], { env, timeout: 60000 });
   const db = mongoose.connection.db!;
-  const org = await db.collection("organizations").findOne({ slug: "caseflow-rental-demo" });
+  const org = await db.collection("organizations").findOne({ slug: "caseflow-rental" });
   expect(org).toBeTruthy();
   expect(await db.collection("users").countDocuments({ organizationId: org!._id, role: "org_admin" })).toBe(1);
   const cases = await db.collection("caserecords").find({ organizationId: org!._id }).toArray();
@@ -37,7 +37,7 @@ it("seeds portable credentials, an admin and chronological cases without overwri
     if (item.closedAt) expect(item.resolvedAt.getTime()).toBeLessThanOrEqual(item.closedAt.getTime());
   }
   const credentials = JSON.parse(await readFile(credentialsFile, "utf8"));
-  expect(credentials.credentials.some((item: { email: string }) => item.email === "tran.khoa@canho-demo.local")).toBe(true);
+  expect(credentials.credentials.some((item: { email: string }) => item.email === "tran.khoa@canho.local")).toBe(true);
   // Staff are split into departments, each service routed to one of them.
   expect(await db.collection("users").countDocuments({ organizationId: org!._id, role: { $ne: "requester" } })).toBe(19);
   expect(new Set((await db.collection("servicedefinitions").find({ organizationId: org!._id }).toArray()).map(item => item.team)).size).toBe(5);

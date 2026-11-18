@@ -29,9 +29,9 @@ Yêu cầu dịch vụ gồm phản ánh của người thuê (gửi qua cổng,
 
 | Bộ | Kích thước | Nguồn | Vai trò |
 |---|---|---|---|
-| `apps/ai/data/rental_demo.json` | 60 câu (10/nhãn) | Nhóm tự viết | Huấn luyện |
+| `apps/ai/data/rental_core.json` | 60 câu (10/nhãn) | Nhóm tự viết | Huấn luyện |
 | `apps/ai/data/rental_train_extra.json` | 240 câu (40/nhãn) | Trợ lý AI (Claude) soạn, có ghi nguồn trong tệp | Huấn luyện |
-| `apps/ai/tests/fixtures/evaluation_demo.csv` | 60 câu (10/nhãn) | Viết riêng, kiểm tra không trùng tập huấn luyện | Kiểm tra mô phỏng |
+| `apps/ai/tests/fixtures/evaluation_sample.csv` | 60 câu (10/nhãn) | Viết riêng, kiểm tra không trùng tập huấn luyện | Kiểm tra mô phỏng |
 | `docs/study/human_test_template.csv` | chưa có | **Người thật viết**, hai người gán nhãn | Kiểm tra cuối (cần thu) |
 | `apps/ai/data/rental_knowledge.json` | 28 quy trình | Quy trình mô phỏng do nhóm soạn | Kho tri thức |
 | `apps/ai/data/rental_retrieval_dev.csv` | 28 có đáp án + 8 ngoài phạm vi | Viết riêng | Chỉ dùng để hiệu chỉnh ngưỡng |

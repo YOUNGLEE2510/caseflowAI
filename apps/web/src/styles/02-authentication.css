@@ -121,19 +121,19 @@
   font-size: 14px;
 }
 
-.demo-switcher {
+.segment-switcher {
   margin: 34px 0 28px;
   padding: 4px;
   border-radius: 0;
   background: var(--surface-soft);
 }
 
-.demo-switcher button {
+.segment-switcher button {
   border-radius: 6px;
   font-size: 12px;
 }
 
-.demo-switcher button.active {
+.segment-switcher button.active {
   border: 1px solid var(--border);
   color: var(--brand-text);
   box-shadow: none;

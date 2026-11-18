@@ -27,7 +27,7 @@ const post = (path: string, body: unknown) => fetch(`${base}/${path}`, {
 it("does not create new reset buckets when unused fields vary", async () => {
   const statuses = [];
   for (let index = 0; index < 7; index++) {
-    statuses.push(await post("request", { organizationSlug: "demo-org", email: "victim@test.local", token: `x${index}` }));
+    statuses.push(await post("request", { organizationSlug: "sample-org", email: "victim@test.local", token: `x${index}` }));
   }
   // Unknown fields are rejected outright and still count against the recipient bucket.
   expect(statuses.filter(status => status === 202)).toHaveLength(0);
@@ -37,7 +37,7 @@ it("does not create new reset buckets when unused fields vary", async () => {
 
 it("limits one recipient to five queued requests per window", async () => {
   const statuses = [];
-  for (let index = 0; index < 7; index++) statuses.push(await post("request", { organizationSlug: "demo-org", email: "Second@Test.local" }));
+  for (let index = 0; index < 7; index++) statuses.push(await post("request", { organizationSlug: "sample-org", email: "Second@Test.local" }));
   expect(statuses).toEqual([202, 202, 202, 202, 202, 429, 429]);
   expect(enqueue).toHaveBeenCalledTimes(5);
 });
@@ -45,7 +45,7 @@ it("limits one recipient to five queued requests per window", async () => {
 it("keeps confirmation attempts on their own limiter", async () => {
   const token = "a".repeat(64);
   const statuses = [];
-  for (let index = 0; index < 11; index++) statuses.push(await post("confirm", { organizationSlug: "demo-org", token, password: "short" }));
+  for (let index = 0; index < 11; index++) statuses.push(await post("confirm", { organizationSlug: "sample-org", token, password: "short" }));
   expect(statuses.slice(0, 10).every(status => status !== 429)).toBe(true);
   expect(statuses[10]).toBe(429);
 });

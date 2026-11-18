@@ -2,10 +2,10 @@ import { test, expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
 const roles = [
-  { name: "requester", email: "nguyen.anh@cudan.canho-demo.local", routes: ["overview", "cases", "cases/new", "knowledge", "profile"] },
-  { name: "agent", email: "tran.khoi@canho-demo.local", routes: ["overview", "cases", "knowledge", "incidents", "profile"] },
-  { name: "manager", email: "pham.ha@canho-demo.local", routes: ["overview", "cases", "knowledge", "incidents", "services", "users", "profile"] },
-  { name: "admin", email: "tran.khoa@canho-demo.local", routes: ["overview", "system", "services", "users"] }
+  { name: "requester", email: "nguyen.anh@cudan.canho.local", routes: ["overview", "cases", "cases/new", "knowledge", "profile"] },
+  { name: "agent", email: "tran.khoi@canho.local", routes: ["overview", "cases", "knowledge", "incidents", "profile"] },
+  { name: "manager", email: "pham.ha@canho.local", routes: ["overview", "cases", "knowledge", "incidents", "services", "users", "profile"] },
+  { name: "admin", email: "tran.khoa@canho.local", routes: ["overview", "system", "services", "users"] }
 ];
 
 for (const role of roles) {
@@ -18,7 +18,7 @@ for (const role of roles) {
     await page.goto("/login");
     await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
     await page.getByLabel("Email tài khoản").fill(role.email);
-    await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
     await expect(page).toHaveURL(/\/overview$/);
     for (const width of [1440, 768, 390]) {

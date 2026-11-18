@@ -2,15 +2,15 @@
 
 ## Trạng thái phát hành
 
-Profile căn hộ `DOMAIN_PROFILE=rental` dùng `apps/ai/data/rental_demo.json` (60 câu nhóm tự viết) và `rental_train_extra.json` (240 câu do AI hỗ trợ soạn): 300 câu mô phỏng, 6 nhóm water/electrical/internet/appliances/access_security/general_support. Model TF-IDF + Logistic Regression có checksum và phiên bản; registry được tách theo domain trong Docker. Đây là model demo chưa hiệu chỉnh độ tin cậy, chưa được xác nhận bằng dữ liệu khách thuê thật.
+Profile căn hộ `DOMAIN_PROFILE=rental` dùng `apps/ai/data/rental_core.json` (60 câu nhóm tự viết) và `rental_train_extra.json` (240 câu do AI hỗ trợ soạn): 300 câu mô phỏng, 6 nhóm water/electrical/internet/appliances/access_security/general_support. Model TF-IDF + Logistic Regression có checksum và phiên bản; registry được tách theo domain trong Docker. Đây là model mẫu chưa hiệu chỉnh độ tin cậy, chưa được xác nhận bằng dữ liệu khách thuê thật.
 
-Kiểm tra nhanh bằng `DOMAIN_PROFILE=rental python -m apps.ai.evaluate_rental_demo` (PowerShell: đặt `$env:DOMAIN_PROFILE="rental"` trước). Báo cáo tại `artifacts/ai-evaluation/rental-demo.json` có confusion matrix, precision/recall/F1 và dự đoán sai trên 12 câu kiểm tra mô phỏng riêng. Bộ này chỉ kiểm tra pipeline, không phải benchmark độc lập.
+Kiểm tra nhanh bằng `DOMAIN_PROFILE=rental python -m apps.ai.evaluate_rental` (PowerShell: đặt `$env:DOMAIN_PROFILE="rental"` trước). Báo cáo tại `artifacts/ai-evaluation/rental.json` có confusion matrix, precision/recall/F1 và dự đoán sai trên 12 câu kiểm tra mô phỏng riêng. Bộ này chỉ kiểm tra pipeline, không phải benchmark độc lập.
 
-Các ghi chú tạm hoãn bên dưới áp dụng cho dữ liệu nghiệp vụ thật, không cấm huấn luyện profile demo căn hộ theo yêu cầu. Không thu thập tệp riêng tư hay tự sinh thêm dữ liệu qua API.
+Các ghi chú tạm hoãn bên dưới áp dụng cho dữ liệu nghiệp vụ thật, không cấm huấn luyện profile căn hộ mẫu theo yêu cầu. Không thu thập tệp riêng tư hay tự sinh thêm dữ liệu qua API.
 
 **Huấn luyện dữ liệu nghiệp vụ đang tạm hoãn.** Corpus PTIT đã bị loại khỏi phạm vi dữ liệu được sử dụng; công cụ crawl/OCR riêng đã được gỡ khỏi mã nguồn sau đợt kiểm tra ngày 01/11/2026: 282 mục gồm 268 mục cần duyệt, 11 trùng và 3 mục cách ly do dấu hiệu định danh; không có yêu cầu đã gán nhãn đủ điều kiện huấn luyện. Kiểm tra ngày 03/11/2026 xác nhận hai thư mục `artifacts/ptit-source` và `artifacts/ocr-build` không còn trên ổ đĩa. Không tự retrain và không gọi API để sinh thêm dữ liệu. Không thay đổi tài liệu nghiệp vụ trên Atlas hoặc Cloudinary.
 
-Model phân loại kèm theo chỉ là baseline demo 300 mẫu/6 nhãn (macro-F1 0,95 trên 60 câu kiểm tra mô phỏng, xem EXPERIMENT_PROTOCOL.md), không phải bằng chứng chất lượng triển khai thực tế. SLA học từ dữ liệu mô phỏng chỉ là thử nghiệm; hạn xử lý thực tế do lịch phục vụ và quy tắc nghiệp vụ quyết định. Không công bố độ chính xác ngoài miền thành kết quả CaseFlow.
+Model phân loại kèm theo chỉ là baseline mẫu 300 mẫu/6 nhãn (macro-F1 0,95 trên 60 câu kiểm tra mô phỏng, xem EXPERIMENT_PROTOCOL.md), không phải bằng chứng chất lượng triển khai thực tế. SLA học từ dữ liệu mô phỏng chỉ là thử nghiệm; hạn xử lý thực tế do lịch phục vụ và quy tắc nghiệp vụ quyết định. Không công bố độ chính xác ngoài miền thành kết quả CaseFlow.
 
 ## Thành phần hiện có
 

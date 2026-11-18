@@ -66,7 +66,7 @@
   font-size: 14px;
 }
 
-.demo-switcher {
+.segment-switcher {
   margin: 24px 0;
   padding: 4px;
   border: 1px solid var(--border);
@@ -76,7 +76,7 @@
   background: var(--surface-soft);
 }
 
-.demo-switcher button {
+.segment-switcher button {
   height: 34px;
   border: 0;
   border-radius: 5px;
@@ -87,7 +87,7 @@
   cursor: pointer;
 }
 
-.demo-switcher button.active {
+.segment-switcher button.active {
   background: var(--surface);
   color: var(--brand);
   box-shadow: 0 1px 4px rgba(23, 33, 30, 0.1);

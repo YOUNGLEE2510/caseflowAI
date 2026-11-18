@@ -1,5 +1,5 @@
-// Fills the rental demo organization with a synthetic, deterministic dataset.
-// Default is a dry run. Writing needs RENTAL_DATASET_CONFIRM=caseflow-rental-demo;
+// Fills the rental sample organization with a synthetic, deterministic dataset.
+// Default is a dry run. Writing needs RENTAL_DATASET_CONFIRM=caseflow-rental;
 // replacing an earlier synthetic dataset also needs RENTAL_DATASET_REPLACE=sim-rental-v1.
 // Staff accounts come from rentalSetup.ts; this tool only adds residents and operating history.
 import { randomBytes } from "node:crypto";
@@ -11,10 +11,10 @@ import { Organization, User, CaseRecord, Incident, Notification } from "./models
 import { RentalProperty, RentalUnit, RentalAsset, MaintenanceTask } from "./models/rental.js";
 import {
   DATASET_CASE_PREFIX, DATASET_INCIDENT_PREFIX, DATASET_RESIDENT_CODE_PREFIX, DATASET_TAG, DATASET_TASK_PREFIX, generateRentalDataset
-} from "./demo/rentalDataset.js";
-import { STAFF, STAFF_EMAILS, TEAM_BY_CATEGORY } from "./demo/rentalOrg.js";
+} from "./sampleData/rentalDataset.js";
+import { STAFF, STAFF_EMAILS, TEAM_BY_CATEGORY } from "./sampleData/rentalOrg.js";
 
-const slug = "caseflow-rental-demo";
+const slug = "caseflow-rental";
 const nowOverride = process.env.RENTAL_DATASET_NOW ? new Date(process.env.RENTAL_DATASET_NOW) : undefined;
 if (nowOverride && Number.isNaN(nowOverride.getTime())) throw new Error("RENTAL_DATASET_NOW is not a valid date");
 const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -59,14 +59,14 @@ try {
   };
   if (process.env.RENTAL_DATASET_CONFIRM !== slug) {
     console.log(JSON.stringify({ mode: "dry-run", ...plan,
-      operation: "Add synthetic properties, units, assets, residents, cases, incidents and maintenance tasks to the rental demo organization." }, null, 2));
+      operation: "Add synthetic properties, units, assets, residents, cases, incidents and maintenance tasks to the rental sample organization." }, null, 2));
   } else {
     if (missingStaff.length) throw new Error(`Staff accounts missing (${missingStaff.length}). Run rentalSetup.ts first.`);
     if (existing && process.env.RENTAL_DATASET_REPLACE !== DATASET_TAG) {
       throw new Error(`Synthetic dataset already present (${existing} cases). Set RENTAL_DATASET_REPLACE=${DATASET_TAG} to remove and regenerate only synthetic records.`);
     }
     if (existing || await User.exists({ organizationId, ...syntheticResidents })) {
-      // Remove only records created by this tool; staff and hand-made demo data are untouched.
+      // Remove only records created by this tool; staff and hand-made sample data are untouched.
       const caseIds = (await CaseRecord.find({ organizationId, tags: DATASET_TAG }).select("_id").lean()).map(item => item._id);
       const userIds = (await User.find({ organizationId, ...syntheticResidents }).select("_id").lean()).map(item => item._id);
       await Notification.deleteMany({ organizationId, $or: [{ relatedCaseId: { $in: caseIds } }, { userId: { $in: userIds } }] });

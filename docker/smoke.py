@@ -1,4 +1,4 @@
-"""Local Docker smoke test. Uploads one small PDF to a demo user's existing case."""
+"""Local Docker smoke test. Uploads one small PDF to a sample user's existing case."""
 import argparse
 import base64
 import io
@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
     base = args.url.rstrip("/")
     if base not in {"http://localhost:8080", "http://127.0.0.1:8080"}:
-        raise ValueError("This demo test is restricted to local Docker")
+        raise ValueError("This sample test is restricted to local Docker")
     cookies = http.cookiejar.CookieJar()
     client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
 
@@ -36,10 +36,10 @@ def main():
     status, _, _ = request("/health")
     assert status == 200, "API health"
     status, body, headers = request("/auth/login", "POST", {
-        "organizationSlug": "caseflow-rental-local", "email": "nguyen.anh@cudan.canho-demo.local",
-        "password": "Demo123!", "remember": False
+        "organizationSlug": "caseflow-rental-local", "email": "nguyen.anh@cudan.canho.local",
+        "password": "Canho123!", "remember": False
     })
-    assert status == 200, "Demo login"
+    assert status == 200, "Sample login"
     token = json.loads(body)["token"]
     claims = json.loads(base64.urlsafe_b64decode(token.split(".")[1] + "=="))
     assert claims["exp"] - claims["iat"] == 900
@@ -55,7 +55,7 @@ def main():
 
     status, body, _ = request("/cases", token=token)
     cases = json.loads(body)["cases"]
-    assert status == 200 and cases, "Demo cases available"
+    assert status == 200 and cases, "Sample cases available"
     case_id = cases[0]["_id"]
     content = b"%PDF-1.4\nDocker storage smoke test\n%%EOF"
     status, body, _ = request(f"/cases/{case_id}/attachments", "POST", content, token,
@@ -99,7 +99,7 @@ def main():
     assert status == 401, "Replacement family should be revoked"
     print("PASS replay revokes refresh family")
 
-    request("/auth/login", "POST", {"organizationSlug": "caseflow-rental-local", "email": "nguyen.anh@cudan.canho-demo.local", "password": "Demo123!"})
+    request("/auth/login", "POST", {"organizationSlug": "caseflow-rental-local", "email": "nguyen.anh@cudan.canho.local", "password": "Canho123!"})
     status, _, _ = request("/auth/logout", "POST", token="expired-access-token")
     assert status == 200, "Cookie logout with expired access"
     status, _, _ = request("/auth/refresh", "POST")

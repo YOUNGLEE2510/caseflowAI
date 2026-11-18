@@ -23,7 +23,7 @@ Dataset mở không cung cấp nhãn SLA thực của CaseFlow. Không suy diễ
 
 | Tệp | Nội dung | Người soạn | Dùng cho |
 |---|---|---|---|
-| `rental_demo.json` | 60 câu phản ánh, 10/nhãn | Nhóm thực hiện tự viết | Huấn luyện |
+| `rental_core.json` | 60 câu phản ánh, 10/nhãn | Nhóm thực hiện tự viết | Huấn luyện |
 | `rental_train_extra.json` | 240 câu phản ánh, 40/nhãn | Trợ lý AI (Claude) soạn ngày 2026-11-18, ghi trong trường `_provenance` | Huấn luyện |
 | `rental_knowledge.json` | 28 quy trình vận hành căn hộ | Quy trình mô phỏng do nhóm soạn với trợ lý AI; không phải quy định của đơn vị thật | Kho tri thức, đánh giá truy xuất |
 | `rental_retrieval_dev.csv` | 36 câu hỏi | Như trên | Chỉ hiệu chỉnh ngưỡng truy xuất |

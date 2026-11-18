@@ -56,9 +56,9 @@ Thêm `-- --live` để đọc metadata hiện tại từ Atlas, lưu snapshot A
 
 `npm run release:check -- --smtp` kiểm tra API, ping Mongo, seed, cấu hình storage, redirect bắt đầu Google/Microsoft và kết nối SMTP mà không gửi thư. OAuth chưa cấu hình được báo là mục tùy chọn chưa đạt, không bị che bởi kết quả tổng; luồng đăng nhập/consent thực tế vẫn phải thử bằng tài khoản hợp lệ. Callback, state và secret không được in ra kết quả.
 
-## Local demo
+## Local sample
 
-Không có Atlas thì `npm run docker:up` dùng Mongo local qua profile `local-db`. Chỉ bật AUTO_SEED=true trên database demo mới, sau đó tắt lại. `seed:force` bị vô hiệu hóa để tránh xóa nhầm dữ liệu. Muốn làm mới demo dùng database dùng một lần, không dùng database thật.
+Không có Atlas thì `npm run docker:up` dùng Mongo local qua profile `local-db`. Chỉ bật AUTO_SEED=true trên database mẫu mới, sau đó tắt lại. `seed:force` bị vô hiệu hóa để tránh xóa nhầm dữ liệu. Muốn làm mới dữ liệu mẫu, dùng database dùng một lần, không dùng database thật.
 
 ## Pilot
 

@@ -1,11 +1,11 @@
-// Organisation structure of the rental demo: departments, named staff and email naming.
+// Organisation structure of the rental sample: departments, named staff and email naming.
 // Shared by rentalSetup.ts (creates the accounts) and the synthetic dataset (assigns work).
 
 export type Category = "water" | "electrical" | "internet" | "appliances" | "access_security" | "general_support";
 
-/** `.local` cannot receive real mail, so demo addresses never reach a real person. */
-export const STAFF_EMAIL_DOMAIN = "canho-demo.local";
-export const RESIDENT_EMAIL_DOMAIN = "cudan.canho-demo.local";
+/** `.local` cannot receive real mail, so sample addresses never reach a real person. */
+export const STAFF_EMAIL_DOMAIN = "canho.local";
+export const RESIDENT_EMAIL_DOMAIN = "cudan.canho.local";
 
 export const DEPARTMENTS = {
   executive: "Ban điều hành",
@@ -34,7 +34,7 @@ export interface StaffMember {
 }
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
-// Fixed, fictional names so the demo looks the same on every machine.
+// Fixed, fictional names so the sample looks the same on every machine.
 export const STAFF: StaffMember[] = [
   { key: "director", name: "Trần Minh Khoa", role: "org_admin", team: DEPARTMENTS.executive, title: "Giám đốc vận hành", skills: [], personnelManager: true, employeeCode: "NV001" },
   { key: "head_ops", name: "Nguyễn Gia Trang", role: "manager", team: DEPARTMENTS.executive, title: "Trưởng phòng vận hành", skills: [], personnelManager: true, employeeCode: "NV002" },
@@ -88,15 +88,15 @@ export const STAFF_EMAILS: Record<string, string> = (() => {
   return Object.fromEntries(STAFF.map(member => [member.key, allocate(member.name, STAFF_EMAIL_DOMAIN)]));
 })();
 
-/** Scripted demo residents used by QUICKSTART (A301/A302/A303 share PUMP-A; B301 is the control case). */
-export const DEMO_RESIDENTS = [
+/** Scripted sample residents used by QUICKSTART (A301/A302/A303 share PUMP-A; B301 is the control case). */
+export const SAMPLE_RESIDENTS = [
   { key: "resident_a301", name: "Đặng Minh Quân", unit: ["TOWER-A", "A301"] },
   { key: "resident_a302", name: "Phạm Thị Lan", unit: ["TOWER-A", "A302"] },
   { key: "resident_a303", name: "Lương Hải Yến", unit: ["TOWER-A", "A303"] },
   { key: "resident_b301", name: "Kim Ji-woo", unit: ["TOWER-B", "B301"] }
 ] as const;
 
-export const DEMO_RESIDENT_EMAILS: Record<string, string> = (() => {
+export const SAMPLE_RESIDENT_EMAILS: Record<string, string> = (() => {
   const allocate = createEmailAllocator(Object.values(STAFF_EMAILS));
-  return Object.fromEntries(DEMO_RESIDENTS.map(person => [person.key, allocate(person.name, RESIDENT_EMAIL_DOMAIN)]));
+  return Object.fromEntries(SAMPLE_RESIDENTS.map(person => [person.key, allocate(person.name, RESIDENT_EMAIL_DOMAIN)]));
 })();

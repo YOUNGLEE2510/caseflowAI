@@ -1,8 +1,8 @@
-// Deterministic synthetic dataset for the rental demo organization.
+// Deterministic synthetic dataset for the rental sample organization.
 // Pure generator: no database access, so tests can check invariants directly.
 import { createHash } from "node:crypto";
 import { addBusinessHours, businessHoursBetween } from "../services/workingHours.js";
-import { DEMO_RESIDENT_EMAILS, DEMO_RESIDENTS, RESIDENT_EMAIL_DOMAIN, STAFF, STAFF_EMAILS, TEAM_BY_CATEGORY, createEmailAllocator, type Category } from "./rentalOrg.js";
+import { SAMPLE_RESIDENT_EMAILS, SAMPLE_RESIDENTS, RESIDENT_EMAIL_DOMAIN, STAFF, STAFF_EMAILS, TEAM_BY_CATEGORY, createEmailAllocator, type Category } from "./rentalOrg.js";
 
 export const DATASET_TAG = "sim-rental-v1";
 /** Synthetic residents carry this customer-code prefix so a re-run removes only them. */
@@ -234,9 +234,9 @@ export function generateRentalDataset(options: DatasetOptions = {}): RentalDatas
   const coordinators = ["head_ops", "care_lead"].map(key => staffByKey.get(key)!);
   const receptionists = ["care_1", "care_2", "care_lead"].map(key => staffByKey.get(key)!);
   const agents = users.filter(user => user.role === "agent");
-  // Reserve staff and scripted demo resident addresses/names so generated residents never collide with them.
-  const allocateEmail = createEmailAllocator([...Object.values(STAFF_EMAILS), ...Object.values(DEMO_RESIDENT_EMAILS)]);
-  for (const person of DEMO_RESIDENTS) usedNames.add(person.name);
+  // Reserve staff and scripted sample resident addresses/names so generated residents never collide with them.
+  const allocateEmail = createEmailAllocator([...Object.values(STAFF_EMAILS), ...Object.values(SAMPLE_RESIDENT_EMAILS)]);
+  for (const person of SAMPLE_RESIDENTS) usedNames.add(person.name);
 
   // Units and assets
   const units: SimUnit[] = [];

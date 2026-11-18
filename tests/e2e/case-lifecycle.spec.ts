@@ -4,17 +4,17 @@ async function login(page: Page, email: string) {
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
 }
 
 test("requester rating, close and reopen persist", async ({ page }) => {
-  const credentials = { organizationSlug: "caseflow-rental-local", password: "Demo123!" };
-  const studentLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "nguyen.anh@cudan.canho-demo.local" } });
+  const credentials = { organizationSlug: "caseflow-rental-local", password: "Canho123!" };
+  const studentLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "nguyen.anh@cudan.canho.local" } });
   expect(studentLogin.ok()).toBeTruthy();
   const student = await studentLogin.json();
-  const managerLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "pham.ha@canho-demo.local" } });
+  const managerLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "pham.ha@canho.local" } });
   expect(managerLogin.ok()).toBeTruthy();
   const manager = await managerLogin.json();
   const staffHeaders = { Authorization: `Bearer ${manager.token}` };
@@ -31,7 +31,7 @@ test("requester rating, close and reopen persist", async ({ page }) => {
   expect((await page.request.patch(`/api/cases/${fixture._id}`, { headers: staffHeaders, data: { confirmAi: true, assigneeId: assignee.id, status: "in_progress" } })).ok()).toBeTruthy();
   expect((await page.request.patch(`/api/cases/${fixture._id}`, { headers: staffHeaders, data: { status: "resolved", resolutionNote: "Completed deterministic lifecycle fixture." } })).ok()).toBeTruthy();
   await page.context().clearCookies();
-  await login(page, "nguyen.anh@cudan.canho-demo.local");
+  await login(page, "nguyen.anh@cudan.canho.local");
   await page.goto(`/cases/${fixture._id}`);
   await page.getByRole("button", { name: "5/5", exact: true }).click();
   await page.getByRole("dialog", { name: "Xác nhận thao tác" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
@@ -48,7 +48,7 @@ test("requester rating, close and reopen persist", async ({ page }) => {
 });
 
 test("profile change survives reload", async ({ page }) => {
-  await login(page, "tran.minh@cudan.canho-demo.local");
+  await login(page, "tran.minh@cudan.canho.local");
   await page.goto("/profile");
   await page.getByRole("button", { name: "Chỉnh sửa", exact: true }).click();
   await page.getByLabel("Họ tên", { exact: true }).fill("Người dùng kiểm thử QA");
@@ -59,7 +59,7 @@ test("profile change survives reload", async ({ page }) => {
 });
 
 test("review safeguards fit desktop and mobile", async ({ page }) => {
-  await login(page, "pham.ha@canho-demo.local");
+  await login(page, "pham.ha@canho.local");
   await page.goto("/cases");
   await page.locator(".case-link").first().click();
   await expect(page.getByText("Tệp nội bộ, không hiển thị cho người gửi phản ánh", { exact: true })).toBeVisible();
@@ -74,7 +74,7 @@ test("review safeguards fit desktop and mobile", async ({ page }) => {
 });
 
 test("incident modal lists every linked case on mobile", async ({ page }) => {
-  await login(page, "pham.ha@canho-demo.local");
+  await login(page, "pham.ha@canho.local");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/incidents");
   await page.locator(".incident-card").filter({ hasText: "Mất Wi-Fi tầng 3 tòa A" }).getByRole("button", { name: "Điều phối", exact: true }).click();
@@ -90,7 +90,7 @@ test("incident modal lists every linked case on mobile", async ({ page }) => {
 });
 
 test("mobile drawer traps focus, closes with Escape and excludes hidden links", async ({ page }) => {
-  await login(page, "pham.ha@canho-demo.local");
+  await login(page, "pham.ha@canho.local");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".sidebar")).toHaveAttribute("inert", "");
   const open = page.getByRole("button", { name: "Mở menu", exact: true }).filter({ visible: true });
@@ -110,7 +110,7 @@ test("operational KPIs and priority queue distinguish missing data from complete
   await page.route("**/api/analytics/csat", route => route.fulfill({ status: 200, json: {
     eligible: 0, responses: 0, responseRate: null, averageScore: null, distribution: []
   } }));
-  await login(page, "pham.ha@canho-demo.local");
+  await login(page, "pham.ha@canho.local");
   await expect(page.locator(".operations-progress")).toContainText("Chưa có dữ liệu");
   await expect(page.locator(".priority-table .badge-resolved, .priority-table .badge-closed")).toHaveCount(0);
   await page.route("**/api/analytics/csat", route => route.fulfill({ status: 503, json: { message: "Service unavailable" } }));

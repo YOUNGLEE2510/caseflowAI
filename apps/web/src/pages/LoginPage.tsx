@@ -9,7 +9,7 @@ import { Modal } from "../components/Modal";
 import { useLocale } from "../i18n";
 import { useConfirmation } from "../components/ConfirmationProvider";
 
-const demoOrganizationSlug = "caseflow-rental-demo";
+const defaultOrganizationSlug = "caseflow-rental";
 
 export function LoginPage() {
   const { user, login, loginWithGoogle, loginWithMicrosoft } = useAuth();
@@ -17,7 +17,7 @@ export function LoginPage() {
   const confirm = useConfirmation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [organizationSlug, setOrganizationSlug] = useState(demoOrganizationSlug);
+  const [organizationSlug, setOrganizationSlug] = useState(defaultOrganizationSlug);
   const [organizations, setOrganizations] = useState<Array<{ name: string; slug: string }>>([]);
   const [providers, setProviders] = useState({ google: false, microsoft: false });
   useEffect(() => {
@@ -32,7 +32,7 @@ export function LoginPage() {
       if (!active) return;
       setOrganizations(response.organizations);
       const requested = searchParams.get("organization");
-      const selected = response.organizations.find(item => item.slug === requested) || response.organizations.find(item => item.slug === demoOrganizationSlug) || response.organizations[0];
+      const selected = response.organizations.find(item => item.slug === requested) || response.organizations.find(item => item.slug === defaultOrganizationSlug) || response.organizations[0];
       if (selected) setOrganizationSlug(selected.slug);
     }).catch(() => undefined);
     return () => { active = false; };
@@ -168,7 +168,7 @@ export function LoginPage() {
                 value={organizationSlug}
                 onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())}
                 autoComplete="organization"
-                placeholder="caseflow-rental-demo"
+                placeholder="caseflow-rental"
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 required
               />}

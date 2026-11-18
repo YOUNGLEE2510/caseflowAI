@@ -10,8 +10,8 @@ test("incomplete uploads require confirmation before scheduling recovery", async
   });
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
-  await page.getByLabel("Email tài khoản").fill("tran.khoa@canho-demo.local");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Email tài khoản").fill("tran.khoa@canho.local");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
   await page.setViewportSize({ width: 390, height: 1000 });
@@ -37,8 +37,8 @@ test("operations names Cloudinary storage correctly on desktop and mobile", asyn
   });
   await page.goto("/login");
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
-  await page.getByLabel("Email tài khoản").fill("tran.khoa@canho-demo.local");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Email tài khoản").fill("tran.khoa@canho.local");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
   await mkdir("artifacts/cloudinary", { recursive: true });

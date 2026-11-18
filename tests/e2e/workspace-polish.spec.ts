@@ -2,16 +2,16 @@ import { test, expect, type Page } from "@playwright/test";
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await expect(page.locator(".demo-switcher")).toHaveCount(0);
+  await expect(page.locator(".segment-switcher")).toHaveCount(0);
   await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("Demo123!");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(/\/overview$/);
 }
 
 test("queue pagination changes records, filters reset pages, sidebar collapse persists", async ({ page }) => {
-  await login(page, "pham.ha@canho-demo.local");
+  await login(page, "pham.ha@canho.local");
   const brand = page.locator(".sidebar .brand");
   const collapse = page.getByRole("button", { name: "Thu gọn sidebar", exact: true });
   const brandBox = await brand.boundingBox();
@@ -48,7 +48,7 @@ test("queue pagination changes records, filters reset pages, sidebar collapse pe
 });
 
 test("student sees relevant controls and live unaccented knowledge matches", async ({ page }) => {
-  await login(page, "nguyen.anh@cudan.canho-demo.local");
+  await login(page, "nguyen.anh@cudan.canho.local");
   await expect(page.locator(".requester-home")).toBeVisible();
   await expect(page.locator(".requester-summary-grid article").first()).toHaveCSS("border-top-width", "1px");
   const widths = await page.evaluate(() => ({ home: document.querySelector(".requester-home")!.getBoundingClientRect().width, content: document.querySelector(".content")!.clientWidth }));
@@ -70,7 +70,7 @@ test("student sees relevant controls and live unaccented knowledge matches", asy
 
 test("mobile administration has explicit navigation, account access and training export", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await login(page, "tran.khoa@canho-demo.local");
+  await login(page, "tran.khoa@canho.local");
   await page.getByRole("button", { name: "Mở menu", exact: true }).filter({ visible: true }).click();
   await page.locator(".sidebar").getByRole("link", { name: "Vận hành", exact: true }).click();
   await expect(page).toHaveURL(/\/system$/);
@@ -86,7 +86,7 @@ test("mobile administration has explicit navigation, account access and training
 });
 
 test("cancelled create has no side effects and confirmation supports keyboard", async ({ page }) => {
-  await login(page, "nguyen.anh@cudan.canho-demo.local");
+  await login(page, "nguyen.anh@cudan.canho.local");
   await page.goto("/cases/new");
   let writes = 0;
   page.on("request", request => { if (request.method() === "POST" && /\/api\/cases$/.test(request.url())) writes++; });
@@ -103,7 +103,7 @@ test("cancelled create has no side effects and confirmation supports keyboard", 
 });
 
 test("failed attachment upload retains file for retry and successful retry survives reload", async ({ page }) => {
-  await login(page, "nguyen.anh@cudan.canho-demo.local");
+  await login(page, "nguyen.anh@cudan.canho.local");
   await page.goto("/cases");
   await page.locator(".case-link").first().click();
   const endpoint = "**/api/cases/*/attachments";

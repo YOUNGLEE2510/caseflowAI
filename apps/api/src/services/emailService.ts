@@ -8,7 +8,7 @@ import type { Transporter } from "nodemailer";
  * - In development / when unconfigured: logs to console (log-only mode).
  *
  * This allows the full email flow to be coded and tested without requiring
- * actual SMTP credentials during development or demos.
+ * actual SMTP credentials during development or local trials.
  */
 
 interface EmailPayload {

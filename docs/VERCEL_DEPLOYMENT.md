@@ -1,4 +1,4 @@
-# Bản demo Vercel miễn phí
+# Bản triển khai Vercel miễn phí
 
 Phạm vi được chọn: web + API + AI trên Vercel Services (beta), không đăng ký/nâng cấp gói trả phí, không tạo daemon thường trực. Bản local và Docker tiếp tục dùng entrypoint hiện có. Chưa coi là đã deploy cho đến khi nhận URL READY và kiểm tra runtime thành công.
 
@@ -8,7 +8,7 @@ Phạm vi được chọn: web + API + AI trên Vercel Services (beta), không �
 - `/api/*` vào Express, còn lại vào SPA; API giữ nguyên prefix `/api`.
 - AI không có public rewrite. Binding của API cấp URL qua `AI_SERVICE_URL`; giữ `AI_INTERNAL_TOKEN` để xác thực ở tầng ứng dụng.
 - API serverless chỉ mở kết nối database dùng chung theo instance, không tự seed, migrate hay tạo timer nền. Khởi tạo thất bại trả 503 có request ID và cho phép thử lại request sau.
-- Model demo AI dùng cache `/tmp`, không phải registry bền vững cho huấn luyện/promotion. Không tự đưa artifact đã recover vào runtime.
+- Model mẫu AI dùng cache `/tmp`, không phải registry bền vững cho huấn luyện/promotion. Không tự đưa artifact đã recover vào runtime.
 - Giữ các security header của web; `.vercelignore` loại toàn bộ `.env`, artifacts, uploads, Git metadata và dependency/build output cục bộ.
 
 ## Giới hạn đã chấp nhận
@@ -48,7 +48,7 @@ Nếu `MFA_ENCRYPTION_KEY` trước đây vắng mặt, ứng dụng local dùng
 - Deployment kiểm tra: `dpl_9pqTqsKjnLt1DAwT2QJPPENaewbg`. Source là working tree đã khôi phục, chưa push GitHub; không đại diện cho một commit sạch.
 - Health 200, MongoDB connected; đăng nhập manager 200; catalog căn hộ, danh sách yêu cầu, kho tri thức đều 200. Chưa đăng nhập truy cập yêu cầu trả 401.
 - AI intake qua binding riêng trả 200, nhãn `water`, provider `ml-service`. Chưa kiểm thử toàn bộ vòng đời ghi yêu cầu, phân quyền chéo tenant hoặc luồng email/OAuth.
-- Endpoint truy xuất tri thức trả 200, chế độ retrieval; truy vấn kiểm tra về nước yếu trả 0 citations với dữ liệu đang có, chưa xác nhận chất lượng truy xuất bằng bộ tài liệu demo đầy đủ.
+- Endpoint truy xuất tri thức trả 200, chế độ retrieval; truy vấn kiểm tra về nước yếu trả 0 citations với dữ liệu đang có, chưa xác nhận chất lượng truy xuất bằng bộ tài liệu mẫu đầy đủ.
 - Kiểm tra giao diện login desktop 1440px và mobile 390px; mobile không tràn ngang. HTTPS/CSP/HSTS và các header bảo vệ được kiểm tra trên domain production công khai.
 - Các kiểm thử API tập trung đạt 23; build web/API local đạt. Kiểm thử serverless 2/2 và kiểm tra nạp bundle ESM đạt sau thay đổi đóng gói. Runtime log không có lỗi trong các request thành công vừa kiểm tra; chưa cấu hình hệ thống giám sát ngoài.
 - CLI tự tạo automation bypass khi dùng `vercel curl` để kiểm tra deployment staging được bảo vệ. Chỉ domain production đã được kiểm tra bằng request công khai không bypass; không tắt Deployment Protection.

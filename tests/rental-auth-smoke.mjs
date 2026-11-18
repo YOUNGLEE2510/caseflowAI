@@ -10,7 +10,7 @@ await mkdir("artifacts/rental-setup", { recursive: true });
 try {
   for (const prefix of ["manager@", "technician@", "resident@"]) {
     const account = setup.credentials.find(item => item.email.startsWith(prefix));
-    assert(account, `Missing demo role: ${prefix}`);
+    assert(account, `Missing sample role: ${prefix}`);
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const page = await context.newPage();
     const errors = [];

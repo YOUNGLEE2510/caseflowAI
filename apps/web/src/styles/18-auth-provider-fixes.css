@@ -50,4 +50,4 @@
 .login-heading p, .login-panel .field > span:first-child,
 .login-panel :is(input, select, .button) { font-size: 15px; line-height: 1.5; }
 .login-panel :is(.button, .field > span:first-child) { font-weight: 500; }
-.login-panel :is(.demo-switcher button, .login-help, .field-error) { font-size: 13px; line-height: 1.5; }
+.login-panel :is(.segment-switcher button, .login-help, .field-error) { font-size: 13px; line-height: 1.5; }

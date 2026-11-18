@@ -46,4 +46,4 @@ Các tệp ở đây do **người thật** điền. Công cụ không tự sinh
 
 ## Lưu ý đạo đức
 
-Thông báo cho người tham gia mục đích thử nghiệm, dữ liệu thu thập và quyền dừng bất cứ lúc nào; chỉ dùng tài khoản và dữ liệu demo, không dùng thông tin thật của người thuê.
+Thông báo cho người tham gia mục đích thử nghiệm, dữ liệu thu thập và quyền dừng bất cứ lúc nào; chỉ dùng tài khoản và dữ liệu mẫu, không dùng thông tin thật của người thuê.

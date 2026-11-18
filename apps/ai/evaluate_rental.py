@@ -36,7 +36,7 @@ def evaluate():
     }
 
 if __name__ == "__main__":
-    output = Path("artifacts/ai-evaluation/rental-demo.json")
+    output = Path("artifacts/ai-evaluation/rental.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     result = evaluate()
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

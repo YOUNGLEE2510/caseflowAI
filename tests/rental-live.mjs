@@ -25,15 +25,15 @@ assert(["PUMP-A", "ROUTER-A", "AC-A301"].every(code => catalog.assets.some(item 
 const classification = await api("/ai/analyze-intake", "POST", { text: "Nước yếu ở tất cả vòi trong căn hộ từ sáng nay" });
 assert.equal(classification.classification.label, "water");
 const cases = await api("/cases?limit=20");
-assert(["RENTAL-DEMO-001", "RENTAL-DEMO-002", "RENTAL-DEMO-005"].every(code => cases.cases.some(item => item.code === code)));
+assert(["RENTAL-001", "RENTAL-002", "RENTAL-005"].every(code => cases.cases.some(item => item.code === code)));
 let incident = (await api("/incidents")).incidents.find(item => item.propertyCode === "TOWER-A");
 if (!incident) {
-  const created = await api("/incidents", "POST", { title: "Nước yếu cơ sở A (mô phỏng)", caseCode: "RENTAL-DEMO-001" });
+  const created = await api("/incidents", "POST", { title: "Nước yếu cơ sở A (mô phỏng)", caseCode: "RENTAL-001" });
   incident = { _id: created.id };
 }
 const options = await api("/incidents/" + incident._id + "/options");
-assert(!options.candidates.some(item => item.code === "RENTAL-DEMO-003"));
-for (const caseCode of ["RENTAL-DEMO-002", "RENTAL-DEMO-005"]) {
+assert(!options.candidates.some(item => item.code === "RENTAL-003"));
+for (const caseCode of ["RENTAL-002", "RENTAL-005"]) {
   await api("/incidents/" + incident._id + "/cases", "PUT", { caseCode, linked: true });
 }
 const tasks = await api("/rental/tasks");
@@ -44,7 +44,7 @@ if (!currentIncident.ownerId) await api("/incidents/" + incident._id, "PATCH", {
   severity: currentIncident.severity, status: "investigating", rootCause: "", resolution: ""
 });
 if (!tasks.tasks.some(item => item.title === "[Mô phỏng] Kiểm tra bơm cấp nước")) {
-  await api("/rental/tasks/live-repair-demo-task", "PUT", {
+  await api("/rental/tasks/live-repair-task", "PUT", {
     assetCode: "PUMP-A", title: "[Mô phỏng] Kiểm tra bơm cấp nước",
     assigneeId: tasks.owners[0]._id, dueAt: new Date(Date.now() + 3600000).toISOString()
   });
@@ -58,7 +58,7 @@ if (repair.status === "in_progress") await api("/rental/tasks/" + repair._id, "P
   version: repair.__v, status: "completed", result: "Kết quả mô phỏng: bơm đã được kiểm tra; cần xác nhận riêng từng căn."
 });
 assert((await api("/rental/assets/PUMP-A/history")).tasks.some(item => item.status === "completed"));
-const outsider = setup.credentials.find(item => item.organization === "caseflow-rental-isolation-demo");
+const outsider = setup.credentials.find(item => item.organization === "caseflow-rental-isolation");
 assert(outsider, "Isolation organization credentials are required");
 const outsiderLogin = await fetch(base + "/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ organizationSlug: outsider.organization, email: outsider.email, password: outsider.password }) });
@@ -89,7 +89,7 @@ try {
   await browser.close();
 }
 const report = { status: "passed", properties: catalog.properties.length, units: catalog.units.length, assets: catalog.assets.length, cases: cases.total, crossOrganizationReadIsolated: true,
-  workflowKind: "scripted-synthetic-demo", sharedReportsLinked: 3, repairTaskCompleted: true,
+  workflowKind: "scripted-synthetic", sharedReportsLinked: 3, repairTaskCompleted: true,
   classificationProvider: classification.classification.provider, label: classification.classification.label,
   crossPropertyCandidatesExcluded: true, screenshots: [1440, 390] };
 await writeFile("artifacts/rental-setup/live-check.json", JSON.stringify(report, null, 2));
