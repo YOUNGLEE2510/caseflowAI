@@ -124,7 +124,7 @@ textarea:disabled { color: var(--subtle); background-color: var(--surface-muted)
 .notification-popover,
 .account-popover,
 .toast {
-  border-color: var(--border);
+  border-color: var(--border-strong);
   color: var(--ink);
   background: var(--surface-raised);
   box-shadow: var(--shadow-lg);
@@ -235,3 +235,37 @@ kbd { color: var(--ink); background: var(--surface-muted); }
   .rental-form-body,
   .repair-list { padding-inline: 16px; }
 }
+
+/* Google / Microsoft sign-in buttons: readable in every state and theme */
+.login-panel .login-google,
+.login-google {
+  border: 1px solid var(--provider-border);
+  color: var(--provider-ink);
+  background: var(--provider-bg);
+}
+.login-panel .login-google:hover:not(:disabled),
+.login-google:hover:not(:disabled) {
+  border-color: var(--provider-ink);
+  color: var(--provider-ink);
+  background: var(--provider-bg-hover);
+}
+.login-panel .login-google:disabled,
+.login-google:disabled { color: var(--provider-ink); opacity: 0.5; }
+
+/* Comfortable hit areas for inline actions (WCAG 2.5.8: at least 24px) */
+.text-link,
+.read-more button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding-block: 4px;
+  cursor: pointer;
+}
+.data-table .case-link,
+.case-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+}
+.text-link:hover,
+.read-more button:hover { text-decoration: underline; text-underline-offset: 3px; }

@@ -50,6 +50,20 @@
   --border-subtle: #e4ebe7;
   --border-strong: var(--gray-300);
 
+  /* Aliases kept for older selectors */
+  --ink-strong: var(--ink);
+  --ink-muted: var(--muted);
+  --line-soft: var(--border-subtle);
+  --line-strong: var(--border-strong);
+  --text-secondary: var(--muted);
+  --text-tertiary: var(--subtle);
+
+  /* Third-party sign-in buttons (Google brand guidance) */
+  --provider-bg: #ffffff;
+  --provider-bg-hover: #f2f4f3;
+  --provider-ink: #1f1f1f;
+  --provider-border: #747775;
+
   /* Brand roles */
   --brand: var(--brand-600);
   --brand-hover: var(--brand-700);
@@ -162,6 +176,7 @@
     --gray-800: #dde5e1;
     --gray-900: #e9f0ed;
     --surface-sunken: #121a17;
+    --surface-raised: #1d2925;
     --overlay: rgba(0, 0, 0, 0.62);
     --topbar-bg: rgba(21, 30, 27, 0.92);
     --placeholder: #7f908a;
@@ -198,7 +213,15 @@
     --ai-border: #574475;
     --neutral-solid: #7c858d;
     --purple: #a88bc4;
-    --sidebar: #0b1c18;
+    --provider-bg: #131314;
+    --provider-bg-hover: #26292a;
+    --provider-ink: #e3e3e3;
+    --provider-border: #8e918f;
+    --provider-bg: #131314;
+  --provider-bg-hover: #26292a;
+  --provider-ink: #e3e3e3;
+  --provider-border: #8e918f;
+  --sidebar: #0b1c18;
     --sidebar-hover: #173e35;
     --sidebar-active: #1f5446;
     --sidebar-border: rgba(202, 225, 215, 0.12);
@@ -233,6 +256,7 @@
   --gray-800: #dde5e1;
   --gray-900: #e9f0ed;
   --surface-sunken: #121a17;
+  --surface-raised: #1d2925;
   --overlay: rgba(0, 0, 0, 0.62);
   --topbar-bg: rgba(21, 30, 27, 0.92);
   --placeholder: #7f908a;
