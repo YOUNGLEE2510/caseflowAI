@@ -20,6 +20,7 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const [organizationSlug, setOrganizationSlug] = useState(defaultOrganizationSlug);
   const [organizations, setOrganizations] = useState<Array<{ name: string; slug: string }>>([]);
+  const [organizationsLoaded, setOrganizationsLoaded] = useState(false);
   const [providers, setProviders] = useState({ google: false, microsoft: false });
   useEffect(() => {
     let active = true;
@@ -32,10 +33,11 @@ export function LoginPage() {
     void api<{ organizations: Array<{ name: string; slug: string }> }>("/auth/organizations?domain=rental").then(response => {
       if (!active) return;
       setOrganizations(response.organizations);
-      const requested = searchParams.get("organization");
-      const selected = response.organizations.find(item => item.slug === requested) || response.organizations.find(item => item.slug === defaultOrganizationSlug) || response.organizations[0];
-      if (selected) setOrganizationSlug(selected.slug);
-    }).catch(() => undefined);
+      const requested = searchParams.get("organization")?.trim().toLowerCase();
+      // An unlisted organization can still be opened by its code (?organization=…).
+      const selected = requested || (response.organizations.find(item => item.slug === defaultOrganizationSlug) || response.organizations[0])?.slug;
+      if (selected) setOrganizationSlug(selected);
+    }).catch(() => undefined).finally(() => { if (active) setOrganizationsLoaded(true); });
     return () => { active = false; };
   }, [searchParams]);
   const [email, setEmail] = useState("");
@@ -180,9 +182,14 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="form-stack">
             <label className="field">
               <span>{text("Đơn vị vận hành", "Property operator")}</span>
-              {organizations.length ? <select value={organizationSlug} onChange={event => setOrganizationSlug(event.target.value)} required aria-label={text("Đơn vị vận hành", "Property operator")}>
+              {organizations.length > 1 && organizations.some(item => item.slug === organizationSlug) ? <select value={organizationSlug} onChange={event => setOrganizationSlug(event.target.value)} required aria-label={text("Đơn vị vận hành", "Property operator")}>
                 {organizations.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}
-              </select> : <input
+              </select> : organizations.length || !organizationsLoaded ? <input
+                className="organization-fixed"
+                readOnly
+                value={organizations.find(item => item.slug === organizationSlug)?.name || (organizationsLoaded ? organizationSlug : text("Đang tải…", "Loading…"))}
+                aria-label={text("Đơn vị vận hành", "Property operator")}
+              /> : <input
                 value={organizationSlug}
                 onChange={(event) => setOrganizationSlug(event.target.value.toLowerCase())}
                 autoComplete="organization"

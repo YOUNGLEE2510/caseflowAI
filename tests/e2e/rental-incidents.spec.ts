@@ -13,7 +13,6 @@ test("manager creates and schedules a shared rental incident", async ({ page, re
   expect(create.ok()).toBe(true);
   const source = (await create.json()).case;
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill("pham.ha@canho.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
@@ -43,7 +42,6 @@ test("manager creates and schedules a shared rental incident", async ({ page, re
 
 test("manager creates catalog and completes a repair task", async ({ page, request }, info) => {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill("pham.ha@canho.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

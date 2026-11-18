@@ -29,7 +29,7 @@ export async function seedDatabase(force = false) {
   if (existing) return existing;
 
   const organization = await Organization.create({
-    name: "CaseFlow Căn hộ (thử nghiệm)", slug: LOCAL_ORGANIZATION_SLUG,
+    name: "CaseFlow Căn Hộ", slug: LOCAL_ORGANIZATION_SLUG,
     settings: { serviceDomain: "rental", locale: "vi-VN", timezone: "Asia/Ho_Chi_Minh" }
   });
   const organizationId = organization._id;
@@ -52,8 +52,8 @@ export async function seedDatabase(force = false) {
     requiredFields: REQUIRED_FIELDS[key] || [], active: true
   })));
   await RentalProperty.insertMany([
-    { organizationId, code: "TOWER-A", name: "Tòa A (thử nghiệm)", address: "Địa chỉ giả lập", active: true },
-    { organizationId, code: "TOWER-B", name: "Tòa B (thử nghiệm)", address: "Địa chỉ giả lập", active: true }
+    { organizationId, code: "TOWER-A", name: "Tòa A", address: "Địa chỉ giả lập", active: true },
+    { organizationId, code: "TOWER-B", name: "Tòa B", address: "Địa chỉ giả lập", active: true }
   ]);
   await RentalUnit.insertMany([
     { organizationId, propertyCode: "TOWER-A", code: "A301", floor: "3", residentIds: [primary._id, secondary._id], occupancyStatus: "occupied", readinessStatus: "ready" },

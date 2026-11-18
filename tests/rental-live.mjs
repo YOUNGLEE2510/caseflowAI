@@ -70,8 +70,7 @@ await mkdir("artifacts/rental-setup", { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  await page.goto(base + "/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption(setup.organization);
+  await page.goto(`${base}/login?organization=${encodeURIComponent(setup.organization)}`);
   await page.getByLabel("Email tài khoản").fill(manager.email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(manager.password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

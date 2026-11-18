@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test("organization selection, CSV preview and knowledge pagination remain usable on mobile", async ({ page }, testInfo) => {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill("tran.khoa@canho.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

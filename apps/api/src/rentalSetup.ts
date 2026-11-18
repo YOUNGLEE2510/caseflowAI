@@ -33,7 +33,7 @@ try {
       await access(dirname(credentialsFile), constants.W_OK);
     }
     const organization = existing || await Organization.create({
-      slug, name: "CaseFlow Căn hộ", settings: { serviceDomain: "rental" }
+      slug, name: "CaseFlow Căn Hộ", settings: { serviceDomain: "rental" }
     });
     if (organization.settings?.serviceDomain !== "rental") throw new Error("Organization domain conflict");
     const organizationId = organization._id;
@@ -162,7 +162,7 @@ try {
     }
     const isolationSlug = "caseflow-rental-isolation";
     const isolation = await Organization.findOne({ slug: isolationSlug }) || await Organization.create({
-      slug: isolationSlug, name: "Căn hộ - Đối chứng cách ly", settings: { serviceDomain: "rental" }
+      slug: isolationSlug, name: "Căn Hộ Đối Chứng Cách Ly", settings: { serviceDomain: "rental", listedOnLogin: false }
     });
     const isolationEmail = "outsider@rental.caseflow.local";
     if (!await User.exists({ organizationId: isolation._id, email: isolationEmail })) {

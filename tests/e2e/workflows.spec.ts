@@ -10,7 +10,6 @@ async function confirmAction(page: Page, title: string) {
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

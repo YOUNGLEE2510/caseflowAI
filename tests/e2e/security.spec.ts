@@ -6,7 +6,6 @@ const OTPAuth = createRequire(resolve(process.cwd(), "apps/api/package.json"))("
 
 async function login(page: Page, email: string, password = "Canho123!") {
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

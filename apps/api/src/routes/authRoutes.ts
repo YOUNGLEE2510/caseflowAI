@@ -37,7 +37,7 @@ authRouter.get("/auth/providers", (_req, res) => {
 });
 authRouter.get("/auth/organizations", async (req, res) => {
   const { domain } = z.object({ domain: z.enum(["rental"]).optional() }).parse(req.query);
-  const organizations = await Organization.find({ status: "active", ...(domain ? { "settings.serviceDomain": domain } : {}) }).select("name slug -_id").sort({ name: 1 }).limit(100).lean();
+  const organizations = await Organization.find({ status: "active", "settings.listedOnLogin": { $ne: false }, ...(domain ? { "settings.serviceDomain": domain } : {}) }).select("name slug -_id").sort({ name: 1 }).limit(100).lean();
   res.json({ organizations });
 });
 

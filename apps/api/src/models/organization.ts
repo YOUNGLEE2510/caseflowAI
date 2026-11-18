@@ -8,6 +8,8 @@ const organizationSchema = new Schema(
     status: { type: String, enum: ["active", "suspended"], default: "active" },
     settings: {
       serviceDomain: { type: String, enum: ["rental"], default: "rental" },
+      // false keeps the organization out of the public sign-in list; it can still sign in by code.
+      listedOnLogin: { type: Boolean, default: true },
       locale: { type: String, default: "vi-VN" },
       timezone: { type: String, default: "Asia/Ho_Chi_Minh" },
       googleHostedDomains: { type: [String], default: [] },

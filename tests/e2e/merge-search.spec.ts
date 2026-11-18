@@ -13,7 +13,6 @@ test("indexed search finds unaccented prefixes and managers merge duplicates wit
   };
   const target = await create("hồ sơ chính"), source = await create("bản trùng");
   await page.goto("/login");
-  await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
   await page.getByLabel("Email tài khoản").fill("pham.ha@canho.local");
   await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

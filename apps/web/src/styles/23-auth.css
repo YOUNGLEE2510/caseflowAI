@@ -213,3 +213,14 @@
 .auth-screen .field > label:first-child,
 .login-reset-screen .field > span:first-child,
 .login-reset-screen .field > label:first-child { color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+/* Single operator: shown as a fixed value, not a dropdown */
+.field input.organization-fixed,
+.auth-screen .field input.organization-fixed {
+  border-color: var(--border);
+  color: var(--ink);
+  background: var(--surface-muted);
+  font-weight: 600;
+  cursor: default;
+}
+.field input.organization-fixed:focus { box-shadow: none; border-color: var(--border-strong); }

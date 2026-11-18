@@ -18,8 +18,7 @@ try {
     page.on("response", response => {
       if (response.url().includes("/api/") && response.status() >= 500) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`);
     });
-    await page.goto(base + "/login");
-    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption(setup.organization);
+    await page.goto(`${base}/login?organization=${encodeURIComponent(setup.organization)}`);
     await page.getByLabel("Email tài khoản", { exact: true }).fill(account.email);
     await page.getByLabel("Mật khẩu", { exact: true }).fill(account.password);
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

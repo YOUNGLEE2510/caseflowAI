@@ -24,7 +24,6 @@ for (const [role, email, routes, denied] of [
       expect((await request.post("/api/users", { headers: { Authorization: `Bearer ${token}` }, data: {} })).status()).toBe(403);
     }
     await page.goto("/login");
-    await page.getByRole("combobox", { name: "Đơn vị vận hành", exact: true }).selectOption("caseflow-rental-local");
     await page.getByLabel("Email tài khoản", { exact: true }).fill(email);
     await page.getByLabel("Mật khẩu", { exact: true }).fill("Canho123!");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

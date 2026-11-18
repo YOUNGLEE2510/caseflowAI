@@ -100,6 +100,17 @@ beforeEach(async () => {
   record = await models.CaseRecord.create({ organizationId: org._id, code: "TEST-01", title: "Test request", description: "A test request for help", serviceKey: "internet", category: "internet", requesterId: requester._id, requesterName: requester.name, team: "IT", dueAt: new Date(Date.now() + 3600000) });
 });
 
+describe("public sign-in organization list", () => {
+  it("omits organizations hidden from the sign-in list", async () => {
+    await models.Organization.create({ name: "Hidden Control", slug: "hidden-control", settings: { listedOnLogin: false } });
+    const response = await fetch(`${base}/api/auth/organizations?domain=rental`);
+    const { organizations } = await response.json() as { organizations: { slug: string }[] };
+    const slugs = organizations.map(item => item.slug);
+    expect(slugs).toContain("test-apartments");
+    expect(slugs).not.toContain("hidden-control");
+  });
+});
+
 describe("request-driven AI triage", () => {
   it("does not claim a case through a different organization", async () => {
     const { processCaseTriage } = await import("../src/jobs/caseTriage.js");
