@@ -13,6 +13,7 @@ import { emailCaseResolved } from "../services/emailService.js";
 import { config } from "../config.js";
 import { resolveAiReviewStatus } from "../services/routing.js";
 import { RentalUnit } from "../models/rental.js";
+import { isAiHidden } from "../services/aiVisibility.js";
 import { caseScope, presentCase, validateStatusTransition } from "../services/casePolicy.js";
 import { addBusinessHours, organizationCalendar } from "../services/workingHours.js";
 export const caseActionsRouter = Router();
@@ -62,6 +63,12 @@ caseActionsRouter.get("/cases/:id/assignment-options", validateObjectId("id"), r
     return { id: String(agent._id), name: agent.name, open, overdue: Number(load?.overdue || 0), capacity, scheduledNow: isScheduledNow(agent),
       atCapacity: open >= capacity, skillMatch: (agent.skills || []).some((skill: string) => [record.serviceKey, record.category].includes(skill)), utilization: open / capacity };
   }).sort((a, b) => Number(a.atCapacity) - Number(b.atCapacity) || Number(b.scheduledNow) - Number(a.scheduledNow) || Number(b.skillMatch) - Number(a.skillMatch) || a.utilization - b.utilization || a.overdue - b.overdue || a.id.localeCompare(b.id));
+  if (isAiHidden(req.auth)) {
+    // Manual condition: the list needed to assign by hand, without ranking or skill-match hints.
+    const plain = options.map(({ skillMatch: _skillMatch, ...option }) => option).sort((a, b) => a.name.localeCompare(b.name, "vi"));
+    res.json({ options: plain, generatedAt: new Date().toISOString(), policy: "alphabetical", advisory: false });
+    return;
+  }
   res.json({ options, generatedAt: new Date().toISOString(), policy: "capacity-skill-utilization", advisory: true });
 });
 interface LeanService {
@@ -284,7 +291,7 @@ caseActionsRouter.patch(
         }
       } catch { console.warn("[Case update] Unable to enqueue notification email."); }
     }
-    res.json({ case: presentCase(record, req.auth!.role) });
+    res.json({ case: presentCase(record, req.auth!) });
   }
 );
 
@@ -353,7 +360,7 @@ caseActionsRouter.post("/cases/:id/intake-verification", validateObjectId("id"),
   await record.save();
   await logAudit({ ...auditFromReq(req), action: "case.qr_intake.review", resource: "case", resourceId: String(record._id),
     changes: { decision: input.decision, linkedResident: Boolean(input.residentId) } }, req);
-  res.json({ case: presentCase(record, req.auth!.role) });
+  res.json({ case: presentCase(record, req.auth!) });
 });
 
 caseActionsRouter.post("/cases/:id/satisfaction", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
@@ -368,7 +375,7 @@ caseActionsRouter.post("/cases/:id/satisfaction", validateObjectId("id"), requir
   record.events.push({ type: "satisfaction", label: `Người yêu cầu đánh giá ${input.rating}/5`, actorId: req.auth!.id as any, actorName: req.auth!.name, createdAt: new Date() } as any);
   await record.save();
   await logAudit({ ...auditFromReq(req), action: "case.satisfaction", resource: "CaseRecord", resourceId: String(record._id), changes: { rating: input.rating } }, req);
-  res.json({ case: presentCase(record, req.auth!.role) });
+  res.json({ case: presentCase(record, req.auth!) });
 });
 
 caseActionsRouter.post("/cases/:id/close", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
@@ -379,7 +386,7 @@ caseActionsRouter.post("/cases/:id/close", validateObjectId("id"), requireRoles(
   record.events.push({ type: "closed_by_requester", label: "Người yêu cầu đã xác nhận đóng hồ sơ", actorId: req.auth!.id as any, actorName: req.auth!.name, createdAt: new Date() } as any);
   await record.save();
   await logAudit({ ...auditFromReq(req), action: "case.close_by_requester", resource: "CaseRecord", resourceId: String(record._id), changes: {} }, req);
-  res.json({ case: presentCase(record, req.auth!.role) });
+  res.json({ case: presentCase(record, req.auth!) });
 });
 
 caseActionsRouter.post("/cases/:id/reopen", validateObjectId("id"), requireRoles("requester"), async (req, res) => {
@@ -416,7 +423,7 @@ caseActionsRouter.post("/cases/:id/reopen", validateObjectId("id"), requireRoles
       relatedCaseId: String(record._id), actionUrl: `/cases/${record._id}`
     });
   }
-  res.json({ case: presentCase(record, req.auth!.role) });
+  res.json({ case: presentCase(record, req.auth!) });
 });
 
 /* ── Case Comments ── */
@@ -502,5 +509,5 @@ caseActionsRouter.post("/cases/:id/comments", validateObjectId("id"), async (req
     } catch { console.warn("[Case comment] Unable to enqueue notification email."); }
   }
 
-  res.status(201).json({ case: presentCase(record, req.auth!.role) });
+  res.status(201).json({ case: presentCase(record, req.auth!) });
 });

@@ -7,6 +7,7 @@ import { pageNumber } from "../services/casePolicy.js";
 import { buildReviewedTrainingCsv, type ReviewedCase } from "../services/trainingDataset.js";
 import { businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
+import { requireAiVisible } from "../services/aiVisibility.js";
 
 export const analyticsRouter = Router();
 
@@ -228,6 +229,7 @@ analyticsRouter.get(
 analyticsRouter.get(
   "/ai-accuracy",
   requireRoles("manager", "org_admin", "platform_admin"),
+  requireAiVisible({ hidden: true }),
   async (req, res) => {
     const organizationId = new mongoose.Types.ObjectId(req.auth!.organizationId);
 

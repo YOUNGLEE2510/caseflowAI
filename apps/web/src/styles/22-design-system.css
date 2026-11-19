@@ -354,3 +354,12 @@ kbd { color: var(--ink); background: var(--surface-muted); }
 .unit-filter-group { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 10px; }
 .unit-filter-label { color: var(--muted); font-size: 13px; font-weight: 600; }
 @media (max-width: 760px) { .unit-filter-group { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+
+/* User study: AI suggestions turned off for this account */
+.ai-hidden-notice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); background: var(--surface-soft); font-size: 14px; }
+.ai-hidden-notice svg { flex: none; color: var(--subtle); }
+.ai-study-settings { display: grid; gap: 10px; }
+.ai-study-settings h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.ai-study-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; font-weight: 600; cursor: pointer; }
+.ai-study-switch input { width: 20px; height: 20px; accent-color: var(--brand-solid); }
+.ai-hidden-badge { display: block; margin-top: 4px; padding: 1px 8px; width: fit-content; border-radius: var(--radius-pill); color: var(--warning); background: var(--warning-bg); font-size: 11px; font-weight: 700; }

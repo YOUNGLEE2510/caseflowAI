@@ -6,6 +6,7 @@ import { retrieveKnowledge } from "../services/aiClient.js";
 import { generationEnabled, groundedAnswer } from "../services/groundedAnswer.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
 import { expandKnowledgeQuery, knowledgeTerms } from "../services/knowledgeQuery.js";
+import { hiddenShapes, requireAiVisible } from "../services/aiVisibility.js";
 
 export const knowledgeRouter = Router();
 knowledgeRouter.get("/knowledge/:id/versions/:version", async (req, res) => {
@@ -58,7 +59,7 @@ knowledgeRouter.get("/knowledge", async (req, res) => {
   res.json({ articles, total, page, limit });
 });
 
-knowledgeRouter.post("/knowledge/search", async (req, res) => {
+knowledgeRouter.post("/knowledge/search", requireAiVisible(hiddenShapes.knowledge), async (req, res) => {
   const input = z.object({ query: z.string().trim().min(3).max(1_000), generate: z.boolean().default(false) }).parse(req.body);
   const query = expandKnowledgeQuery(input.query);
   const MAX_ARTICLES = 50;

@@ -9,6 +9,7 @@ import { CaseRecord, Incident, User } from "../models.js";
 import { INCIDENT_STATUSES, SEVERITY_LEVELS } from "../models/constants.js";
 import { findRelatedCases } from "../services/aiClient.js";
 import { auditFromReq, logAudit, notifyMany } from "../services/helpers.js";
+import { hiddenShapes, requireAiVisible } from "../services/aiVisibility.js";
 
 export const incidentActions = Router();
 const manage = requireRoles("manager", "org_admin", "platform_admin");
@@ -16,7 +17,7 @@ const code = z.string().trim().regex(/^[a-z\d-]{1,64}$/i).transform(value => val
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const openCase = { status: { $nin: ["closed", "resolved"] }, mergedIntoId: null };
 
-incidentActions.get("/cases/:id/related", manage, validateObjectId("id"), async (req, res) => {
+incidentActions.get("/cases/:id/related", manage, validateObjectId("id"), requireAiVisible(hiddenShapes.related), async (req, res) => {
   const source = await CaseRecord.findOne({ organizationId: req.auth!.organizationId, _id: req.params.id }).lean<any>();
   if (!source) throw new HttpError(404, "Không tìm thấy hồ sơ.");
   if (!source.propertyCode || ["closed", "resolved"].includes(source.status)) { res.json({ matches: [] }); return; }

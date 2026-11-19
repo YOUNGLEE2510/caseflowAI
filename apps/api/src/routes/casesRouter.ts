@@ -32,6 +32,7 @@ import { searchTerms } from "../services/caseSearch.js";
 import { incidentActions } from "./incidentActions.js";
 import { rentalRouter } from "./rental.js";
 import { RentalAsset, RentalProperty, RentalUnit } from "../models/rental.js";
+import { hiddenShapes, isAiHidden, requireAiVisible } from "../services/aiVisibility.js";
 
 interface LeanService {
   _id: mongoose.Types.ObjectId;
@@ -127,7 +128,8 @@ casesRouter.get("/cases", async (req, res) => {
     if (queue === "assigned") conditions.push({ assigneeId: req.auth!.id });
     const now = new Date();
     if (queue === "overdue") conditions.push({ dueAt: { $lt: now } });
-    if (queue === "at_risk") conditions.push({ $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] });
+    // Hidden viewers must not infer AI risk scores from queue membership: overdue only.
+    if (queue === "at_risk") conditions.push(isAiHidden(req.auth) ? { dueAt: { $lt: now } } : { $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] });
     if (queue === "due_soon") conditions.push({ dueAt: { $gte: now, $lte: new Date(now.getTime() + 86_400_000) } });
     filter.$and = conditions;
   }
@@ -152,12 +154,12 @@ casesRouter.get("/cases", async (req, res) => {
   const statusCounts = req.query.includeCounts === "true" ? Object.fromEntries(await Promise.all(CASE_STATUSES.map(async status => [status,
     await CaseRecord.countDocuments({ $and: [filter, { status }] })]))) : undefined;
 
-  res.json({ cases: cases.map((item) => presentCase(item, req.auth!.role)), total, page, limit, totalPages, statusCounts });
+  res.json({ cases: cases.map((item) => presentCase(item, req.auth!)), total, page, limit, totalPages, statusCounts });
 });
 
 /* ── AI Analyze Intake (pre-submit) ── */
 
-casesRouter.post("/ai/analyze-intake", async (req, res) => {
+casesRouter.post("/ai/analyze-intake", requireAiVisible(hiddenShapes.analysis), async (req, res) => {
   const input = z.object({ text: z.string().min(12).max(5_000) }).parse(req.body);
   const [classification, openCases] = await Promise.all([
     classifyText(input.text),
@@ -219,7 +221,7 @@ casesRouter.post("/cases", (_req, _res, next) => withAiBudget(config.CASE_TRIAGE
     if (existing.requestFingerprint !== requestFingerprint) throw new HttpError(409, "Khóa gửi yêu cầu đã được dùng cho nội dung khác.");
     const visible = await CaseRecord.exists({ _id: existing._id, ...caseScope(req.auth!) });
     if (!visible) throw new HttpError(403, "Bạn không còn quyền truy cập hồ sơ này.");
-    res.set("Idempotency-Replayed", "true").status(200).json({ case: presentCase(existing, req.auth!.role), similar: [] });
+    res.set("Idempotency-Replayed", "true").status(200).json({ case: presentCase(existing, req.auth!), similar: [] });
     return true;
   };
   if (await replay()) return;
@@ -378,7 +380,7 @@ casesRouter.post("/cases", (_req, _res, next) => withAiBudget(config.CASE_TRIAGE
     }
   );
 
-  res.status(201).json({ case: presentCase(record, req.auth!.role), similar });
+  res.status(201).json({ case: presentCase(record, req.auth!), similar: isAiHidden(req.auth) ? [] : similar });
 });
 
 /* ── Case Detail ── */
@@ -389,7 +391,7 @@ casesRouter.get("/cases/:id", validateObjectId("id"), async (req, res) => {
   if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
   const mergedCases = await CaseRecord.find({ ...caseScope(req.auth!), mergedIntoId: record._id })
     .select("code title status mergedAt").sort({ mergedAt: -1 }).limit(100).lean();
-  res.json({ case: presentCase({ ...record, mergedCases }, req.auth!.role) });
+  res.json({ case: presentCase({ ...record, mergedCases }, req.auth!) });
 });
 
 /* ── Update Case ── */

@@ -27,6 +27,7 @@ import type { CaseRecord, DashboardData } from "../types";
 import { OperationsProgress } from "../components/OperationsProgress";
 import { SystemAlert } from "../components/SystemAlert";
 import { RecommendationPanel } from "../components/RecommendationPanel";
+import { AiHiddenNotice } from "../components/AiHiddenNotice";
 
 const DashboardCharts = lazy(async () => ({ default: (await import("../components/DashboardCharts")).DashboardCharts }));
 
@@ -215,8 +216,8 @@ export function OverviewPage() {
         </section>
       ) : null}
 
-      {canSeeAnalytics ? <OperationsProgress /> : null}
-      {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
+      {canSeeAnalytics ? <OperationsProgress hideAi={Boolean(user?.aiSuggestionsHidden)} /> : null}
+      {user?.aiSuggestionsHidden ? <AiHiddenNotice /> : ["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
 
       <nav className="work-queue-shortcuts" aria-label={text("Hàng đợi nhanh", "Quick queues")}>
         <Link to="/cases?status=new"><Inbox size={18} /><span>{text("Chờ tiếp nhận", "Awaiting triage")}</span><ArrowRight size={16} /></Link>
