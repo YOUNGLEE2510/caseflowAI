@@ -29,20 +29,38 @@ const codeSchema = z.object({ code: z.string().trim().regex(/^(?:\d{6}|[a-f0-9]{
 const recoveryHash = (value: string) => createHash("sha256").update(value.toLowerCase()).digest("hex");
 const scope = (req: import("express").Request) => ({ _id: req.auth!.id, organizationId: req.auth!.organizationId, active: true });
 
+// A sign-in through Google/Microsoft within this window stands in for typing the
+// password again, so accounts created through a provider can still enable 2FA.
+const PROVIDER_REAUTH_MS = 10 * 60_000;
+type SessionAuth = { mfaVerified?: boolean; authMethod?: string; authenticatedAt?: Date | null };
+const currentSession = (req: import("express").Request) => req.auth!.sessionId
+  ? RefreshSession.findOne({ familyId: req.auth!.sessionId, userId: req.auth!.id, organizationId: req.auth!.organizationId, consumedAt: null, revokedAt: null }).lean<SessionAuth>()
+  : Promise.resolve(null);
+const providerReauth = (session: SessionAuth | null) => {
+  const method = session?.authMethod === "google" || session?.authMethod === "microsoft" ? session.authMethod : null;
+  return { method, fresh: Boolean(method && session?.authenticatedAt && Date.now() - new Date(session.authenticatedAt).getTime() < PROVIDER_REAUTH_MS) };
+};
+
 mfaRouter.get("/profile/security", async (req, res) => {
   const user = await User.findOne(scope(req)).lean<{ mfaEnabled?: boolean; mustChangePassword?: boolean }>();
-  const session = req.auth!.sessionId ? await RefreshSession.findOne({ familyId: req.auth!.sessionId, userId: req.auth!.id, organizationId: req.auth!.organizationId, consumedAt: null, revokedAt: null }).lean<{ mfaVerified?: boolean }>() : null;
+  const session = await currentSession(req);
+  const reauth = providerReauth(session);
   res.setHeader("Cache-Control", "no-store");
   res.json({ mfaEnabled: Boolean(user?.mfaEnabled), mfaVerified: Boolean(session?.mfaVerified),
-    mfaRequired: config.DEPLOYMENT_MODE === "pilot" && ["org_admin", "platform_admin"].includes(req.auth!.role), mustChangePassword: Boolean(user?.mustChangePassword) });
+    mfaRequired: config.DEPLOYMENT_MODE === "pilot" && ["org_admin", "platform_admin"].includes(req.auth!.role), mustChangePassword: Boolean(user?.mustChangePassword),
+    signInMethod: reauth.method || "password", providerReauthFresh: reauth.fresh });
 });
 
 mfaRouter.post("/profile/mfa/setup", async (req, res) => {
-  const { password } = z.object({ password: currentPasswordSchema }).strict().parse(req.body);
+  const { password } = z.object({ password: currentPasswordSchema.optional() }).strict().parse(req.body);
   await consumeAuthAttempt(req.auth!.id, "mfa", 10);
   if (!req.auth!.sessionId) throw new HttpError(401, "Vui lòng đăng nhập lại để cấu hình 2FA.");
   const user = await User.findOne(scope(req)).select("+passwordHash");
-  if (!user || !await bcrypt.compare(password, user.passwordHash)) throw new HttpError(401, "Thông tin xác thực không hợp lệ.");
+  if (!user) throw new HttpError(401, "Thông tin xác thực không hợp lệ.");
+  if (password === undefined) {
+    // No password: only a fresh Google/Microsoft sign-in in this session proves identity.
+    if (!providerReauth(await currentSession(req)).fresh) throw new HttpError(401, "Vui lòng đăng nhập lại bằng Google hoặc nhập mật khẩu để thiết lập 2FA.");
+  } else if (!await bcrypt.compare(password, user.passwordHash)) throw new HttpError(401, "Thông tin xác thực không hợp lệ.");
   if (user.mustChangePassword) throw new HttpError(403, "Cần đổi mật khẩu được cấp trước khi thiết lập 2FA.");
   if (user.mfaEnabled) throw new HttpError(409, "2FA đã được bật.");
   const secret = new OTPAuth.Secret({ size: 20 }).base32;

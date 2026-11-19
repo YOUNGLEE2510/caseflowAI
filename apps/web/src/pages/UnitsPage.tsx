@@ -44,18 +44,30 @@ export function UnitsPage() {
   useEffect(() => { if (!property && data?.properties.length) setProperty(data.properties[0].code); }, [data, property]);
 
   const inProperty = useMemo(() => (data?.units || []).filter(unit => !property || unit.propertyCode === property), [data, property]);
-  const visible = inProperty.filter(unit => (occupancy === "rentable" ? unit.rentable : !occupancy || unit.occupancyStatus === occupancy)
-    && (!readiness || unit.readinessStatus === readiness) && (!query || unit.code.toLowerCase().includes(query.trim().toLowerCase())));
+  // Two independent filter groups (letting and readiness) that combine with AND.
+  const matchesOccupancy = (unit: UnitRow, value = occupancy) => value === "rentable" ? unit.rentable : !value || unit.occupancyStatus === value;
+  const matchesReadiness = (unit: UnitRow, value = readiness) => !value || unit.readinessStatus === value;
+  const matchesQuery = (unit: UnitRow) => !query || unit.code.toLowerCase().includes(query.trim().toLowerCase());
+  const visible = inProperty.filter(unit => matchesOccupancy(unit) && matchesReadiness(unit) && matchesQuery(unit));
   const floors = [...new Set(visible.map(unit => unit.floor))].sort((a, b) => Number(b) - Number(a) || b.localeCompare(a));
-  const count = (predicate: (unit: UnitRow) => boolean) => inProperty.filter(predicate).length;
-  const chips: Array<{ key: string; label: string; value: number; active: boolean; onClick: () => void; tone: string }> = [
-    { key: "all", label: text("Tất cả căn", "All units"), value: inProperty.length, active: !occupancy && !readiness, tone: "neutral", onClick: () => { setOccupancy(""); setReadiness(""); } },
-    { key: "rentable", label: text("Cho thuê được", "Ready to let"), value: count(unit => unit.rentable), active: occupancy === "rentable", tone: "success", onClick: () => { setOccupancy("rentable"); setReadiness(""); } },
-    ...(Object.keys(occupancyLabels) as Occupancy[]).map(key => ({ key, label: occupancyLabels[key][locale], value: count(unit => unit.occupancyStatus === key),
-      active: occupancy === key, tone: `occ-${key}`, onClick: () => { setOccupancy(key); setReadiness(""); } })),
-    ...(["needs_cleaning", "cleaned", "under_repair"] as Readiness[]).map(key => ({ key, label: readinessLabels[key][locale], value: count(unit => unit.readinessStatus === key),
-      active: readiness === key, tone: `ready-${key}`, onClick: () => { setReadiness(key); setOccupancy(""); } }))
+  type Chip = { key: string; label: string; value: number; active: boolean; onClick: () => void; tone: string };
+  // Each group's counts respect the other group's current choice, so the numbers match what clicking shows.
+  const occupancyChips: Chip[] = [
+    { key: "occ-all", label: text("Tất cả", "All"), value: inProperty.filter(unit => matchesReadiness(unit)).length, active: !occupancy, tone: "neutral", onClick: () => setOccupancy("") },
+    { key: "rentable", label: text("Cho thuê được", "Ready to let"), value: inProperty.filter(unit => unit.rentable && matchesReadiness(unit)).length, active: occupancy === "rentable", tone: "success",
+      onClick: () => setOccupancy(occupancy === "rentable" ? "" : "rentable") },
+    ...(Object.keys(occupancyLabels) as Occupancy[]).map(key => ({ key, label: occupancyLabels[key][locale],
+      value: inProperty.filter(unit => unit.occupancyStatus === key && matchesReadiness(unit)).length,
+      active: occupancy === key, tone: `occ-${key}`, onClick: () => setOccupancy(occupancy === key ? "" : key) }))
   ];
+  const readinessChips: Chip[] = [
+    { key: "ready-all", label: text("Tất cả", "All"), value: inProperty.filter(unit => matchesOccupancy(unit)).length, active: !readiness, tone: "neutral", onClick: () => setReadiness("") },
+    ...(Object.keys(readinessLabels) as Readiness[]).map(key => ({ key, label: readinessLabels[key][locale],
+      value: inProperty.filter(unit => unit.readinessStatus === key && matchesOccupancy(unit)).length,
+      active: readiness === key, tone: `ready-${key}`, onClick: () => setReadiness(readiness === key ? "" : key) }))
+  ];
+  const renderChips = (chips: Chip[]) => chips.map(chip => <button key={chip.key} type="button" className={`unit-chip unit-chip-${chip.tone}`} aria-pressed={chip.active} onClick={chip.onClick}>
+    <span>{chip.label}</span><strong>{chip.value}</strong></button>);
 
   return <div className="page-stack units-page">
     <PageHeader title={text("Căn hộ", "Units")} />
@@ -70,9 +82,15 @@ export function UnitsPage() {
         <label className="field units-search"><span>{text("Tìm căn", "Find unit")}</span>
           <span className="units-search-input"><Search size={16} aria-hidden="true" /><input value={query} maxLength={32} onChange={event => setQuery(event.target.value)} placeholder={text("Mã căn", "Unit code")} /></span></label>
       </div>
-      <div className="unit-chips" role="group" aria-label={text("Lọc theo tình trạng", "Filter by status")}>
-        {chips.map(chip => <button key={chip.key} type="button" className={`unit-chip unit-chip-${chip.tone}`} aria-pressed={chip.active} onClick={chip.onClick}>
-          <span>{chip.label}</span><strong>{chip.value}</strong></button>)}
+      <div className="unit-filter-groups">
+        <div className="unit-filter-group">
+          <span className="unit-filter-label" id="unit-filter-occupancy">{text("Tình trạng thuê", "Letting")}</span>
+          <div className="unit-chips" role="group" aria-labelledby="unit-filter-occupancy">{renderChips(occupancyChips)}</div>
+        </div>
+        <div className="unit-filter-group">
+          <span className="unit-filter-label" id="unit-filter-readiness">{text("Dọn dẹp / sửa chữa", "Cleaning / repair")}</span>
+          <div className="unit-chips" role="group" aria-labelledby="unit-filter-readiness">{renderChips(readinessChips)}</div>
+        </div>
       </div>
       {!visible.length ? <p className="empty-note">{text("Không có căn nào khớp bộ lọc.", "No units match the filters.")}</p> : null}
       {floors.map(floor => <section key={floor} className="unit-floor" aria-label={text(`Tầng ${Number(floor)}`, `Floor ${Number(floor)}`)}>
@@ -138,7 +156,7 @@ function UnitDialog({ unit, canLease, onClose, onSaved }: { unit: UnitRow; canLe
         {unit.statusNote ? <span>{unit.statusNote}</span> : null}
       </p>
       {unit.statusUpdatedAt ? <p className="unit-dialog-meta">{text("Cập nhật", "Updated")} {formatDate(unit.statusUpdatedAt)}{unit.statusUpdatedByName ? ` · ${unit.statusUpdatedByName}` : ""}</p> : null}
-      {unit.openCases ? <p><Link to={`/cases?search=${encodeURIComponent(unit.code)}`}>{text(`${unit.openCases} phản ánh đang mở`, `${unit.openCases} open requests`)}</Link></p> : null}
+      {unit.openCases ? <p><Link to={`/cases?${new URLSearchParams({ propertyCode: unit.propertyCode, unitCode: unit.code, status: "open" })}`}>{text(`${unit.openCases} phản ánh đang mở`, `${unit.openCases} open requests`)}</Link></p> : null}
       {data?.residents.length ? <div><h3>{text("Người thuê", "Tenants")}</h3><ul className="unit-residents">
         {data.residents.map(person => <li key={person._id}><Home size={14} aria-hidden="true" />{person.name} <small>{person.email}</small></li>)}</ul></div> : null}
       <form className="form-stack" onSubmit={submit}>

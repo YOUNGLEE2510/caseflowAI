@@ -59,10 +59,10 @@ test("student sees relevant controls and live unaccented knowledge matches", asy
   await expect(page.getByLabel("Mức ưu tiên", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Kênh tiếp nhận", { exact: true })).toHaveCount(0);
   await page.goto("/knowledge");
-  await page.getByLabel("Câu hỏi tra cứu").fill("MAT KHAU");
+  await page.getByLabel("Tìm trong danh mục").fill("MAT KHAU");
   await expect(page.locator(".article-list article").first()).toBeVisible();
   await expect(page.locator(".article-list article")).not.toHaveCount(0);
-  await page.getByLabel("Câu hỏi tra cứu").fill("zzunrelatedzz");
+  await page.getByLabel("Tìm trong danh mục").fill("zzunrelatedzz");
   await expect(page.locator(".article-list article")).toHaveCount(0);
   await expect(page.getByText("Không có tài liệu khớp từ khóa", { exact: true })).toBeVisible();
 });

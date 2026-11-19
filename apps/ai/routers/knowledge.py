@@ -1,6 +1,8 @@
+import json
 import os
 import re
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import APIRouter
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -23,6 +25,15 @@ VIETNAMESE_STOP_WORDS = frozenset({
     "sau", "sẽ", "sinh", "tác", "thì", "theo", "tôi", "trong", "trường", "và", "về", "với",
     "xin", "yêu", "định", "đến",
 })
+
+
+# Administrative topics the maintenance knowledge base does not cover (billing,
+# contracts, parking, amenities, house rules, office hours). They are matched in
+# the same TF-IDF space; when a question is closer to one of them than to any
+# procedure, the service abstains and points to the building office.
+# Topics and the margin were chosen on the dev question set only.
+OUT_OF_SCOPE_TOPICS = json.loads((Path(__file__).resolve().parent.parent / "data" / "out_of_scope_topics.json").read_text(encoding="utf-8"))
+OUT_OF_SCOPE_ANSWER = "Câu hỏi thuộc nghiệp vụ hành chính (thanh toán, hợp đồng, tiện ích, nội quy), không có trong kho quy trình kỹ thuật. Vui lòng liên hệ ban quản lý."
 
 
 def passages(content: str, limit: int = 650) -> list[str]:
@@ -56,6 +67,8 @@ def index_articles(articles: tuple[tuple[str, str, str, str, str], ...]):
         entries.extend((article_id, title, category, source_label, part, False) for part in passages(content))
     if not entries:
         return None
+    for topic in OUT_OF_SCOPE_TOPICS:
+        entries.append((topic["id"], topic["topic"], "out_of_scope", "", topic["text"], False))
     vectorizer = TfidfVectorizer(
         lowercase=True,
         ngram_range=(1, 2),
@@ -83,18 +96,24 @@ def retrieve_knowledge(request: KnowledgeRequest) -> dict:
         return empty
     scores = cosine_similarity(vectorizer.transform([request.query]), matrix).flatten()
     ranked = sorted(range(len(entries)), key=lambda i: scores[i], reverse=True)
+    best_scope = max((float(scores[i]) for i, entry in enumerate(entries) if entry[2] == "out_of_scope"), default=0.0)
+    best_procedure = max((float(scores[i]) for i, entry in enumerate(entries) if entry[2] != "out_of_scope"), default=0.0)
+    if best_scope > MIN_RETRIEVAL_SCORE and best_scope >= best_procedure:
+        return {"answer": OUT_OF_SCOPE_ANSWER, "citations": [], "outOfScope": True}
     citations = []
     seen = set()
     for position in ranked:
-        article_id, title, _, source_label, passage, is_title = entries[position]
+        article_id, title, category, source_label, passage, is_title = entries[position]
         score = float(scores[position])
+        if category == "out_of_scope":
+            continue
         if score <= MIN_RETRIEVAL_SCORE:
             break
         if article_id in seen:
             continue
         if is_title:
             body_positions = [i for i, entry in enumerate(entries)
-                              if entry[0] == article_id and not entry[5]]
+                              if entry[0] == article_id and not entry[5] and entry[2] != "out_of_scope"]
             if not body_positions:
                 continue
             body_position = max(body_positions, key=lambda i: scores[i])

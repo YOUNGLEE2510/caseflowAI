@@ -55,8 +55,35 @@ rentalRouter.put("/rental/catalog", manage, async (req, res) => {
     ...(item.kind === "unit" || item.kind === "asset" ? { propertyCode: item.propertyCode } : {}),
     ...(item.kind === "asset" ? { unitCode: item.unitCode || "" } : {})
   };
+  // Keep the letting status consistent with the resident list edited here.
+  let occupancySync: { $set: Record<string, unknown>; $push?: Record<string, unknown> } | null = null;
+  if (item.kind === "unit") {
+    const current = await RentalUnit.findOne(key).select("occupancyStatus readinessStatus").lean<{ occupancyStatus?: string; readinessStatus?: string }>();
+    const occupancy = current?.occupancyStatus || "vacant";
+    const now = new Date();
+    const note = item.residentIds.length ? "Gán người thuê qua danh mục" : "Gỡ hết người thuê qua danh mục";
+    const changes: Array<{ axis: string; from: string; to: string }> = [];
+    if (!item.residentIds.length && ["occupied", "notice"].includes(occupancy)) {
+      changes.push({ axis: "occupancy", from: occupancy, to: "vacant" });
+      if ((current?.readinessStatus || "ready") !== "needs_cleaning" && (current?.readinessStatus || "ready") !== "under_repair") {
+        changes.push({ axis: "readiness", from: current?.readinessStatus || "ready", to: "needs_cleaning" });
+      }
+    } else if (item.residentIds.length && ["vacant", "reserved"].includes(occupancy)) {
+      changes.push({ axis: "occupancy", from: occupancy, to: "occupied" });
+    }
+    if (changes.length) {
+      occupancySync = {
+        $set: { ...Object.fromEntries(changes.map(change => [change.axis === "occupancy" ? "occupancyStatus" : "readinessStatus", change.to])),
+          statusNote: note, statusUpdatedAt: now, statusUpdatedByName: actor.actorName },
+        $push: { statusHistory: { $each: changes.map(change => ({ ...change, note, actorName: actor.actorName, at: now })), $slice: -200 } }
+      };
+    }
+  }
   try {
-    await model.updateOne(key, { $set: { ...fields, ...(item.kind === "asset" ? { unitCode: item.unitCode || "" } : {}) } }, { upsert: true, runValidators: true });
+    await model.updateOne(key, {
+      $set: { ...fields, ...(item.kind === "asset" ? { unitCode: item.unitCode || "" } : {}), ...(occupancySync?.$set || {}) },
+      ...(occupancySync?.$push ? { $push: occupancySync.$push } : {})
+    }, { upsert: true, runValidators: true });
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && error.code === 11000) {
       throw new HttpError(409, "Mã thiết bị đã được dùng tại vị trí khác. Không được đổi vị trí hoặc mã của thiết bị cũ.");

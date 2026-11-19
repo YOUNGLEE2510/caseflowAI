@@ -16,6 +16,8 @@ export interface RefreshSessionRecord {
   remember: boolean;
   expiresAt: Date;
   mfaVerified?: boolean;
+  authMethod?: "password" | "google" | "microsoft";
+  authenticatedAt?: Date | null;
 }
 
 export const REFRESH_COOKIE = "caseflow_refresh";
@@ -31,13 +33,14 @@ export function checkRefreshOrigin(req: Request) {
   if (req.headers["sec-fetch-site"] === "cross-site") throw new HttpError(403, "Cross-site request not allowed.");
 }
 
-export async function createRefreshSession(res: Response, user: Pick<PublicUserSource, "_id" | "organizationId" | "tokenVersion">, remember: boolean, previous?: RefreshSessionRecord) {
+export async function createRefreshSession(res: Response, user: Pick<PublicUserSource, "_id" | "organizationId" | "tokenVersion">, remember: boolean, previous?: RefreshSessionRecord, authMethod: "password" | "google" | "microsoft" = "password") {
   const token = randomBytes(32).toString("hex");
   const expiresAt = previous?.expiresAt || new Date(Date.now() + config.REFRESH_TTL_DAYS * 86400000);
   const session = await RefreshSession.create({
     userId: user._id, organizationId: user.organizationId,
     tokenHash: hashRefreshToken(token), familyId: previous?.familyId || randomUUID(),
-    tokenVersion: user.tokenVersion || 0, remember, expiresAt, mfaVerified: previous?.mfaVerified || false
+    tokenVersion: user.tokenVersion || 0, remember, expiresAt, mfaVerified: previous?.mfaVerified || false,
+    authMethod: previous?.authMethod || authMethod, authenticatedAt: previous ? previous.authenticatedAt || null : new Date()
   });
   // A replay can revoke the family while the replacement is being inserted.
   if (previous && await RefreshSession.exists({ familyId: previous.familyId, revokedAt: { $ne: null } })) {

@@ -27,19 +27,41 @@ interface IntakeAnalysis {
   needsReview: boolean;
 }
 
+type CaseDraft = { title: string; description: string; serviceKey: string; customFields: Record<string, string>; propertyCode: string;
+  unitCode: string; assetCode: string; priority: string; channel: string; requesterId: string; savedAt: string };
+
+function readDraft(key: string): CaseDraft | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(key) || "null") as Partial<CaseDraft> | null;
+    if (!value || typeof value !== "object") return null;
+    const str = (input: unknown) => (typeof input === "string" ? input : "");
+    const fields = value.customFields && typeof value.customFields === "object"
+      ? Object.fromEntries(Object.entries(value.customFields).filter(([, item]) => typeof item === "string")) as Record<string, string> : {};
+    return { title: str(value.title).slice(0, 200), description: str(value.description).slice(0, 5000), serviceKey: str(value.serviceKey), customFields: fields,
+      propertyCode: str(value.propertyCode), unitCode: str(value.unitCode), assetCode: str(value.assetCode), priority: str(value.priority) || "normal",
+      channel: str(value.channel) || "portal", requesterId: str(value.requesterId), savedAt: str(value.savedAt) };
+  } catch {
+    return null;
+  }
+}
+
 export function NewCasePage() {
   const navigate = useNavigate();
   const { locale, text } = useLocale();
   const { user } = useAuth();
   const confirm = useConfirmation();
   const { data: serviceData } = useApiData<{ services: ServiceDefinition[] }>("/services");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [serviceKey, setServiceKey] = useState("");
-  const [customFields, setCustomFields] = useState<Record<string, string>>({});
-  const [propertyCode, setPropertyCode] = useState("");
-  const [unitCode, setUnitCode] = useState("");
-  const [assetCode, setAssetCode] = useState("");
+  // The draft lives in this tab's sessionStorage: it survives moving between pages and is gone when the tab closes.
+  const draftKey = `caseflow.draft.new-case.${user?.id || "anonymous"}`;
+  const [initialDraft] = useState(() => readDraft(draftKey));
+  const [title, setTitle] = useState(initialDraft?.title || "");
+  const [description, setDescription] = useState(initialDraft?.description || "");
+  const [serviceKey, setServiceKey] = useState(initialDraft?.serviceKey || "");
+  const [customFields, setCustomFields] = useState<Record<string, string>>(initialDraft?.customFields || {});
+  const [propertyCode, setPropertyCode] = useState(initialDraft?.propertyCode || "");
+  const [unitCode, setUnitCode] = useState(initialDraft?.unitCode || "");
+  const [assetCode, setAssetCode] = useState(initialDraft?.assetCode || "");
+  const [draftRestoredAt, setDraftRestoredAt] = useState(initialDraft?.savedAt || "");
   const { data: catalog } = useApiData<{
     properties: { code: string; name: string }[];
     units: { propertyCode: string; code: string }[];
@@ -51,9 +73,9 @@ export function NewCasePage() {
     const allowed = serviceData?.services.find(service => service.key === key)?.requiredFields || [];
     setCustomFields(current => retainServiceFields(current, allowed));
   }
-  const [priority, setPriority] = useState("normal");
-  const [channel, setChannel] = useState("portal");
-  const [requesterId, setRequesterId] = useState("");
+  const [priority, setPriority] = useState(initialDraft?.priority || "normal");
+  const [channel, setChannel] = useState(initialDraft?.channel || "portal");
+  const [requesterId, setRequesterId] = useState(initialDraft?.requesterId || "");
   const [requesterSearch, setRequesterSearch] = useState("");
   const [requesterOptions, setRequesterOptions] = useState<Array<{ _id: string; name: string }>>([]);
   useEffect(() => {
@@ -67,6 +89,29 @@ export function NewCasePage() {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [requesterSearch, user?.role]);
   const [files, setFiles] = useState<File[]>([]);
+  const hasDraft = Boolean(title.trim() || description.trim() || Object.values(customFields).some(value => value.trim()));
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        if (!hasDraft) { sessionStorage.removeItem(draftKey); return; }
+        sessionStorage.setItem(draftKey, JSON.stringify({ title, description, serviceKey, customFields, propertyCode, unitCode, assetCode,
+          priority, channel, requesterId, savedAt: new Date().toISOString() } satisfies CaseDraft));
+      } catch { /* Storage can be unavailable; the form still works. */ }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, hasDraft, title, description, serviceKey, customFields, propertyCode, unitCode, assetCode, priority, channel, requesterId]);
+  useEffect(() => {
+    // Closing or reloading the tab would lose attached files and the draft itself.
+    if (!hasDraft) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasDraft]);
+  function discardDraft() {
+    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setTitle(""); setDescription(""); setServiceKey(""); setCustomFields({}); setPropertyCode(""); setUnitCode(""); setAssetCode("");
+    setPriority("normal"); setChannel("portal"); setRequesterId(""); setDraftRestoredAt("");
+  }
   const submission = useRef<{ body: string; key: string } | null>(null);
   const [analysis, setAnalysis] = useState<IntakeAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -138,6 +183,7 @@ export function NewCasePage() {
           failedUploads.push(file.name);
         }
       }
+      try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
       navigate(`/cases/${response.case._id}`, {
         state: failedUploads.length
           ? {
@@ -165,6 +211,11 @@ export function NewCasePage() {
         )}
       />
 
+      {draftRestoredAt ? <div className="draft-notice" role="status">
+        <span>{text(`Đã khôi phục bản nháp lưu lúc ${new Date(draftRestoredAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}. Tệp đính kèm cần chọn lại.`,
+          `Restored the draft saved at ${new Date(draftRestoredAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. Attach files again.`)}</span>
+        <button type="button" className="button button-secondary button-small" onClick={discardDraft}>{text("Xoá nháp", "Discard draft")}</button>
+      </div> : null}
       <form className="intake-layout" onSubmit={submit}>
         <section className="panel intake-form">
           <div className="section-heading">

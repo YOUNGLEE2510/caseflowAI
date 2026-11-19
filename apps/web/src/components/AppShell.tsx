@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import {
   Bell,
   Activity,
@@ -16,6 +16,7 @@ import {
   Users,
   Workflow,
   Building2,
+  Lock,
   X
 } from "lucide-react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -147,6 +148,14 @@ export function AppShell() {
   const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role));
   const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role));
   const organizationName = user?.organizationName || text("Tổ chức của bạn", "Your organization");
+  // Until a required security step is done every page except Profile is locked; say so instead of bouncing silently.
+  const securityLocked = Boolean(user?.securityRequired);
+  const lockedNavClick = (event: ReactMouseEvent, to: string) => {
+    if (!securityLocked || to === "/profile") return;
+    event.preventDefault();
+    navigate("/profile#account-security");
+    document.getElementById("account-security")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   function toggleSidebar() {
     setCollapsed(current => {
       try { localStorage.setItem("caseflow.sidebar.collapsed", String(!current)); } catch { /* The toggle still works when browser storage is unavailable. */ }
@@ -276,12 +285,13 @@ export function AppShell() {
                 title={text(item.label.vi, item.label.en)}
                 aria-label={text(item.label.vi, item.label.en)}
                 end={item.to === "/overview" || item.to === "/cases"}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+                onClick={event => { setMobileOpen(false); lockedNavClick(event, item.to); }}
+                aria-disabled={securityLocked || undefined}
+                className={({ isActive }) => `nav-item ${isActive ? "active" : ""} ${securityLocked ? "nav-locked" : ""}`}
               >
                 <Icon size={18} />
                 <span>{text(item.label.vi, item.label.en)}</span>
-                {item.badge ? <small className="nav-badge">{item.badge}</small> : null}
+                {securityLocked ? <Lock size={14} className="nav-lock" aria-hidden="true" /> : item.badge ? <small className="nav-badge">{item.badge}</small> : null}
               </NavLink>
             );
           })}
@@ -295,11 +305,13 @@ export function AppShell() {
                 to={item.to}
                 title={text(item.label.vi, item.label.en)}
                 aria-label={text(item.label.vi, item.label.en)}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+                onClick={event => { setMobileOpen(false); lockedNavClick(event, item.to); }}
+                aria-disabled={securityLocked || undefined}
+                className={({ isActive }) => `nav-item ${isActive ? "active" : ""} ${securityLocked ? "nav-locked" : ""}`}
               >
                 <Icon size={18} />
                 <span>{text(item.label.vi, item.label.en)}</span>
+                {securityLocked ? <Lock size={14} className="nav-lock" aria-hidden="true" /> : null}
               </NavLink>
             );
           })}
@@ -439,6 +451,12 @@ export function AppShell() {
         </header>
 
         <main className="content">
+          {securityLocked ? <div className="security-lock-banner" role="status">
+            <Lock size={18} aria-hidden="true" />
+            <p><strong>{user?.mustChangePassword ? text("Cần đổi mật khẩu được cấp trước khi dùng hệ thống.", "Change your temporary password before using the system.") : text("Tài khoản quản trị cần bật xác thực hai bước trước khi dùng hệ thống.", "Administrator accounts must turn on two-factor authentication first.")}</strong>
+              {" "}{text("Các mục khác tạm khoá cho tới khi hoàn tất bước này.", "Other sections stay locked until this step is done.")}</p>
+            {location.pathname !== "/profile" ? <Link className="button button-primary button-small" to="/profile#account-security">{text("Làm ngay", "Do it now")}</Link> : null}
+          </div> : null}
           <Outlet />
         </main>
 
@@ -456,7 +474,9 @@ export function AppShell() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
-                className={isActive ? "active" : ""}
+                onClick={event => lockedNavClick(event, item.to)}
+                aria-disabled={securityLocked || undefined}
+                className={`${isActive ? "active" : ""} ${securityLocked && item.to !== "/profile" ? "nav-locked" : ""}`}
               >
                 <Icon size={20} />
                 <span>{text(item.label.vi, item.label.en)}</span>

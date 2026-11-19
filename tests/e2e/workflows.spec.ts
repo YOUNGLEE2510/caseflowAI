@@ -80,13 +80,13 @@ test("knowledge drafting displays citations and retrieval fallback without exter
   });
   await page.goto("/knowledge");
   await page.getByRole("checkbox", { name: "Soạn bản nháp qua dịch vụ AI bên ngoài" }).check();
-  await page.getByLabel("Câu hỏi tra cứu").fill("Tôi cần hỗ trợ tài khoản");
-  await page.getByRole("button", { name: "Tra cứu", exact: true }).click();
+  await page.getByLabel("Câu hỏi cho kho tri thức").fill("Tôi cần hỗ trợ tài khoản");
+  await page.getByRole("button", { name: "Hỏi", exact: true }).click();
   await expect(page.getByText("Bản nháp · Cần kiểm duyệt", { exact: true })).toBeVisible();
   await expect(page.getByText("[S1] Quy trình hỗ trợ", { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await overflow(page);
-  await page.getByRole("button", { name: "Tra cứu", exact: true }).click();
+  await page.getByRole("button", { name: "Hỏi", exact: true }).click();
   await expect(page.getByText("Đang hiển thị kết quả tra cứu nội bộ.", { exact: true })).toBeVisible();
   await expect(page.getByText("Bản nháp · Cần kiểm duyệt", { exact: true })).toHaveCount(0);
 });

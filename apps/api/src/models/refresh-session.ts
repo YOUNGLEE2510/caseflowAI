@@ -9,6 +9,9 @@ const schema = new Schema({
   tokenVersion: { type: Number, required: true },
   remember: { type: Boolean, default: false },
   mfaVerified: { type: Boolean, default: false },
+  // How the family was opened and when the person last proved who they are.
+  authMethod: { type: String, enum: ["password", "google", "microsoft"], default: "password" },
+  authenticatedAt: { type: Date, default: null },
   expiresAt: { type: Date, required: true },
   consumedAt: { type: Date, default: null },
   revokedAt: { type: Date, default: null }

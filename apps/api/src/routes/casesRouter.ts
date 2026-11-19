@@ -106,7 +106,16 @@ casesRouter.get("/cases", async (req, res) => {
   if (req.auth!.role === "requester" || req.query.mine === "true") {
     filter.requesterId = req.auth!.id;
   }
-  if (typeof req.query.status === "string" && req.query.status !== "all") filter.status = z.enum(CASE_STATUSES).parse(req.query.status);
+  if (typeof req.query.status === "string" && req.query.status !== "all") {
+    // "open" matches the unit board's count: everything not resolved or closed.
+    filter.status = req.query.status === "open" ? { $nin: ["resolved", "closed"] } : z.enum(CASE_STATUSES).parse(req.query.status);
+  }
+  const locationCode = z.string().trim().regex(/^[a-z\d-]{1,32}$/i).transform(value => value.toUpperCase());
+  if (typeof req.query.propertyCode === "string" && req.query.propertyCode) filter.propertyCode = locationCode.parse(req.query.propertyCode);
+  if (typeof req.query.unitCode === "string" && req.query.unitCode) {
+    if (!filter.propertyCode) throw new HttpError(422, "Cần chọn cơ sở khi lọc theo căn.");
+    filter.unitCode = locationCode.parse(req.query.unitCode);
+  }
   if (typeof req.query.priority === "string" && req.query.priority !== "all") filter.priority = z.enum(["low", "normal", "high", "urgent"]).parse(req.query.priority);
   if (typeof req.query.serviceKey === "string" && req.query.serviceKey !== "all") filter.serviceKey = req.query.serviceKey.slice(0, 50);
   const queue = z.enum(["all", "unassigned", "assigned", "overdue", "due_soon", "at_risk"]).parse(req.query.queue || "all");

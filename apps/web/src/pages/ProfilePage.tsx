@@ -145,10 +145,7 @@ export function ProfilePage() {
         description={text("Quản lý thông tin cá nhân và bảo mật tài khoản.", "Manage your personal information and account security.")}
       />
 
-      {user?.securityRequired && <p role="alert" className="form-error">
-        {user.mustChangePassword ? text("Cần đổi mật khẩu được cấp để tiếp tục. ", "Change your temporary password to continue. ") : text("Cần hoàn tất xác thực hai bước để tiếp tục. ", "Complete two-factor authentication to continue. ")}
-        <a href={user.mustChangePassword ? "#account-password" : "#account-security"}>{text("Mở biểu mẫu", "Open form")}</a>
-      </p>}
+
 
       {/* ── Profile Info ── */}
       <section className="panel profile-panel">
@@ -300,7 +297,7 @@ export function ProfilePage() {
         )}
       </section>
 
-      <SecuritySettings />
+      <SecuritySettings organizationSlug={user?.organizationSlug || ""} />
       <section className="panel profile-panel" id="account-password">
         <div className="profile-section-header">
           <Shield size={20} />

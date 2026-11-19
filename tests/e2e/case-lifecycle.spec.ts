@@ -53,6 +53,8 @@ test("profile change survives reload", async ({ page }) => {
   await page.getByLabel("Họ tên", { exact: true }).fill("Người dùng kiểm thử QA");
   await page.getByRole("button", { name: "Lưu thay đổi", exact: true }).click();
   await page.getByRole("dialog", { name: "Lưu thông tin cá nhân?" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
+  // Wait for the save to land before reloading, otherwise the reload can race the request.
+  await expect(page.getByRole("heading", { name: "Người dùng kiểm thử QA", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Người dùng kiểm thử QA", exact: true })).toBeVisible();
 });

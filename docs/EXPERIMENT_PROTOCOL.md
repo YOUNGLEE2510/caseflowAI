@@ -67,7 +67,10 @@ Ngưỡng điểm tối thiểu để coi một đoạn là căn cứ được c
 | Ngưỡng | Hit@1 | Hit@3 | Recall@5 | MRR | Từ chối đúng câu ngoài phạm vi |
 |---|---|---|---|---|---|
 | 0,03 (cũ) | 0,77 | 0,88 | 0,90 | 0,83 | 0,00 |
-| **0,15 (hiện tại)** | **0,77** | **0,85** | **0,85** | **0,80** | **0,75** |
+| 0,15 | 0,77 | 0,85 | 0,85 | 0,80 | 0,75 |
+| **0,15 + chủ đề ngoài phạm vi (hiện tại)** | **0,77** | **0,85** | **0,85** | **0,80** | **1,00\*** |
+
+\*Bổ sung ngày 19/11/2026: thêm 6 "chủ đề ngoài phạm vi" (thanh toán, hợp đồng, gửi xe, tiện ích, nội quy, giờ làm việc — `apps/ai/data/out_of_scope_topics.json`). Khi câu hỏi gần một chủ đề này hơn mọi quy trình, dịch vụ từ chối và chuyển ban quản lý. Cách làm và biên được chọn trên bộ dev (từ chối đúng 0,38 → 0,88, Hit@1 giữ 0,82). **Lưu ý trung thực:** bản sửa được làm sau khi đã thấy 3 câu bị trả nhầm trên bộ kiểm tra, nên con số 1,00 không còn là đánh giá mù; con số đưa vào báo cáo phải lấy từ tập câu hỏi mới do người thật viết.
 
 Ngưỡng mới đánh đổi một chút độ bao phủ để không trích dẫn tài liệu không liên quan khi kho thiếu căn cứ. Giới hạn: tìm kiếm theo từ (TF-IDF) nhầm khi câu hỏi dùng từ đồng nghĩa hoặc không dấu trùng âm (ví dụ "do" trong "đỗ xe" và "chế độ"); cải tiến kế tiếp là embedding tiếng Việt hoặc kết hợp BM25 + embedding, đánh giá lại trên cùng bộ kiểm tra.
 
@@ -95,7 +98,7 @@ Bộ quá nhỏ để kết luận; ngưỡng 0,5 chưa hiệu chỉnh. Cần m�
 | Thành phần | Tiêu chí | Hiện trạng (dữ liệu mô phỏng) |
 |---|---|---|
 | Phân loại | Macro-F1 trên tập người thật viết cao hơn luật từ khóa; không nhãn nào có recall dưới 0,70 | Mô phỏng: 0,95 vs 0,54; recall thấp nhất 0,80. **Chưa có tập thật** |
-| Truy xuất | Hit@3 ≥ 0,80 và từ chối đúng ≥ 0,70 trên bộ câu hỏi khóa | 0,85 và 0,75 (bộ mô phỏng) |
+| Truy xuất | Hit@3 ≥ 0,80 và từ chối đúng ≥ 0,70 trên bộ câu hỏi khóa | 0,85 và 0,75 (bộ mô phỏng, trước khi thêm chủ đề ngoài phạm vi) |
 | Ưu tiên | Recall khẩn cấp ≥ 0,95 | 0,79 — **chưa đạt** |
 | Liên quan | F1 ≥ 0,80 trên ≥ 30 kịch bản | Chưa đủ kịch bản |
 | Đồng thuận nhãn | Cohen's kappa ≥ 0,61 | Chưa đo |

@@ -1,0 +1,8 @@
+[
+  {"id": "oos-billing", "topic": "Thanh toán và phí", "text": "thanh toán tiền thuê hóa đơn tiền điện tiền nước giá điện giá nước phí dịch vụ phí quản lý chuyển khoản ngân hàng thẻ ngân hàng thẻ tín dụng ví điện tử đóng tiền trả tiền công nợ biên lai"},
+  {"id": "oos-contract", "topic": "Hợp đồng và giá thuê", "text": "hợp đồng thuê gia hạn hợp đồng chấm dứt hợp đồng đặt cọc tiền cọc giá thuê thuê theo ngày thuê theo tháng thuê ngắn hạn đổi căn chuyển căn giấy tờ thuê nhà đăng ký tạm trú"},
+  {"id": "oos-parking", "topic": "Gửi xe", "text": "gửi xe bãi đỗ xe hầm xe vé tháng gửi xe máy ô tô xe đạp chỗ đậu xe"},
+  {"id": "oos-amenities", "topic": "Tiện ích tòa nhà", "text": "tiện ích tòa nhà hồ bơi phòng gym phòng tập sân chơi trẻ em sân thượng khu bbq dịch vụ giặt ủi giặt là theo ký dọn phòng định kỳ dịch vụ thêm"},
+  {"id": "oos-house-rules", "topic": "Nội quy", "text": "nội quy hút thuốc ban công nuôi thú cưng chó mèo khách ở qua đêm giờ yên tĩnh tiệc tùng tiếng ồn hàng xóm trang trí căn hộ khoan tường treo tranh"},
+  {"id": "oos-office", "topic": "Ban quản lý và liên hệ", "text": "giờ làm việc ban quản lý làm việc chủ nhật ngày lễ số điện thoại liên hệ văn phòng tòa nhà gặp trực tiếp quản lý"}
+]

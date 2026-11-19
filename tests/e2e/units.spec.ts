@@ -22,6 +22,8 @@ test("housekeeping marks a returned unit clean and the manager lets it again", a
   await dialog.getByLabel("Ghi chú").fill("Đã dọn và kiểm tra thiết bị");
   await dialog.getByRole("button", { name: "Lưu trạng thái" }).click();
   await expect(dialog).toHaveCount(0);
+  // Letting and readiness filters combine, so clear the readiness filter first.
+  await page.getByRole("group", { name: "Dọn dẹp / sửa chữa" }).getByRole("button", { name: /Tất cả/ }).click();
   await page.locator(".unit-chip").filter({ hasText: "Cho thuê được" }).click();
   await expect(page.locator(".unit-tile").filter({ hasText: "A303" })).toContainText("Cho thuê được");
 

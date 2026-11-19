@@ -306,7 +306,7 @@ authRouter.post(["/auth/google/exchange", "/auth/microsoft/exchange"], async (re
   if (!user || !organization) throw new HttpError(401, "Tài khoản không còn khả dụng.");
 
   const payload = publicUser(user, organization);
-  const session = await createRefreshSession(res, user, Boolean(ticket.remember));
+  const session = await createRefreshSession(res, user, Boolean(ticket.remember), undefined, provider);
   const token = issueAccessToken(user, session.familyId);
   await logAudit({
     organizationId: String(organization._id), actorId: String(user._id), actorName: user.name,

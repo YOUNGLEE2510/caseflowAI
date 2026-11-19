@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { config } from "../config.js";
 import { HttpError } from "../middleware/error.js";
-import { CaseRecord, Organization, ServiceDefinition, User } from "../models.js";
+import { CaseRecord, Organization, QrIntakeGuard, ServiceDefinition, User } from "../models.js";
 import { RentalProperty, RentalUnit } from "../models/rental.js";
 import { fallbackClassify } from "../services/aiClient.js";
 import { logAudit } from "../services/helpers.js";
@@ -85,30 +85,51 @@ publicIntakeRouter.post("/public/qr/:token/reports", async (req, res) => {
   const input = reportSchema.parse(req.body);
   if (input.website) throw new HttpError(422, "Dữ liệu không hợp lệ.");
   const organizationId = unit.organizationId;
-  const since = new Date(Date.now() - 24 * 3_600_000);
-  const recent = await CaseRecord.find({ organizationId, "intakeVerification.reporterPhone": input.phone, createdAt: { $gte: since } })
-    .select("code propertyCode unitCode description createdAt").sort({ createdAt: -1 }).limit(PHONE_DAILY_LIMIT + 1)
-    .lean<Array<{ code: string; propertyCode?: string; unitCode?: string; description: string; createdAt: Date }>>();
-  const duplicate = recent.find(item => item.propertyCode === unit.propertyCode && item.unitCode === unit.code && item.description === input.description
-    && Date.now() - item.createdAt.getTime() < DUPLICATE_WINDOW_MS);
-  if (duplicate) {
-    res.status(200).json({ code: duplicate.code, duplicate: true, message: "Phản ánh này đã được ghi nhận trước đó." });
+  const isDuplicateKey = (error: unknown) => typeof error === "object" && error !== null && "code" in error && error.code === 11000;
+  const digest = (...parts: string[]) => createHash("sha256").update(JSON.stringify(parts)).digest("hex");
+  const code = `CF-${new Date().getFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`;
+
+  // 1. Claim this exact report atomically, so concurrent copies resolve to one case.
+  const duplicateKey = `dup:${digest(String(organizationId), unit.propertyCode, unit.code, input.phone, input.description)}`;
+  try {
+    await QrIntakeGuard.create({ key: duplicateKey, caseCode: code, expiresAt: new Date(Date.now() + DUPLICATE_WINDOW_MS) });
+  } catch (error) {
+    if (!isDuplicateKey(error)) throw error;
+    const claim = await QrIntakeGuard.findOne({ key: duplicateKey }).select("caseCode").lean<{ caseCode: string }>();
+    res.status(200).json({ code: claim?.caseCode || "", duplicate: true, message: "Phản ánh này đã được ghi nhận trước đó." });
     return;
   }
-  if (recent.length >= PHONE_DAILY_LIMIT) throw new HttpError(429, "Số điện thoại này đã gửi nhiều phản ánh trong hôm nay. Vui lòng gọi trực tiếp ban quản lý.");
+  const releaseClaim = () => QrIntakeGuard.deleteOne({ key: duplicateKey, caseCode: code });
+
+  // 2. Reserve one slot of the phone's daily quota (Vietnam calendar day) with a conditional increment.
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+  const quotaKey = `quota:${digest(String(organizationId), input.phone)}:${day}`;
+  try {
+    await QrIntakeGuard.updateOne({ key: quotaKey }, { $setOnInsert: { count: 0, expiresAt: new Date(Date.now() + 48 * 3_600_000) } }, { upsert: true });
+  } catch (error) {
+    if (!isDuplicateKey(error)) { await releaseClaim(); throw error; }
+  }
+  const reserved = await QrIntakeGuard.findOneAndUpdate({ key: quotaKey, count: { $lt: PHONE_DAILY_LIMIT } }, { $inc: { count: 1 } }, { new: true }).lean();
+  if (!reserved) {
+    await releaseClaim();
+    throw new HttpError(429, "Số điện thoại này đã gửi nhiều phản ánh trong hôm nay. Vui lòng gọi trực tiếp ban quản lý.");
+  }
+  const releaseQuota = () => QrIntakeGuard.updateOne({ key: quotaKey, count: { $gt: 0 } }, { $inc: { count: -1 } });
 
   const service = (await ServiceDefinition.findOne({ organizationId, key: input.category || "general_support", active: true }).lean<{ key: string; category: string; team: string; slaHours: number }>())
     || await ServiceDefinition.findOne({ organizationId, key: "general_support", active: true }).lean<{ key: string; category: string; team: string; slaHours: number }>();
-  if (!service) throw new HttpError(503, "Ban quản lý chưa mở tiếp nhận qua mã QR. Vui lòng gọi trực tiếp.");
+  if (!service) {
+    await Promise.all([releaseClaim(), releaseQuota()]);
+    throw new HttpError(503, "Ban quản lý chưa mở tiếp nhận qua mã QR. Vui lòng gọi trực tiếp.");
+  }
   const requesterId = await qrRequester(organizationId);
   const classification = fallbackClassify(input.description);
   const title = input.description.split(/[.!?\n]/)[0].trim().slice(0, 120) || "Phản ánh qua mã QR";
   const dueAt = addBusinessHours(new Date(), service.slaHours, organizationCalendar(organization.settings));
   let record: any;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
+  try {
       record = await CaseRecord.create({
-        code: `CF-${new Date().getFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`,
+        code,
         organizationId, title, description: input.description, serviceKey: service.key, category: service.category,
         priority: "normal", status: "new", channel: "qr", requesterId, requesterName: input.name,
         createdById: null, createdByName: "", team: service.team, dueAt,
@@ -123,10 +144,10 @@ publicIntakeRouter.post("/public/qr/:token/reports", async (req, res) => {
           { type: "ai_triage", label: `Đã tiếp nhận tại ${service.team}; chờ nhân viên xác minh và phân loại`, actorName: "CaseFlow AI", internal: true }
         ]
       });
-      break;
-    } catch (error) {
-      if (!(typeof error === "object" && error && "code" in error && error.code === 11000) || attempt === 2) throw error;
-    }
+  } catch (error) {
+    // Free the claim and quota slot so the reporter can retry after a failure.
+    await Promise.all([releaseClaim(), releaseQuota()]);
+    throw error;
   }
   if (config.CASE_TRIAGE_MODE === "inline") await processCaseTriage({ caseId: String(record._id), organizationId: String(organizationId) });
   // Audit without the reporter's phone number or text.

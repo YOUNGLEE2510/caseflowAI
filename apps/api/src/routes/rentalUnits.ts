@@ -72,7 +72,8 @@ rentalUnitsRouter.get("/rental/units/:property/:code/status", staff, async (req,
 const statusSchema = z.object({
   occupancyStatus: z.enum(UNIT_OCCUPANCY).optional(),
   readinessStatus: z.enum(UNIT_READINESS).optional(),
-  availableFrom: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).nullable().optional(),
+  // z.iso.date() rejects impossible days such as 2026-02-31 instead of rolling them over.
+  availableFrom: z.string().datetime({ offset: true }).or(z.iso.date()).nullable().optional(),
   releaseResidents: z.boolean().optional(),
   note: z.string().trim().min(3).max(300)
 }).strict();

@@ -94,4 +94,28 @@ describe("unit board", () => {
     const history = await call("/rental/units/TOWER-A/A301/status", people.manager);
     expect(history.body.history.map((item: any) => `${item.axis}:${item.to}`)).toEqual(["readiness:needs_cleaning", "occupancy:vacant", "occupancy:notice"]);
   });
+  it("syncs the letting status when tenants are added or removed in the catalog", async () => {
+    const put = (residentIds: string[]) => call("/rental/catalog", people.manager, "PUT", { kind: "unit", propertyCode: "TOWER-A", code: "A304", floor: "3", residentIds });
+    expect((await put([String(people.tenant._id)])).status).toBe(204);
+    let unit = (await call("/rental/units", people.manager)).body.units.find((item: any) => item.code === "A304");
+    expect(unit).toMatchObject({ occupancyStatus: "occupied", residentCount: 1 });
+    expect((await put([])).status).toBe(204);
+    unit = (await call("/rental/units", people.manager)).body.units.find((item: any) => item.code === "A304");
+    expect(unit).toMatchObject({ occupancyStatus: "vacant", readinessStatus: "needs_cleaning", residentCount: 0 });
+    const history = await call("/rental/units/TOWER-A/A304/status", people.manager);
+    expect(history.body.history.map((item: any) => `${item.axis}:${item.to}`).sort()).toEqual(["occupancy:occupied", "occupancy:vacant", "readiness:needs_cleaning"]);
+  });
+
+  it("filters the case list by unit and open status to match the board count", async () => {
+    const cases = await call("/cases?propertyCode=TOWER-A&unitCode=A301&status=open", people.manager);
+    expect(cases.status).toBe(200);
+    expect(cases.body.cases.map((item: any) => item.code)).toEqual(["U-1"]);
+    expect((await call("/cases?propertyCode=TOWER-A&unitCode=A302&status=open", people.manager)).body.cases).toHaveLength(0);
+    expect((await call("/cases?unitCode=A301", people.manager)).status).toBe(422);
+  });
+
+  it("rejects calendar dates that do not exist", async () => {
+    expect((await status("A303", people.manager, { availableFrom: "2026-02-31", note: "Ngày sai" })).status).toBe(400);
+    expect((await status("A303", people.manager, { availableFrom: "2026-02-28", note: "Ngày đúng" })).status).toBe(204);
+  });
 });

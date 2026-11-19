@@ -788,6 +788,25 @@ describe("tenant and privacy boundaries", () => {
     await expect(first.json()).resolves.toMatchObject({ remember: false, user: { email: requester.email } });
     expect((await exchange()).status).toBe(401);
   });
+  it("lets a fresh Google session set up 2FA without a password, but not a password session", async () => {
+    const rawTicket = randomBytes(32).toString("hex");
+    await models.OAuthLoginTicket.create({ organizationId: org._id, userId: admin._id, provider: "google",
+      tokenHash: createHash("sha256").update(rawTicket).digest("hex"), remember: false, expiresAt: new Date(Date.now() + 60_000) });
+    const exchange = await fetch(`${base}/api/auth/google/exchange`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket: rawTicket }) });
+    const { token: googleToken } = await exchange.json() as { token: string };
+    const security = await request("/profile/security", googleToken);
+    expect(security.body).toMatchObject({ signInMethod: "google", providerReauthFresh: true });
+    expect((await request("/profile/mfa/setup", googleToken, "POST", {})).status).toBe(200);
+
+    const passwordLogin = await request("/auth/login", admin, "POST", { organizationSlug: org.slug, email: admin.email, password: "TestPassword123!" });
+    expect((await request("/profile/security", passwordLogin.body.token)).body).toMatchObject({ signInMethod: "password", providerReauthFresh: false });
+    expect((await request("/profile/mfa/setup", passwordLogin.body.token, "POST", {})).status).toBe(401);
+
+    // An older Google session no longer counts as proof of identity.
+    const sessionId = (jwt.decode(googleToken) as { sid: string }).sid;
+    await models.RefreshSession.updateMany({ familyId: sessionId }, { $set: { authenticatedAt: new Date(Date.now() - 11 * 60_000) } });
+    expect((await request("/profile/mfa/setup", googleToken, "POST", {})).status).toBe(401);
+  });
   it("restricts agents to cases and attachments in their assigned team", async () => {
     const financeCase = await models.CaseRecord.create({
       organizationId: org._id,

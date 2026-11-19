@@ -15,3 +15,4 @@ export { PasswordResetToken } from "./password-reset-token.js";
 export { OAuthLoginTicket } from "./oauth-login-ticket.js";
 export { JobLease } from "./job-lease.js";
 export { RefreshSession } from "./refresh-session.js";
+export { QrIntakeGuard } from "./qr-intake-guard.js";

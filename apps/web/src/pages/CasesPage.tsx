@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Columns3, Filter, List, Plus, Search } from "lucide-react";
+import { Columns3, Filter, List, Plus, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 import {
   EmptyState,
   ErrorState,
+  formatDate,
   formatRelative,
   LoadingState,
   PageHeader,
@@ -20,6 +21,7 @@ import { categoryLabels } from "../utils/labels";
 
 const statusTabs: Array<{ value: string; vi: string; en: string }> = [
   { value: "all", vi: "Tất cả", en: "All" },
+  { value: "open", vi: "Đang mở", en: "Open" },
   { value: "new", vi: "Mới", en: "New" },
   { value: "triaged", vi: "Đã phân loại", en: "Triaged" },
   { value: "in_progress", vi: "Đang xử lý", en: "In progress" },
@@ -45,6 +47,8 @@ export function CasesPage() {
   const search = searchParams.get("search") || "";
   const page = searchParams.get("page") || "1";
   const queue = user?.role === "requester" ? "all" : searchParams.get("queue") || "all";
+  const propertyCode = searchParams.get("propertyCode") || "";
+  const unitCode = propertyCode ? searchParams.get("unitCode") || "" : "";
   const canUseBoard = user?.role !== "requester";
   const [viewMode, setViewMode] = useState<"table" | "board">("table");
   const [searchInput, setSearchInput] = useState(search);
@@ -58,9 +62,11 @@ export function CasesPage() {
     params.set("limit", viewMode === "board" ? "50" : "8");
     if (viewMode === "board") params.set("includeCounts", "true");
     if (search) params.set("search", search);
+    if (propertyCode) params.set("propertyCode", propertyCode);
+    if (unitCode) params.set("unitCode", unitCode);
     if (user?.role === "requester") params.set("mine", "true");
     return `/cases?${params.toString()}`;
-  }, [status, priority, search, page, queue, user?.role, viewMode]);
+  }, [status, priority, search, page, queue, propertyCode, unitCode, user?.role, viewMode]);
 
   function setCaseView(nextMode: "table" | "board") {
     setViewMode(nextMode);
@@ -80,7 +86,7 @@ export function CasesPage() {
 
   function clearFilters() {
     const next = new URLSearchParams(searchParams);
-    ["status", "priority", "search", "queue", "page"].forEach((key) => next.delete(key));
+    ["status", "priority", "search", "queue", "page", "propertyCode", "unitCode"].forEach((key) => next.delete(key));
     setSearchInput("");
     setSearchParams(next);
   }
@@ -89,6 +95,7 @@ export function CasesPage() {
     status !== "all" ? { key: "status", label: statusTabs.find((item) => item.value === status)?.[locale === "vi" ? "vi" : "en"] || status } : null,
     priority !== "all" ? { key: "priority", label: text(`Ưu tiên: ${priority}`, `Priority: ${priority}`) } : null,
     search ? { key: "search", label: text(`Tìm: ${search}`, `Search: ${search}`) } : null,
+    propertyCode ? { key: unitCode ? "unitCode" : "propertyCode", label: unitCode ? text(`Căn ${unitCode} · ${propertyCode}`, `Unit ${unitCode} · ${propertyCode}`) : text(`Cơ sở ${propertyCode}`, `Property ${propertyCode}`) } : null,
     queue !== "all" && queueLabels[queue] ? { key: "queue", label: text(queueLabels[queue].vi, queueLabels[queue].en) } : null
   ].filter((filter): filter is { key: string; label: string } => Boolean(filter));
 
@@ -169,6 +176,8 @@ export function CasesPage() {
               <option value="low">{text("Thấp", "Low")}</option>
             </select>
           </label> : null}
+          {unitCode ? <span className="location-filter-chip">{text(`Căn ${unitCode} · ${propertyCode}`, `Unit ${unitCode} · ${propertyCode}`)}
+            <button type="button" aria-label={text("Bỏ lọc theo căn", "Remove unit filter")} onClick={() => { const next = new URLSearchParams(searchParams); ["propertyCode", "unitCode", "page"].forEach(key => next.delete(key)); setSearchParams(next); }}><X size={14} /></button></span> : null}
           {activeFilters.length ? <button type="button" className="clear-filter-button" onClick={clearFilters}>{text("Xóa bộ lọc", "Clear filters")}</button> : null}
         </div>
       </section>
@@ -196,17 +205,17 @@ export function CasesPage() {
                     <th>{text("Tiêu đề", "Subject")}</th>
                     {canUseBoard ? <th>{text("Người yêu cầu", "Requester")}</th> : null}
                     <th>{text("Trạng thái", "Status")}</th>
-                    {canUseBoard ? <th>{text("Ưu tiên", "Priority")}</th> : null}
+                    <th className={canUseBoard ? "" : "cell-mobile-only"}>{text("Ưu tiên · Hạn", "Priority · Due")}</th>
                     <th>{text("Cập nhật", "Updated")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.cases.map((item) => (
                     <tr key={item._id}>
-                      <td>
+                      <td className="cell-code">
                         <Link to={`/cases/${item._id}`} className="case-link">{item.code}</Link>
                       </td>
-                      <td>
+                      <td className="cell-title">
                         <Link to={`/cases/${item._id}`} className="case-title-cell">
                           <strong title={item.title}>{item.title}</strong>
                           {["manager", "org_admin", "platform_admin"].includes(user?.role || "") && item.ai.sharedIncidentCandidate && !["closed", "resolved"].includes(item.status) ?
@@ -216,14 +225,16 @@ export function CasesPage() {
                           <small>{categoryLabels[item.category]?.[locale] || item.category}</small>
                         </Link>
                       </td>
-                      {canUseBoard ? <td>{item.requesterName}</td> : null}
-                      <td>
+                      {canUseBoard ? <td className="cell-requester">{item.requesterName}</td> : null}
+                      <td className="cell-status">
                         <StatusBadge status={item.status as CaseStatus} />
                       </td>
-                      {canUseBoard ? <td>
+                      <td className={`cell-priority ${canUseBoard ? "" : "cell-mobile-only"}`}>
                         <PriorityBadge priority={item.priority} />
-                      </td> : null}
-                      <td>{formatRelative(item.updatedAt)}</td>
+                        {item.dueAt && !["resolved", "closed"].includes(item.status) ? <span className={`case-due ${new Date(item.dueAt).getTime() < Date.now() ? "case-due-overdue" : ""}`}>
+                          {text("Hạn", "Due")} {formatDate(item.dueAt)}</span> : null}
+                      </td>
+                      <td className="cell-updated">{formatRelative(item.updatedAt)}</td>
                     </tr>
                   ))}
                 </tbody>

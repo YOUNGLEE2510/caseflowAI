@@ -269,3 +269,88 @@ kbd { color: var(--ink); background: var(--surface-muted); }
 }
 .text-link:hover,
 .read-more button:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Location filter chip on the case queue */
+.location-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-pill);
+  color: var(--brand-text);
+  background: var(--brand-subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+.location-filter-chip button { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 50%; color: inherit; background: transparent; cursor: pointer; }
+.location-filter-chip button:hover { background: var(--selected); }
+
+/* Required security step: visible lock instead of silent redirects */
+.security-lock-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  background: var(--warning-bg);
+}
+.security-lock-banner svg { flex: none; color: var(--warning); }
+.security-lock-banner p { flex: 1; margin: 0; font-size: 14px; line-height: 1.5; }
+.service-workspace .nav-item.nav-locked:not(.active) { opacity: 0.55; }
+.nav-item .nav-lock { margin-left: auto; flex: none; }
+.mobile-bottom-nav a.nav-locked { opacity: 0.5; }
+.mfa-qr { display: grid; justify-items: start; gap: 8px; margin: 0; }
+.mfa-qr img { padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: #ffffff; }
+.mfa-qr figcaption { color: var(--muted); font-size: 13px; }
+@media (max-width: 640px) { .security-lock-banner { flex-wrap: wrap; } }
+
+/* Knowledge: asking a question vs filtering the library */
+.knowledge-section-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.knowledge-section-head svg { flex: none; margin-top: 2px; color: var(--brand); }
+.knowledge-section-head h2 { margin: 0; font-size: 18px; }
+.knowledge-section-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.library-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 20px 12px;
+  padding: 0 12px;
+  min-height: 42px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--subtle);
+  background: var(--surface);
+}
+.library-filter:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--focus-ring-soft); }
+.library-filter input { flex: 1; min-width: 0; min-height: 40px; border: 0; color: var(--ink); background: transparent; font: inherit; outline: none; box-shadow: none; }
+.article-title-button { padding: 0; border: 0; color: inherit; background: none; font: inherit; text-align: left; cursor: pointer; }
+.article-title-button:hover { color: var(--brand-text); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 640px) { .library-filter { margin-inline: 16px; } }
+
+/* Restored new-request draft */
+.draft-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border: 1px solid var(--info-border); border-radius: var(--radius-lg); color: var(--ink); background: var(--info-bg); font-size: 14px; }
+
+/* Case queue cells (named, so requester and staff tables share the mobile card layout) */
+.case-due { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.case-due-overdue { color: var(--danger); font-weight: 600; }
+@media (min-width: 761px) { .cases-table .cell-mobile-only { display: none; } }
+@media (max-width: 760px) {
+  .cases-table .cell-code { grid-area: code; }
+  .cases-table .cell-title { grid-area: title; }
+  .cases-table .cell-requester { display: none; }
+  .cases-table .cell-status { grid-area: status; align-self: center; }
+  .cases-table .cell-priority { grid-area: priority; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+  .cases-table .cell-priority .case-due { margin: 0; }
+  .cases-table .cell-updated { grid-area: updated; color: var(--subtle); font-size: 11px; text-align: right; }
+}
+
+/* Unit board: letting and readiness filters combine */
+.unit-filter-groups { display: grid; gap: 10px; }
+.unit-filter-group { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 10px; }
+.unit-filter-label { color: var(--muted); font-size: 13px; font-weight: 600; }
+@media (max-width: 760px) { .unit-filter-group { grid-template-columns: minmax(0, 1fr); gap: 6px; } }

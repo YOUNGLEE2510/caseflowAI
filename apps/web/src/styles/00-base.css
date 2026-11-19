@@ -2164,11 +2164,8 @@
   }
 
   .article-list > article {
-    grid-template-columns: 36px 1fr;
-  }
-
-  .article-list > article > .icon-button {
-    display: none;
+    grid-template-columns: 32px minmax(0, 1fr) 40px;
+    gap: 10px;
   }
 
   .service-card dl {

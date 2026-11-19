@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookMarked, ExternalLink, Search, Send, Sparkles, Plus, Pencil } from "lucide-react";
+import { BookMarked, ExternalLink, MessageCircleQuestion, Search, Send, Sparkles, Plus, Pencil } from "lucide-react";
 import { useAuth } from "../auth";
 import { ArticleEditor } from "../components/AdminEditors";
 import { Modal } from "../components/Modal";
@@ -32,6 +32,7 @@ export function KnowledgePage() {
   const [editing, setEditing] = useState<KnowledgeArticle | "new" | null>(null);
   const [opened, setOpened] = useState<KnowledgeArticle | null>(null);
   const [page, setPage] = useState(1);
+  const [libraryInput, setLibraryInput] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
   const { data, loading, error, reload } = useApiData<{ articles: KnowledgeArticle[]; total: number }>(`/knowledge?page=${page}&limit=20&search=${encodeURIComponent(libraryQuery)}`);
   const [query, setQuery] = useState("");
@@ -40,13 +41,14 @@ export function KnowledgePage() {
   const [searchError, setSearchError] = useState("");
   const [generate, setGenerate] = useState(false);
   const filteredArticles = data?.articles || [];
+  // The library filter and the question box are separate: typing a question never hides documents.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setLibraryQuery(query.trim().slice(0, 160));
+      setLibraryQuery(libraryInput.trim().slice(0, 160));
       setPage(1);
-    }, 400);
+    }, 300);
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [libraryInput]);
   const { data: capabilities } = useApiData<{ generation: boolean }>("/knowledge/capabilities");
 
   async function openSource(id: string, version?: string) {
@@ -101,11 +103,18 @@ export function KnowledgePage() {
         )}
       />
 
-      <section className="knowledge-search knowledge-search-premium" aria-label={text("Tra cứu tài liệu", "Search documents")}>
+      <section className="knowledge-search knowledge-search-premium" aria-labelledby="knowledge-ask-title">
+        <div className="knowledge-section-head">
+          <MessageCircleQuestion size={20} aria-hidden="true" />
+          <div>
+            <h2 id="knowledge-ask-title">{text("Hỏi kho tri thức", "Ask the knowledge base")}</h2>
+            <p>{text("Đặt câu hỏi bằng lời; hệ thống trả lời kèm nguồn trích từ tài liệu đã duyệt.", "Ask in your own words; answers cite approved documents.")}</p>
+          </div>
+        </div>
         <form onSubmit={search} className="knowledge-query-bar">
           <Search size={19} />
           <input
-            aria-label={text("Câu hỏi tra cứu", "Knowledge query")}
+            aria-label={text("Câu hỏi cho kho tri thức", "Question for the knowledge base")}
             disabled={searching}
             maxLength={1000}
             value={query}
@@ -114,7 +123,7 @@ export function KnowledgePage() {
           />
           <button className="button button-primary" disabled={searching || query.trim().length < 3}>
             {searching ? <span className="spinner spinner-light" /> : <Send size={16} />}
-            {text("Tra cứu", "Search")}
+            {text("Hỏi", "Ask")}
           </button>
         </form>
         {searchError ? <ErrorState message={searchError} /> : null}
@@ -154,6 +163,11 @@ export function KnowledgePage() {
           </div>
           <span className="panel-kpi">{filteredArticles.length} / {data?.total || 0} {text("tài liệu", "documents")}</span>
         </div>
+        <label className="library-filter">
+          <Search size={17} aria-hidden="true" />
+          <input type="search" value={libraryInput} maxLength={160} onChange={event => setLibraryInput(event.target.value)}
+            placeholder={text("Lọc theo tên hoặc nội dung tài liệu", "Filter by title or content")} aria-label={text("Tìm trong danh mục", "Filter the library")} />
+        </label>
         {loading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} onRetry={reload} /> : null}
         {!loading && !error && data ? (
@@ -166,7 +180,7 @@ export function KnowledgePage() {
                   </span>
                   <div>
                     <span className="article-category">{categoryLabels[article.category]?.[locale] || article.category}</span>
-                    <h3>{article.title}</h3>
+                    <h3><button type="button" className="article-title-button" onClick={() => setOpened(article)}>{article.title}</button></h3>
                     <ReadMore text={article.content} limit={180} className="article-preview" />
                     <footer>
                       <span>{article.sourceLabel}</span>
@@ -182,8 +196,8 @@ export function KnowledgePage() {
             </div>
           ) : (
             <EmptyState
-              title={query.trim() ? text("Không có tài liệu khớp từ khóa", "No matching documents") : text("Kho tri thức đang trống", "The knowledge base is empty")}
-              detail={query.trim() ? text("Thử từ khóa khác hoặc gửi câu hỏi tra cứu.", "Try another keyword or submit a search question.") : text("Chưa có tài liệu đã được duyệt và công bố cho bạn. Bạn vẫn có thể gửi yêu cầu hỗ trợ.", "No approved documents are published for you yet. You can still submit a support request.")}
+              title={libraryQuery ? text("Không có tài liệu khớp từ khóa", "No matching documents") : text("Kho tri thức đang trống", "The knowledge base is empty")}
+              detail={libraryQuery ? text("Thử từ khóa khác, hoặc đặt câu hỏi ở khung Hỏi kho tri thức.", "Try another keyword, or ask a question above.") : text("Chưa có tài liệu đã được duyệt và công bố cho bạn. Bạn vẫn có thể gửi yêu cầu hỗ trợ.", "No approved documents are published for you yet. You can still submit a support request.")}
             />
           )
         ) : null}

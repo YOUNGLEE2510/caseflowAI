@@ -70,7 +70,7 @@ beforeAll(async () => {
   people.residentA = await make("resident-a", orgA, "requester");
   people.neighbourA = await make("neighbour-a", orgA, "requester");
   people.managerB = await make("manager-b", orgB, "manager");
-  for (const code of ["A301", "A302", "A303", "A304", "A305"]) {
+  for (const code of ["A301", "A302", "A303", "A304", "A305", "A306", "A307"]) {
     await rental.RentalUnit.create({ organizationId: orgA._id, propertyCode: "TOWER-A", code, floor: "3", residentIds: code === "A301" ? [people.residentA._id] : [people.neighbourA._id] });
   }
   await rental.RentalUnit.create({ organizationId: orgB._id, propertyCode: "TOWER-A", code: "A301", floor: "3", residentIds: [] });
@@ -219,6 +219,23 @@ describe("public QR intake", () => {
     const rejected = await call(`/cases/${record._id}/intake-verification`, people.managerA, "POST", { decision: "rejected", note: "Gọi hai lần không liên lạc được" });
     expect(rejected.status).toBe(200);
     expect(rejected.body.case).toMatchObject({ status: "closed", intakeVerification: { status: "rejected" } });
+  });
+
+  it("creates one case for concurrent identical reports and never exceeds the daily phone limit", async () => {
+    const token = await issue("A306");
+    const same = { ...valid, phone: "0944444444", description: "Bồn rửa bát rò nước xuống tủ bếp từ sáng nay." };
+    const identical = await Promise.all(Array.from({ length: 6 }, () => report(token, same)));
+    const created = identical.filter(item => item.status === 201);
+    expect(created).toHaveLength(1);
+    expect(identical.filter(item => item.status === 200).every(item => item.body.duplicate === true && item.body.code === created[0].body.code)).toBe(true);
+    expect(await models.CaseRecord.countDocuments({ "intakeVerification.reporterPhone": "0944444444" })).toBe(1);
+
+    const other = await issue("A307");
+    const burst = await Promise.all(Array.from({ length: 6 }, (_, index) =>
+      report(other, { ...valid, phone: "0955555555", description: `Sự cố thiết bị số ${index + 1} trong căn cần kiểm tra.` })));
+    expect(burst.filter(item => item.status === 201)).toHaveLength(5);
+    expect(burst.filter(item => item.status === 429)).toHaveLength(1);
+    expect(await models.CaseRecord.countDocuments({ "intakeVerification.reporterPhone": "0955555555" })).toBe(5);
   });
 
   it("validates input and limits abuse", async () => {
