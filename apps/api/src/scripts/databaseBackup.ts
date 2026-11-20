@@ -33,7 +33,8 @@ interface Manifest {
 export async function backupDatabase(db: mongoose.mongo.Db, outputDir: string): Promise<Manifest> {
   await mkdir(outputDir, { recursive: true });
   const manifest: Manifest = { database: db.databaseName, host: databaseHost(), createdAt: new Date().toISOString(), collections: [] };
-  const collections = (await db.listCollections({}, { nameOnly: true }).toArray())
+  // Plain collections only: views and time-series buckets are not backed up as data.
+  const collections = (await db.listCollections({ type: "collection" }).toArray())
     .map(item => item.name).filter(name => !name.startsWith("system.")).sort();
   for (const name of collections) {
     const lines: string[] = [];
@@ -44,12 +45,14 @@ export async function backupDatabase(db: mongoose.mongo.Db, outputDir: string): 
     const indexes = (await db.collection(name).indexes()).filter(index => index.name !== "_id_");
     manifest.collections.push({ name, documents: lines.length, file, sha256: sha256(data), indexes });
   }
-  await writeFile(join(outputDir, "manifest.json"), JSON.stringify(manifest, null, 2), { mode: 0o600 });
+  // Canonical EJSON keeps BSON types inside index options (e.g. dates in partial filters).
+  await writeFile(join(outputDir, "manifest.json"), EJSON.stringify(manifest, undefined, 2, { relaxed: false }), { mode: 0o600 });
   return manifest;
 }
 
 export async function restoreDatabase(target: mongoose.mongo.Db, backupDir: string) {
-  const manifest = JSON.parse(await readFile(join(backupDir, "manifest.json"), "utf8")) as Manifest;
+  // Relaxed parse: dates and ObjectIds come back as BSON types, counts as plain numbers.
+  const manifest = EJSON.parse(await readFile(join(backupDir, "manifest.json"), "utf8"), { relaxed: true }) as unknown as Manifest;
   if ((await target.listCollections({}, { nameOnly: true }).toArray()).length) throw new Error(`Target database "${target.databaseName}" is not empty.`);
   const result: Record<string, { expected: number; restored: number }> = {};
   for (const item of manifest.collections) {

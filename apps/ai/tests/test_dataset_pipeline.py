@@ -31,3 +31,12 @@ def test_prepare_dataset_redacts_deduplicates_and_keeps_groups_together(tmp_path
             split_rows[split] = list(csv.DictReader(stream))
     assert sum(len(rows) for rows in split_rows.values()) == 36
     assert all("[ID_NUMBER]" in row["text"] for rows in split_rows.values() for row in rows)
+
+
+def test_redact_pii_masks_student_codes_and_other_long_numbers():
+    for identifier in ("B22DCCN019", "b22dccn019", "N21DCCN001", "SV12345678", "MSSV: 20212345", "HD 20240815"):
+        text, count = redact_pii(f"Toi o can 1205, ma {identifier} can ho tro")
+        assert identifier.split()[-1].split(":")[-1].strip() not in text
+        assert count >= 1
+    text, _ = redact_pii("Goi 0912 345 678, CCCD 012345678901")
+    assert text == "Goi [PHONE], CCCD [ID_NUMBER]"

@@ -44,16 +44,21 @@ describe("API session handling", () => {
     expect(await restoreSession()).toBe(false);
     expect(fetcher).not.toHaveBeenCalled();
   });
-  it("does not call refresh for a browser that never signed in, and forgets a rejected session", async () => {
+  it("restores a session from before the marker existed, and asks only once when there is none", async () => {
+    localStorage.clear();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response('{"token":"restored","remember":true}')));
+    expect(await restoreSession()).toBe(true);
+    expect(getToken()).toBe("restored");
+    expect(localStorage.getItem("caseflow_session_hint")).toBe("1");
+
+    setToken(null);
     localStorage.clear();
     const fetcher = vi.fn().mockResolvedValue(new Response('{"message":"No session"}', { status: 401 }));
     vi.stubGlobal("fetch", fetcher);
     expect(await restoreSession()).toBe(false);
-    expect(fetcher).not.toHaveBeenCalled();
-    localStorage.setItem("caseflow_session_hint", "1");
     expect(await restoreSession()).toBe(false);
     expect(fetcher).toHaveBeenCalledOnce();
-    expect(localStorage.getItem("caseflow_session_hint")).toBeNull();
+    expect(localStorage.getItem("caseflow_session_hint")).toBe("0");
   });
   it("renews an expired access token and retries once", async () => {
     setToken("expired", false);

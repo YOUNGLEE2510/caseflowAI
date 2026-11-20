@@ -117,18 +117,13 @@ export function CaseDetailPage() {
 
   useEffect(() => {
     if (!canOperate) return;
-    Promise.all([
-      api<{ users: User[] }>("/users?role=agent"),
-      api<{ services: ServiceDefinition[] }>("/services")
-    ])
-      .then(([userResponse, serviceResponse]) => {
-        setAgents(userResponse.users.filter((item) => item.role === "agent"));
-        setServices(serviceResponse.services);
-      })
-      .catch(() => {
-        setAgents([]);
-        setServices([]);
-      });
+    // Load each list on its own so one failing request does not empty the other dropdown.
+    api<{ users: User[] }>("/users?role=agent")
+      .then(response => setAgents(response.users.filter((item) => item.role === "agent")))
+      .catch(() => setAgents([]));
+    api<{ services: ServiceDefinition[] }>("/services")
+      .then(response => setServices(response.services))
+      .catch(() => setServices([]));
   }, [canOperate]);
 
   if (loading && !data) return <LoadingState label={text("Đang tải hồ sơ", "Loading request")} />;

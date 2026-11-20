@@ -19,13 +19,16 @@ from apps.ai.config import TRAINING_EXAMPLES
 
 EMAIL = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
 PHONE = re.compile(r"(?:\+?\d[\d .()-]{7,}\d)")
-# Citizen ID: CCCD (12 digits) or CMND (9 digits); matched before phones.
-ID_NUMBER = re.compile(r"\b(?:\d{12}|\d{9})\b")
+# Personal identifiers, matched before phones: student-style codes (B22DCCN019, SV12345678,
+# MSSV 12345678) and citizen IDs (CCCD 12 digits, CMND 9 digits). Tenants are often students.
+ID_NUMBER = re.compile(r"\b(?:[A-Z]{1,2}\d{2}[A-Z]{2,8}\d{3,6}|(?:MSSV|MSV|SV)\s*[:#-]?\s*\d{6,10}|\d{12}|\d{9})\b", re.IGNORECASE)
+# Any other run of 6+ digits left after phones (contract or account numbers).
+LONG_NUMBER = re.compile(r"\b\d{6,12}\b")
 
 
 def redact_pii(text: str) -> tuple[str, int]:
     replacements = 0
-    for pattern, marker in ((EMAIL, "[EMAIL]"), (ID_NUMBER, "[ID_NUMBER]"), (PHONE, "[PHONE]")):
+    for pattern, marker in ((EMAIL, "[EMAIL]"), (ID_NUMBER, "[ID_NUMBER]"), (PHONE, "[PHONE]"), (LONG_NUMBER, "[ID_NUMBER]")):
         text, count = pattern.subn(marker, text)
         replacements += count
     return " ".join(text.split()), replacements

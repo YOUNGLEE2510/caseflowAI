@@ -25,6 +25,8 @@ it("backs up and restores documents with their BSON types and indexes into an em
   const at = new Date("2026-11-20T08:00:00.000Z");
   await source.collection("users").insertMany([{ _id: id, email: "a@x.test", joinedAt: at, n: 1 }, { email: "b@x.test", n: 2.5 }]);
   await source.collection("users").createIndex({ email: 1 }, { unique: true, name: "email_unique" });
+  await source.collection("users").createIndex({ n: 1 }, { name: "recent_only", partialFilterExpression: { joinedAt: { $gte: new Date("2026-01-01T00:00:00.000Z") } } });
+  await source.createCollection("users_view", { viewOn: "users", pipeline: [] });
   await source.collection("empty").insertOne({ x: 1 });
   await source.collection("empty").deleteMany({});
 
@@ -39,6 +41,9 @@ it("backs up and restores documents with their BSON types and indexes into an em
   expect(restored?.joinedAt).toBeInstanceOf(Date);
   expect(restored?.joinedAt.toISOString()).toBe(at.toISOString());
   expect((await target.collection("users").indexes()).find(index => index.name === "email_unique")?.unique).toBe(true);
+  const partial = (await target.collection("users").indexes()).find(index => index.name === "recent_only");
+  expect(partial?.partialFilterExpression?.joinedAt?.$gte).toBeInstanceOf(Date);
+  expect(manifest.collections.map(item => item.name)).not.toContain("users_view");
   expect(await target.collection("empty").countDocuments()).toBe(0);
 
   // A second restore into the same (now non-empty) database is refused.

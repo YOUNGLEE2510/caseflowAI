@@ -7,6 +7,11 @@ describe("reviewed training dataset export", () => {
       .toBe("CCCD [ID_NUMBER] khong vao duoc, email [EMAIL], [PHONE]");
   });
 
+  it("masks student-style codes as well as citizen IDs", () => {
+    for (const id of ["B22DCCN019", "b22dccn019", "SV12345678", "MSSV 20212345", "012345678901"]) {
+      expect(redactTrainingText(`Ma ${id} can ho tro`)).not.toMatch(/\d{5,}|DCCN/i);
+    }
+  });
   it("uses a human correction as the training label and omits unreviewed cases", () => {
     const csv = buildReviewedTrainingCsv([
       {
