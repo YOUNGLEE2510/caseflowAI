@@ -82,7 +82,7 @@ beforeAll(async () => {
 }, 180000);
 
 afterAll(async () => {
-  server?.close();
+  await new Promise<void>(resolve => server ? server.close(() => resolve()) : resolve());
   await mongoose.disconnect();
   await database?.stop();
   vi.unstubAllEnvs();
@@ -133,7 +133,7 @@ describe("AI suggestions hidden for a study account", () => {
     expect((await call("/cases?queue=at_risk", people.hidden)).body.cases).toHaveLength(0);
     expect((await call("/cases?queue=at_risk", people.shown)).body.cases.map((item: any) => item.code)).toEqual(["STUDY-1"]);
     const dashboard = await call("/dashboard", people.hidden);
-    expect(dashboard.body.highRiskCases ?? []).toHaveLength(0);
+    expect(dashboard.body.highRiskCases).toEqual([]);
   });
 
   it("hides predicted-risk notifications but keeps breaches", async () => {
@@ -190,6 +190,15 @@ describe("switching the AI condition", () => {
     expect((await call(`/cases/${record._id}`, people.shown)).body.case.ai).toHaveProperty("classification");
     const users = await call("/users", people.admin);
     expect(users.body.users.find((user: any) => user.email === "hidden@study.test")).toMatchObject({ aiSuggestionsHidden: true, studyCode: "p01" });
+    // Teammates see the colleague but not the code or condition; the account still sees its own.
+    for (const viewer of [people.shown]) {
+      const peer = (await call("/users", viewer)).body.users.find((user: any) => user.email === "hidden@study.test");
+      expect(peer).toBeTruthy();
+      expect(peer).not.toHaveProperty("studyCode");
+      expect(peer).not.toHaveProperty("aiSuggestionsHidden");
+    }
+    expect((await call("/users", people.hidden)).body.users.find((user: any) => user.email === "hidden@study.test"))
+      .toMatchObject({ aiSuggestionsHidden: true, studyCode: "p01" });
   });
 
   it("refuses managers, self-changes, other organizations, residents and duplicate codes", async () => {

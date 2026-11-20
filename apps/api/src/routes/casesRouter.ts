@@ -441,6 +441,14 @@ casesRouter.get(
       ...(req.auth!.role === "agent" ? { role: "agent", team: req.auth!.team } : {}) })
       .sort({ role: 1, name: 1 })
       .lean<PublicUserSource[]>();
-    res.json({ users: users.map((user) => publicUser(user)) });
+    // Study assignment (participant code, AI condition) is for the facilitating admin only: peers
+    // must not be able to link a colleague's identity to a pseudonymous code or condition.
+    const seesStudy = ["org_admin", "platform_admin"].includes(req.auth!.role);
+    res.json({ users: users.map((user) => {
+      const value = publicUser(user);
+      if (seesStudy || value.id === req.auth!.id) return value;
+      const { aiSuggestionsHidden: _hidden, studyCode: _code, ...rest } = value;
+      return rest;
+    }) });
   }
 );

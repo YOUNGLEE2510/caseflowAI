@@ -206,7 +206,7 @@ export function UsersPage() {
               </dl>
               {selected.role !== "requester" && selected.role !== "platform_admin" && selected.id !== user?.id && (canManage || user?.role === "manager") ? <>
                 <div className="config-divider" />
-                <AiStudySettings member={selected} canChange={Boolean(canManage)} onSaved={() => void reload()} />
+                {canManage ? <AiStudySettings member={selected} canChange onSaved={() => void reload()} /> : null}
               </> : null}
               <div className="config-divider" />
               <section className="permission-section">
