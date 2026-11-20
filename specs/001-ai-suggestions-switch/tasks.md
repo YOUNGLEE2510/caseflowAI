@@ -131,7 +131,7 @@ gate requires denied-path tests for security-relevant changes (Principle II scop
 - [x] T037 Add the E2E suite: the same case viewed in manual and assisted mode at 1440px and 390px, light and dark, no horizontal overflow, notice visible, admin switch flow, in tests/e2e/ai-visibility.spec.ts
 - [x] T038 [P] Run the hover/contrast audit used for the redesign on the users page and the notice in both themes (Constitution VI) — done inside tests/e2e/ai-visibility.spec.ts (normal/hover/focus, both themes, ≥ 4.5:1)
 - [x] T039 Run quickstart.md end to end (API, web, AI tests, `npm run build`, `npm run test:e2e`) and record results in the PR description
-- [ ] T040 [P] Update the "Xây công tắc ẩn gợi ý AI" task in the Notion task board with commit and test evidence
+- [x] T040 [P] Update the "Xây công tắc ẩn gợi ý AI" task in the Notion task board with commit and test evidence
 
 ---
 
