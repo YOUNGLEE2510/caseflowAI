@@ -22,18 +22,22 @@ async function overflow(page: Page) {
 }
 
 test("login provider logos and password borders render on desktop and mobile", async ({ page }) => {
-  await page.route("**/api/auth/providers", route => route.fulfill({ json: { google: false, microsoft: false } }));
+  // Unconfigured Google is hidden, not shown disabled.
+  await page.route("**/api/auth/providers", route => route.fulfill({ json: { google: false } }));
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: "Đăng nhập", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toHaveCount(0);
+  await page.unroute("**/api/auth/providers");
+  await page.route("**/api/auth/providers", route => route.fulfill({ json: { google: true } }));
   await mkdir("artifacts/login-ui", { recursive: true });
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/login");
     await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toBeVisible();
     expect(await page.getByRole("button", { name: "Tiếp tục với Google", exact: true }).evaluate((node) => getComputedStyle(node).borderTopWidth)).toBe("1px");
-    await expect(page.getByRole("button", { name: "Tiếp tục với Outlook / Microsoft", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toBeDisabled();
-    await expect(page.getByRole("button", { name: "Tiếp tục với Outlook / Microsoft", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /Microsoft/ })).toHaveCount(0);
     const images = await page.locator(".login-panel .provider-mark").evaluateAll((nodes) => nodes.map((node) => ({ complete: (node as HTMLImageElement).complete, width: (node as HTMLImageElement).naturalWidth })));
-    expect(images).toHaveLength(2);
+    expect(images).toHaveLength(1);
     expect(images.every((item) => item.complete && item.width > 0)).toBe(true);
     const dimensions = await page.locator(".password-field").evaluate((node) => {
       const box = node.getBoundingClientRect();
@@ -200,18 +204,14 @@ test("request intake, real file round-trip, staff review and private notes", asy
     await login(staff, "pham.ha@canho.local");
     await staff.goto(caseUrl);
     await staff.getByRole("button", { name: "Xác nhận phân luồng" }).click();
-    await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByRole("button", { name: "Xác nhận phân luồng" })).not.toBeVisible();
     await staff.getByLabel("Người xử lý", { exact: true }).selectOption({ label: "Hoàng Gia Thư · Kỹ thuật điện lạnh" });
-    await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByLabel("Trạng thái", { exact: true }).locator('option[value="in_progress"]')).toHaveCount(1);
     await staff.getByLabel("Trạng thái", { exact: true }).selectOption("in_progress");
-    await confirmAction(staff, "Cập nhật hồ sơ?");
     await expect(staff.getByLabel("Trạng thái", { exact: true })).toHaveValue("in_progress");
     await staff.locator(".comment-form textarea").fill("PRIVATE STAFF NOTE");
     await staff.getByLabel("Ghi chú nội bộ").check();
     await staff.locator(".comment-form").getByRole("button", { name: /Gửi/ }).click();
-    await confirmAction(staff, "Gửi ghi chú nội bộ?");
     await expect(staff.getByText("PRIVATE STAFF NOTE", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByText("PRIVATE STAFF NOTE", { exact: true })).toHaveCount(0);

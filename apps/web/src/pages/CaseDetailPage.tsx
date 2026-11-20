@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useToast } from "../components/Toast";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import {
   ArrowLeft,
   BrainCircuit,
@@ -100,11 +102,23 @@ export function CaseDetailPage() {
   const [actionError, setActionError] = useState("");
   const [satisfactionComment, setSatisfactionComment] = useState("");
   const canOperate = user?.role !== "requester";
+  const toast = useToast();
+  // On phones the request text comes before the routing controls.
+  const narrow = useMediaQuery("(max-width: 760px)");
+  const aiPending = ["queued", "running"].includes(data?.case.ai.processingStatus || "");
+  const [aiPolls, setAiPolls] = useState(0);
+  // Triage runs in the background after creation: refresh a few times until it finishes (about 15 s).
+  useEffect(() => {
+    if (!aiPending || aiPolls >= 6) return;
+    const timer = window.setTimeout(() => { setAiPolls(count => count + 1); void reload(); }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [aiPending, aiPolls, reload]);
+  useEffect(() => { setAiPolls(0); }, [id]);
 
   useEffect(() => {
     if (!canOperate) return;
     Promise.all([
-      api<{ users: User[] }>("/users"),
+      api<{ users: User[] }>("/users?role=agent"),
       api<{ services: ServiceDefinition[] }>("/services")
     ])
       .then(([userResponse, serviceResponse]) => {
@@ -132,7 +146,6 @@ export function CaseDetailPage() {
       if (resolutionNote.trim().length < 10) { setActionError(text("Nhập kết quả xử lý ít nhất 10 ký tự.", "Enter a resolution of at least 10 characters.")); return; }
       payload = { ...payload, resolutionNote: resolutionNote.trim() };
     }
-    if (!await confirm({ title: text("Cập nhật hồ sơ?", "Update case?"), message: text(`Áp dụng thay đổi cho ${record.code}.`, `Apply changes to ${record.code}.`) })) return;
     setSaving(true);
     setActionError("");
     try {
@@ -141,6 +154,7 @@ export function CaseDetailPage() {
         body: JSON.stringify(payload)
       });
       setData(response);
+      toast.success(text("Đã lưu thay đổi.", "Changes saved."));
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : text("Không thể cập nhật hồ sơ.", "We could not update this request."));
     } finally {
@@ -151,7 +165,6 @@ export function CaseDetailPage() {
   async function addComment(event: React.FormEvent) {
     event.preventDefault();
     if (saving || !comment.trim()) return;
-    if (!await confirm({ title: internal ? text("Gửi ghi chú nội bộ?", "Send internal note?") : text("Gửi phản hồi?", "Send reply?"), message: comment })) return;
     setSaving(true);
     setActionError("");
     try {
@@ -161,6 +174,7 @@ export function CaseDetailPage() {
       });
       setData(response);
       setComment("");
+      toast.success(internal ? text("Đã lưu ghi chú nội bộ.", "Internal note saved.") : text("Đã gửi phản hồi.", "Reply sent."));
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : text("Không thể gửi phản hồi.", "We could not send your reply."));
     } finally {
@@ -170,7 +184,8 @@ export function CaseDetailPage() {
 
   async function requesterAction(action: "close" | "reopen" | "satisfaction", payload?: Record<string, unknown>) {
     if (saving) return;
-    if (!await confirm({ title: text("Xác nhận thao tác", "Confirm action"), message: action === "close" ? text("Đóng hồ sơ đã được giải quyết?", "Close this resolved case?") : action === "reopen" ? text("Mở lại hồ sơ để tiếp tục xử lý?", "Reopen this case for further assistance?") : text("Gửi đánh giá dịch vụ?", "Submit your service rating?") })) return;
+    // Only closing asks first: it ends the request; reopening and rating are easy to follow up on.
+    if (action === "close" && !await confirm({ title: text("Đóng hồ sơ?", "Close this case?"), message: text("Xác nhận vấn đề đã được xử lý xong. Nếu lỗi quay lại, bạn có thể mở lại trong 14 ngày.", "Confirm the issue is fixed. If it comes back, you can reopen within 14 days.") })) return;
     setSaving(true);
     setActionError("");
     try {
@@ -179,6 +194,7 @@ export function CaseDetailPage() {
         ...(payload ? { body: JSON.stringify(payload) } : {})
       });
       setData(response);
+      toast.success(action === "close" ? text("Đã đóng hồ sơ.", "Case closed.") : action === "reopen" ? text("Đã mở lại hồ sơ.", "Case reopened.") : text("Cảm ơn bạn đã đánh giá.", "Thank you for your rating."));
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : text("Không thể cập nhật hồ sơ.", "We could not update this request."));
     } finally {
@@ -188,7 +204,6 @@ export function CaseDetailPage() {
 
   async function uploadAttachments() {
     if (!files.length) return;
-    if (!await confirm({ title: text("Tải tệp lên?", "Upload files?"), message: files.map(file => file.name).join(", ") })) return;
     setUploading(true);
     setAttachmentError("");
     try {
@@ -248,34 +263,13 @@ export function CaseDetailPage() {
     }
   }
 
-  return (
-    <div className="page-stack">
-      <div className="detail-header">
-        <div>
-          <Link to="/cases" className="back-link">
-            <ArrowLeft size={17} />
-            {text("Quay lại hàng đợi", "Back to queue")}
-          </Link>
-          <div className="detail-title-row">
-            <span className="case-code">{record.code}</span>
-            <StatusBadge status={record.status} />
-          </div>
-          <h1>{record.title}</h1>
-          <p>
-            {text("Tạo bởi", "Created by")} {record.requesterName} · {formatDate(record.createdAt)}
-          </p>
-        </div>
-        {canOperate ? <div className="detail-header-actions">
-          {user && ["manager", "org_admin", "platform_admin"].includes(user.role) && !record.mergedIntoId && !["resolved", "closed"].includes(record.status) && <CaseMergeButton caseId={record._id} onMerged={reload} />}
-          <PriorityBadge priority={record.priority} />
-          {!aiHidden ? <RiskBadge score={record.ai.riskScore} /> : null}
-        </div> : null}
-      </div>
-
-      {record.mergedIntoId && <p role="status" className="analysis-review-note">{text("Hồ sơ này đã được gộp. ", "This case has been merged. ")}<Link to={`/cases/${record.mergedIntoId}`}>{text("Mở hồ sơ chính", "Open primary case")}</Link></p>}
-      {record.mergedCases?.length ? <section className="panel"><div className="panel-heading"><h2>{text("Hồ sơ đã gộp", "Merged cases")}</h2></div><ul>{record.mergedCases.map(item => <li key={item._id}><Link to={`/cases/${item._id}`}>{item.code} · {item.title}</Link></li>)}</ul></section> : null}
-
-      {canOperate && !record.mergedIntoId ? (
+  const nextStatuses = statusOptions.filter((option) => option.value !== record.status && transitions[record.status].includes(option.value));
+  // Explain why the status list is short instead of silently hiding the next steps.
+  const statusHint = !nextStatuses.length ? ""
+    : aiReviewPending ? text("Bấm \"Xác nhận phân luồng\" để mở các trạng thái tiếp theo.", "Confirm routing to unlock the next statuses.")
+      : !record.assigneeId && nextStatuses.some(option => ["in_progress", "resolved"].includes(option.value))
+        ? text("Chọn người xử lý để chuyển sang Đang xử lý.", "Choose an assignee to move to In progress.") : "";
+  const actionBar = canOperate && !record.mergedIntoId ? (
         <section className="action-bar" id="case-routing" tabIndex={-1}>
           {["in_progress", "waiting"].includes(record.status) && <label>
             <span>{text("Kết quả xử lý", "Resolution")}</span>
@@ -355,8 +349,39 @@ export function CaseDetailPage() {
             </button>
           ) : null}
           {saving ? <span className="saving-label"><span className="spinner" /> {text("Đang lưu", "Saving")}</span> : null}
+          {/* Below the whole bar, so the controls stay on one row. */}
+          {statusHint ? <p className="action-hint" role="note">{statusHint}</p> : null}
         </section>
-      ) : null}
+  ) : null;
+
+  return (
+    <div className="page-stack">
+      <div className="detail-header">
+        <div>
+          <Link to="/cases" className="back-link">
+            <ArrowLeft size={17} />
+            {text("Quay lại hàng đợi", "Back to queue")}
+          </Link>
+          <div className="detail-title-row">
+            <span className="case-code">{record.code}</span>
+            <StatusBadge status={record.status} />
+          </div>
+          <h1>{record.title}</h1>
+          <p>
+            {text("Tạo bởi", "Created by")} {record.requesterName} · {formatDate(record.createdAt)}
+          </p>
+        </div>
+        {canOperate ? <div className="detail-header-actions">
+          {user && ["manager", "org_admin", "platform_admin"].includes(user.role) && !record.mergedIntoId && !["resolved", "closed"].includes(record.status) && <CaseMergeButton caseId={record._id} onMerged={reload} />}
+          <PriorityBadge priority={record.priority} />
+          {!aiHidden ? <RiskBadge score={record.ai.riskScore} /> : null}
+        </div> : null}
+      </div>
+
+      {record.mergedIntoId && <p role="status" className="analysis-review-note">{text("Hồ sơ này đã được gộp. ", "This case has been merged. ")}<Link to={`/cases/${record.mergedIntoId}`}>{text("Mở hồ sơ chính", "Open primary case")}</Link></p>}
+      {record.mergedCases?.length ? <section className="panel"><div className="panel-heading"><h2>{text("Hồ sơ đã gộp", "Merged cases")}</h2></div><ul>{record.mergedCases.map(item => <li key={item._id}><Link to={`/cases/${item._id}`}>{item.code} · {item.title}</Link></li>)}</ul></section> : null}
+
+      {!narrow ? actionBar : null}
 
       {actionError ? <ErrorState message={actionError} /> : null}
       {uploadWarning ? <ErrorState message={uploadWarning} /> : null}
@@ -369,9 +394,6 @@ export function CaseDetailPage() {
         <RelatedIncidentPanel id={data.case._id} code={data.case.code} title={data.case.title} /> : null}
       <div className="case-detail-grid">
         <div className="case-main-column">
-          {canOperate && !aiHidden && <RecommendationPanel key={record._id} caseId={record._id}
-            onAction={action => { const target = document.getElementById(["assign", "review_routing", "review_sla"].includes(action) ? "case-routing" : "case-conversation"); target?.scrollIntoView({ block: "center" }); target?.focus(); }}
-            onDraft={value => { setComment(value); setInternal(true); }} />}
           <section className="panel case-description">
             <div className="panel-heading">
               <div>
@@ -384,6 +406,10 @@ export function CaseDetailPage() {
             {record.propertyCode ? <dl className="case-custom-fields"><div><dt>{text("Mã cơ sở", "Property code")}</dt><dd>{record.propertyCode}</dd></div>{record.unitCode ? <div><dt>{text("Mã căn", "Unit code")}</dt><dd>{record.unitCode}</dd></div> : null}{record.assetCode ? <div><dt>{text("Thiết bị", "Asset")}</dt><dd>{record.assetCode}</dd></div> : null}</dl> : null}
             {Object.keys(record.customFields || {}).length ? <dl className="case-custom-fields">{Object.entries(record.customFields || {}).map(([field, value]) => <div key={field}><dt>{field}</dt><dd>{value}</dd></div>)}</dl> : null}
           </section>
+          {narrow ? actionBar : null}
+          {canOperate && !aiHidden && <RecommendationPanel key={record._id} caseId={record._id}
+            onAction={action => { const target = document.getElementById(["assign", "review_routing", "review_sla"].includes(action) ? "case-routing" : "case-conversation"); target?.scrollIntoView({ block: "center" }); target?.focus(); }}
+            onDraft={value => { setComment(value); setInternal(true); }} />}
 
           {!canOperate && !record.mergedIntoId && ["resolved", "closed"].includes(record.status) ? (
             <section className="panel requester-resolution-panel">

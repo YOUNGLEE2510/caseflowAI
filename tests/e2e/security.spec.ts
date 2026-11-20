@@ -69,9 +69,8 @@ test("owner can cancel or confirm deletion of a mistaken upload", async ({ page,
   await expect(page).toHaveURL(/\/overview$/);
   await page.goto(`/cases/${testCase._id}`);
   await page.locator('input[type="file"]').setInputFiles({ name: "mistaken-private-file.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nSynthetic privacy test\n%%EOF") });
+  // Uploading no longer asks first; deleting still does.
   await page.getByRole("button", { name: "Tải tệp lên", exact: true }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Đang tải lên" })).toHaveCount(0);
   const remove = page.getByRole("button", { name: "Xóa tệp: mistaken-private-file.pdf", exact: true });
   await expect(remove).toBeVisible();

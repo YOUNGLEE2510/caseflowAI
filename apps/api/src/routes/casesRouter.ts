@@ -19,6 +19,7 @@ import {
   ServiceDefinition,
   User
 } from "../models.js";
+import { USER_ROLES } from "../models/constants.js";
 import {
   classifyText,
   fallbackClassify,
@@ -437,7 +438,10 @@ casesRouter.get(
   requireRoles("agent", "manager", "org_admin", "platform_admin"),
   async (req, res) => {
     const includeInactive = ["org_admin", "platform_admin"].includes(req.auth!.role) && req.query.includeInactive === "true";
+    // Optional role filter, so pages that only need agents do not download every resident.
+    const role = z.enum(USER_ROLES).optional().parse(req.query.role);
     const users = await User.find({ organizationId: req.auth!.organizationId, ...(includeInactive ? {} : { active: true }),
+      ...(role ? { role } : {}),
       ...(req.auth!.role === "agent" ? { role: "agent", team: req.auth!.team } : {}) })
       .sort({ role: 1, name: 1 })
       .lean<PublicUserSource[]>();

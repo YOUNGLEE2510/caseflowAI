@@ -10,6 +10,7 @@ import { categoryLabels } from "../utils/labels";
 import { MaintenancePanel } from "../components/MaintenancePanel";
 import { UnitQrPanel } from "../components/UnitQrPanel";
 import { useAuth } from "../auth";
+import { useToast } from "../components/Toast";
 
 type Catalog = {
   properties: { code: string; name: string; address: string }[];
@@ -33,7 +34,7 @@ export function RentalPage() {
   const [kind, setKind] = useState("property");
   const [property, setProperty] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const toast = useToast();
   const [history, setHistory] = useState<{ asset: string; data: AssetHistory } | null>(null);
 
   const tabs: { key: TabKey; label: string; icon: typeof Wrench }[] = [
@@ -67,18 +68,17 @@ export function RentalPage() {
         { kind, propertyCode: property, code: values.code, name: values.name, category: values.category, unitCode: values.unitCode || undefined };
     if (!await confirm({ title: text("Lưu danh mục", "Save catalog"), message: text("Mã đã tồn tại sẽ được cập nhật.", "An existing code will be updated.") })) return;
     setBusy(true);
-    setMessage("");
     try {
       await api("/rental/catalog", { method: "PUT", body: JSON.stringify(body) });
-      setMessage(text("Đã lưu.", "Saved."));
+      toast.success(text("Đã lưu danh mục.", "Catalog saved."));
       await reload();
-    } catch (cause) { setMessage(cause instanceof Error ? cause.message : text("Không thể lưu.", "Save failed.")); }
+    } catch (cause) { toast.error(cause instanceof Error ? cause.message : text("Không thể lưu.", "Save failed.")); }
     finally { setBusy(false); }
   }
 
   async function showHistory(code: string) {
     try { setHistory({ asset: code, data: await api<AssetHistory>(`/rental/assets/${encodeURIComponent(code)}/history`) }); }
-    catch (cause) { setMessage(cause instanceof Error ? cause.message : text("Không tải được lịch sử.", "History unavailable.")); }
+    catch (cause) { toast.error(cause instanceof Error ? cause.message : text("Không tải được lịch sử.", "History unavailable.")); }
   }
 
   const propertyName = (code: string) => data?.properties.find(item => item.code === code)?.name || code;
@@ -102,7 +102,7 @@ export function RentalPage() {
 
       <div role="tabpanel" id={`rental-panel-${active}`} aria-labelledby={`rental-tab-${active}`} className="rental-tabpanel">
         {active === "repairs" ? <MaintenancePanel assets={data.assets} /> : null}
-        {active === "qr" && canManage ? <UnitQrPanel properties={data.properties} units={data.units} /> : null}
+        {active === "qr" && canManage ? <UnitQrPanel properties={data.properties} units={data.units} initialProperty={params.get("property") || ""} initialUnit={params.get("unit") || ""} /> : null}
         {active === "catalog" ? <div className={canManage ? "rental-catalog-layout" : "page-stack"}>
           <div className="page-stack">
             <section className="panel">
@@ -164,7 +164,6 @@ export function RentalPage() {
                   {["water", "electrical", "internet", "appliances", "access_security", "general_support"].map(key => <option key={key} value={key}>{categoryLabels[key][locale]}</option>)}
                 </select></label>
               </> : null}
-              {message ? <p role="status" className="form-hint">{message}</p> : null}
               <button className="button button-primary" disabled={busy}><Save size={16} />{text("Lưu danh mục", "Save catalog")}</button>
             </div>
           </form> : null}

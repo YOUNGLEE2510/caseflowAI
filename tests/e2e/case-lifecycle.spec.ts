@@ -10,9 +10,9 @@ async function login(page: Page, email: string) {
 
 test("requester rating, close and reopen persist", async ({ page }) => {
   const credentials = { organizationSlug: "caseflow-rental-local", password: "Canho123!" };
-  const studentLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "nguyen.anh@cudan.canho.local" } });
-  expect(studentLogin.ok()).toBeTruthy();
-  const student = await studentLogin.json();
+  const residentLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "nguyen.anh@cudan.canho.local" } });
+  expect(residentLogin.ok()).toBeTruthy();
+  const resident = await residentLogin.json();
   const managerLogin = await page.request.post("/api/auth/login", { data: { ...credentials, email: "pham.ha@canho.local" } });
   expect(managerLogin.ok()).toBeTruthy();
   const manager = await managerLogin.json();
@@ -22,7 +22,7 @@ test("requester rating, close and reopen persist", async ({ page }) => {
   const service = services.services.find((item: { team: string }) => users.users.some((user: { role: string; team: string }) => user.role === "agent" && user.team === item.team));
   expect(service).toBeTruthy();
   const assignee = users.users.find((user: { role: string; team: string }) => user.role === "agent" && user.team === service.team);
-  const created = await page.request.post("/api/cases", { headers: { Authorization: `Bearer ${student.token}` }, data: {
+  const created = await page.request.post("/api/cases", { headers: { Authorization: `Bearer ${resident.token}` }, data: {
     title: "Lifecycle fixture", description: "A deterministic request for lifecycle verification.", serviceKey: service.key, propertyCode: "TOWER-A", unitCode: "A301",
     customFields: Object.fromEntries((service.requiredFields || []).map((key: string) => [key, "E2E fixture"])) } });
   expect(created.ok()).toBeTruthy();
@@ -33,16 +33,14 @@ test("requester rating, close and reopen persist", async ({ page }) => {
   await login(page, "nguyen.anh@cudan.canho.local");
   await page.goto(`/cases/${fixture._id}`);
   await page.getByRole("button", { name: "5/5", exact: true }).click();
-  await page.getByRole("dialog", { name: "Xác nhận thao tác" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.getByText("Bạn đã đánh giá 5/5. Có thể chọn lại để cập nhật.", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Bạn đã đánh giá 5/5. Có thể chọn lại để cập nhật.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Xác nhận đóng", exact: true }).click();
-  await page.getByRole("dialog", { name: "Xác nhận thao tác" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
+  await page.getByRole("dialog", { name: "Đóng hồ sơ?" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.getByRole("button", { name: "Mở lại yêu cầu", exact: true })).toBeVisible();
   await page.screenshot({ path: "artifacts/qa-2026-10-12/02-rating-closed.png", fullPage: true });
   await page.getByRole("button", { name: "Mở lại yêu cầu", exact: true }).click();
-  await page.getByRole("dialog", { name: "Xác nhận thao tác" }).getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.getByRole("button", { name: "Mở lại yêu cầu", exact: true })).toHaveCount(0);
 });
 

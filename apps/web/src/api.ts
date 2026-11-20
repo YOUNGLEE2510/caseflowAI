@@ -4,6 +4,9 @@ const API_URL = import.meta.env.VITE_API_URL || "/api";
 const uploadKeys = new WeakMap<Blob, Map<string, string>>();
 const TOKEN_KEY = "caseflow_token";
 const LOGGED_OUT_KEY = "caseflow_logged_out";
+// Non-secret marker that this browser holds a refresh cookie, so a fresh visitor does not
+// trigger a refresh request that can only answer 401 (a red error in the console on /login).
+const SESSION_HINT_KEY = "caseflow_session_hint";
 let sessionGeneration = 0;
 let refreshing: Promise<boolean> | null = null;
 let lastRenewal: { from: string | null; to: string } | null = null;
@@ -25,11 +28,15 @@ export function setToken(token: string | null, _remember = true) {
   sessionStorage.removeItem(TOKEN_KEY);
   if (token) {
     localStorage.removeItem(LOGGED_OUT_KEY);
-  } else localStorage.setItem(LOGGED_OUT_KEY, "true");
+    localStorage.setItem(SESSION_HINT_KEY, "1");
+  } else {
+    localStorage.setItem(LOGGED_OUT_KEY, "true");
+    localStorage.removeItem(SESSION_HINT_KEY);
+  }
 }
 
 export async function restoreSession(): Promise<boolean> {
-  if (localStorage.getItem(LOGGED_OUT_KEY) === "true") return false;
+  if (localStorage.getItem(LOGGED_OUT_KEY) === "true" || localStorage.getItem(SESSION_HINT_KEY) !== "1") return false;
   if (refreshing) return refreshing;
   const generation = sessionGeneration;
   const previousToken = getToken();
@@ -37,7 +44,7 @@ export async function restoreSession(): Promise<boolean> {
     const response = await fetch(apiUrl("/auth/refresh"), {
       method: "POST", credentials: "include", signal: AbortSignal.timeout(30000)
     });
-    if (response.status === 401) return false;
+    if (response.status === 401) { localStorage.removeItem(SESSION_HINT_KEY); return false; }
     if (!response.ok) throw new Error(getStoredLocale() === "en" ? "Unable to renew session." : "Không thể gia hạn phiên đăng nhập.");
     const data = await response.json();
     if (generation !== sessionGeneration || typeof data.token !== "string") return false;

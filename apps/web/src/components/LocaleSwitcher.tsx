@@ -1,28 +1,19 @@
 import { Languages } from "lucide-react";
 import { useLocale, type Locale } from "../i18n";
+import { PreferenceMenu } from "./PreferenceMenu";
 
-const options: Array<{ value: Locale; label: string }> = [
-  { value: "vi", label: "VI" },
-  { value: "en", label: "EN" }
-];
-
+/** Language picker: a button that opens a short list (Tiếng Việt / English). */
 export function LocaleSwitcher({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale, text } = useLocale();
-
   return (
-    <div className={`locale-switcher ${compact ? "locale-switcher-compact" : ""}`} aria-label={text("Ngôn ngữ", "Language")}>
-      {!compact ? <Languages size={15} aria-hidden="true" /> : null}
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          className={locale === option.value ? "active" : ""}
-          onClick={() => setLocale(option.value)}
-          aria-pressed={locale === option.value}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <PreferenceMenu<Locale>
+      className="locale-menu"
+      compact={compact}
+      label={text("Ngôn ngữ", "Language")}
+      value={locale}
+      onChange={setLocale}
+      options={[{ value: "vi", label: "Tiếng Việt" }, { value: "en", label: "English" }]}
+      buttonContent={<><Languages size={16} aria-hidden="true" /><span className="preference-menu-value">{locale.toUpperCase()}</span></>}
+    />
   );
 }

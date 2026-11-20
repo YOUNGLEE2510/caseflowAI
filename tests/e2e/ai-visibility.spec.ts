@@ -87,10 +87,8 @@ test("facilitator switches conditions, staff work manually, then export pseudony
     await staff.setViewportSize({ width: 1440, height: 950 });
     await staff.goto(path);
     await staff.getByRole("combobox", { name: "Mức ưu tiên", exact: true }).selectOption("urgent");
-    await staff.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(staff.getByRole("combobox", { name: "Mức ưu tiên", exact: true })).toHaveValue("urgent");
     await staff.getByRole("button", { name: "Xác nhận phân luồng", exact: true }).click();
-    await staff.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(staff.getByRole("button", { name: "Xác nhận phân luồng", exact: true })).toHaveCount(0);
 
     await settings.getByRole("switch").click();

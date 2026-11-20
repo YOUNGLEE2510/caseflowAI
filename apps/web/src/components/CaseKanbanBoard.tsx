@@ -5,8 +5,8 @@ import { PriorityBadge, StatusBadge, formatRelative } from "./ui";
 import { useLocale } from "../i18n";
 import { useAuth } from "../auth";
 import { api } from "../api";
-import { useConfirmation } from "./ConfirmationProvider";
 import { useState } from "react";
+import { useToast } from "./Toast";
 
 interface BoardColumn {
   id: string;
@@ -25,16 +25,24 @@ const columns: BoardColumn[] = [
 export function CaseKanbanBoard({ cases, counts, onChanged }: { cases: CaseRecord[]; counts?: Record<string, number>; onChanged?: () => void }) {
   const { text } = useLocale();
   const { user } = useAuth();
-  const confirm = useConfirmation();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  async function take(record: CaseRecord) {
-    if (busy || !await confirm({ title: text("Nhận hồ sơ?", "Take this case?"), message: record.code })) return;
+  async function patch(record: CaseRecord, body: Record<string, unknown>, done: string) {
+    if (busy) return;
     setBusy(true); setError("");
-    try { await api(`/cases/${record._id}`, { method: "PATCH", body: JSON.stringify({ assigneeId: user!.id }) }); onChanged?.(); }
-    catch (error) { setError(error instanceof Error ? error.message : text("Không thể nhận hồ sơ.", "Unable to take case.")); }
+    try { await api(`/cases/${record._id}`, { method: "PATCH", body: JSON.stringify(body) }); toast.success(`${record.code}: ${done}`); onChanged?.(); }
+    catch (error) { setError(error instanceof Error ? error.message : text("Không thể cập nhật hồ sơ.", "Unable to update the case.")); }
     finally { setBusy(false); }
   }
+  // One-click moves that need no extra input; resolving (needs a note) and routing stay on the detail page.
+  const quickMove = (item: CaseRecord): { status: CaseStatus; label: string } | null => {
+    if (user?.role === "requester") return null;
+    if (item.status === "triaged" && item.assigneeId) return { status: "in_progress", label: text("Bắt đầu xử lý", "Start work") };
+    if (item.status === "in_progress") return { status: "waiting", label: text("Chuyển chờ phản hồi", "Move to waiting") };
+    if (item.status === "waiting") return { status: "in_progress", label: text("Tiếp tục xử lý", "Resume work") };
+    return null;
+  };
 
   return (
     <section className="case-board-scroll" aria-label={text("Bảng điều phối hồ sơ", "Case coordination board")}>
@@ -61,7 +69,10 @@ export function CaseKanbanBoard({ cases, counts, onChanged }: { cases: CaseRecor
                       <span><UserRound size={13} /> {item.assigneeName || item.requesterName}</span>
                       <span><CalendarClock size={13} /> {formatRelative(item.dueAt)}</span>
                     </footer>
-                    {user?.role === "agent" && !item.assigneeId && !["closed", "resolved"].includes(item.status) ? <button type="button" className="text-link" disabled={busy} onClick={() => void take(item)}>{text("Nhận hồ sơ", "Take case")}</button> : null}
+                    <div className="case-board-actions">
+                      {user?.role === "agent" && !item.assigneeId && !["closed", "resolved"].includes(item.status) ? <button type="button" className="text-link" disabled={busy} onClick={() => void patch(item, { assigneeId: user.id }, text("đã nhận hồ sơ", "taken"))}>{text("Nhận hồ sơ", "Take case")}</button> : null}
+                      {(() => { const move = quickMove(item); return move ? <button type="button" className="text-link" disabled={busy} onClick={() => void patch(item, { status: move.status }, move.label)}>{move.label} →</button> : null; })()}
+                    </div>
                   </article>
                 ))}
                 {!items.length ? <div className="case-board-empty">{text("Không có hồ sơ", "No cases")}</div> : null}

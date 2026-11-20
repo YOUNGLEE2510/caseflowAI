@@ -14,7 +14,9 @@ import {
   Search,
   Siren,
   Users,
-  Workflow,
+  Warehouse,
+  ClipboardList,
+  UserCog,
   Building2,
   Lock,
   X
@@ -53,19 +55,19 @@ const workspaceItems: NavItem[] = [
 
 const adminItems: NavItem[] = [
   { to: "/units", label: { vi: "Căn hộ", en: "Units" }, icon: Building2, roles: ["agent", "manager", "org_admin", "platform_admin"] },
-  { to: "/rental", label: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, icon: Workflow, roles: ["agent", "manager", "org_admin", "platform_admin"] },
+  { to: "/rental", label: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, icon: Warehouse, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/personnel", label: { vi: "Nhân sự", en: "Personnel" }, icon: Users, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/system", label: { vi: "Vận hành", en: "System" }, icon: Activity, roles: ["manager", "org_admin", "platform_admin"] },
   {
     to: "/services",
     label: { vi: "Dịch vụ", en: "Services" },
-    icon: Workflow,
+    icon: ClipboardList,
     roles: ["manager", "org_admin", "platform_admin"]
   },
   {
     to: "/users",
     label: { vi: "Tài khoản", en: "Accounts" },
-    icon: Users,
+    icon: UserCog,
     roles: ["manager", "org_admin", "platform_admin"]
   }
 ];
@@ -318,6 +320,8 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar-footer">
+          {/* On phones the language and theme switches live here to keep the top bar uncluttered. */}
+          <div className="sidebar-preferences"><LocaleSwitcher compact /><ThemeSwitcher /></div>
           <button className="nav-item logout-button" title={text("Đăng xuất", "Sign out")} aria-label={text("Đăng xuất", "Sign out")} onClick={async () => {
             if (await confirm({ title: text("Đăng xuất?", "Sign out?"), message: text("Bạn sẽ kết thúc phiên làm việc hiện tại.", "Your current session will end.") })) await logout();
           }}>
@@ -368,8 +372,7 @@ export function AppShell() {
           </form>
 
           <div className="topbar-actions">
-            <LocaleSwitcher compact />
-            <ThemeSwitcher />
+            <span className="topbar-preferences"><LocaleSwitcher compact /><ThemeSwitcher /></span>
             <div className="notification-center" ref={notificationRef}>
               <button
                 className="icon-button notification-button"
