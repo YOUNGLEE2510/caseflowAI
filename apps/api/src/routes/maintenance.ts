@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
 import { MaintenanceTask, RentalAsset } from "../models/rental.js";
-import { User } from "../models.js";
+import { CaseRecord, User } from "../models.js";
 import { requireRoles } from "../middleware/auth.js";
 import { validateObjectId } from "../middleware/validateId.js";
 import { HttpError } from "../middleware/error.js";
@@ -13,6 +13,7 @@ const manage = requireRoles("manager", "org_admin", "platform_admin");
 const staff = requireRoles("agent", "manager", "org_admin", "platform_admin");
 const create = z.object({
   assetCode: z.string().regex(/^[A-Z\d-]{1,32}$/),
+  caseCode: z.string().trim().regex(/^[A-Z\d-]{1,64}$/).optional(),
   title: z.string().trim().min(3).max(160), dueAt: z.string().datetime(),
   assigneeId: z.string().regex(/^[a-f\d]{24}$/i)
 }).strict();
@@ -33,6 +34,9 @@ maintenanceRouter.put("/rental/tasks/:key", manage, async (req, res) => {
   const actor = auditFromReq(req);
   const asset = await RentalAsset.findOne({ organizationId: actor.organizationId, code: input.assetCode, active: true }).select("propertyCode");
   if (!asset) throw new HttpError(422, "Thiết bị không hợp lệ.");
+  const relatedCase = input.caseCode ? await CaseRecord.findOne({ organizationId: actor.organizationId,
+    code: input.caseCode, propertyCode: asset.propertyCode }).select("_id").lean<{ _id: unknown }>() : null;
+  if (input.caseCode && !relatedCase) throw new HttpError(422, "Hồ sơ phải thuộc cùng tổ chức và cơ sở với thiết bị.");
   if (!await User.exists({ _id: input.assigneeId, organizationId: actor.organizationId, role: "agent", active: true })) {
     throw new HttpError(422, "Người xử lý không hợp lệ.");
   }
@@ -40,7 +44,8 @@ maintenanceRouter.put("/rental/tasks/:key", manage, async (req, res) => {
   let task;
   try {
     task = await MaintenanceTask.findOneAndUpdate({ organizationId: actor.organizationId, key },
-      { $setOnInsert: { ...input, key, fingerprint, organizationId: actor.organizationId, propertyCode: asset.propertyCode } },
+      { $setOnInsert: { ...input, key, fingerprint, organizationId: actor.organizationId, propertyCode: asset.propertyCode,
+        createdById: actor.actorId, caseId: relatedCase?._id || null } },
       { upsert: true, new: true, runValidators: true }).select("+fingerprint");
   } catch (error) {
     if (!(typeof error === "object" && error && "code" in error && error.code === 11000)) throw error;

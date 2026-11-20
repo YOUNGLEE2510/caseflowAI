@@ -12,6 +12,7 @@ import { useConfirmation } from "../components/ConfirmationProvider";
 import { matchesSearch } from "../utils/search";
 import { useToast } from "../components/Toast";
 import { AiStudySettings } from "../components/AiStudySettings";
+import { StudyExport } from "../components/StudyExport";
 
 const roleLabels: Record<Role, { vi: string; en: string }> = {
   requester: { vi: "Người yêu cầu", en: "Requester" },
@@ -107,6 +108,7 @@ export function UsersPage() {
         }
       />
 
+      {canManage ? <StudyExport /> : null}
       {loading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
       {!loading && !error && data ? (

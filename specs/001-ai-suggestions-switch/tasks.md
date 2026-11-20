@@ -110,17 +110,17 @@ gate requires denied-path tests for security-relevant changes (Principle II scop
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T029 [US3] Add tests that first open and first confirmation are recorded once with the flag value at that moment, that accounts without `studyCode` record nothing, and that the CSV has the contract header, ISO +07:00 times, the condition from `confirmedAiHidden`, formula-escaped cells and no names, phones, emails or descriptions, in apps/api/tests/aiVisibility.test.ts
+- [x] T029 [US3] Add tests that first open and first confirmation are recorded once with the flag value at that moment, that accounts without `studyCode` record nothing, and that the CSV has the contract header, ISO +07:00 times, the condition from `confirmedAiHidden`, formula-escaped cells and no names, phones, emails or descriptions, in apps/api/tests/aiVisibility.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T030 [P] [US3] Create the `CaseHandlingRecord` model per data-model.md `CaseHandlingRecord.organizationId`, `CaseHandlingRecord.userId`, `CaseHandlingRecord.caseId`, `CaseHandlingRecord.firstOpenedAt`, `CaseHandlingRecord.firstOpenedAiHidden`, `CaseHandlingRecord.confirmedAt`, `CaseHandlingRecord.confirmedAiHidden`, `CaseHandlingRecord.finalCategory`, `CaseHandlingRecord.finalPriority` with the unique (organizationId, userId, caseId) index, and export it, in apps/api/src/models/case-handling.ts and apps/api/src/models/index.ts
-- [ ] T031 [US3] Upsert `firstOpenedAt` on staff `GET /cases/:id` for accounts with data-model.md `User.studyCode` in apps/api/src/routes/casesRouter.ts
-- [ ] T032 [US3] Set `confirmedAt`, `confirmedAiHidden`, `finalCategory` and `finalPriority` once on the first `PATCH /cases/:id` that sets category/service and priority, in apps/api/src/routes/caseActionsRouter.ts
-- [ ] T033 [P] [US3] Add the optional case tag per data-model.md `Case.study.scenarioGroup` (`g1` | `g2`) in apps/api/src/models/case.ts
-- [ ] T034 [US3] Implement `GET /study/export.csv?from&to` (org admin only, `Cache-Control: no-store`, header and column order from contracts/api.md, `duplicate_jobs` from maintenance tasks created by the participant for the case, `false_links` from incident links the participant made that were later removed) in apps/api/src/routes/admin.ts
-- [ ] T035 [US3] Add an "Xuất dữ liệu thử nghiệm" button with a date range for org admins in apps/web/src/pages/UsersPage.tsx
-- [ ] T036 [P] [US3] Document the export, the extra columns and the condition rule in docs/study/README.md
+- [x] T030 [P] [US3] Create the `CaseHandlingRecord` model per data-model.md `CaseHandlingRecord.organizationId`, `CaseHandlingRecord.userId`, `CaseHandlingRecord.caseId`, `CaseHandlingRecord.firstOpenedAt`, `CaseHandlingRecord.firstOpenedAiHidden`, `CaseHandlingRecord.confirmedAt`, `CaseHandlingRecord.confirmedAiHidden`, `CaseHandlingRecord.finalCategory`, `CaseHandlingRecord.finalPriority` with the unique (organizationId, userId, caseId) index, and export it, in apps/api/src/models/case-handling.ts and apps/api/src/models/index.ts
+- [x] T031 [US3] Upsert `firstOpenedAt` on staff `GET /cases/:id` for accounts with data-model.md `User.studyCode` in apps/api/src/routes/casesRouter.ts
+- [x] T032 [US3] Set `confirmedAt`, `confirmedAiHidden`, `finalCategory` and `finalPriority` once on the first `PATCH /cases/:id` that sets category/service and priority, in apps/api/src/routes/caseActionsRouter.ts
+- [x] T033 [P] [US3] Add the optional case tag per data-model.md `Case.study.scenarioGroup` (`g1` | `g2`) in apps/api/src/models/case.ts
+- [x] T034 [US3] Implement `GET /study/export.csv?from&to` (org admin only, `Cache-Control: no-store`, header and column order from contracts/api.md, `duplicate_jobs` from maintenance tasks created by the participant for the case, `false_links` from incident links the participant made that were later removed) in apps/api/src/routes/admin.ts
+- [x] T035 [US3] Add an "Xuất dữ liệu thử nghiệm" button with a date range for org admins in apps/web/src/pages/UsersPage.tsx
+- [x] T036 [P] [US3] Document the export, the extra columns and the condition rule in docs/study/README.md
 
 **Checkpoint**: All three stories work independently
 
@@ -128,9 +128,9 @@ gate requires denied-path tests for security-relevant changes (Principle II scop
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T037 Add the E2E suite: the same case viewed in manual and assisted mode at 1440px and 390px, light and dark, no horizontal overflow, notice visible, admin switch flow, in tests/e2e/ai-visibility.spec.ts
-- [ ] T038 [P] Run the hover/contrast audit used for the redesign on the users page and the notice in both themes (Constitution VI)
-- [ ] T039 Run quickstart.md end to end (API, web, AI tests, `npm run build`, `npm run test:e2e`) and record results in the PR description
+- [x] T037 Add the E2E suite: the same case viewed in manual and assisted mode at 1440px and 390px, light and dark, no horizontal overflow, notice visible, admin switch flow, in tests/e2e/ai-visibility.spec.ts
+- [x] T038 [P] Run the hover/contrast audit used for the redesign on the users page and the notice in both themes (Constitution VI) — done inside tests/e2e/ai-visibility.spec.ts (normal/hover/focus, both themes, ≥ 4.5:1)
+- [x] T039 Run quickstart.md end to end (API, web, AI tests, `npm run build`, `npm run test:e2e`) and record results in the PR description
 - [ ] T040 [P] Update the "Xây công tắc ẩn gợi ý AI" task in the Notion task board with commit and test evidence
 
 ---

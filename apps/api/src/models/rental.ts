@@ -43,6 +43,8 @@ export const RentalUnit = models.RentalUnit || model("RentalUnit", unitSchema);
 export const RentalAsset = models.RentalAsset || model("RentalAsset", assetSchema);
 const maintenanceSchema = new Schema({
   organizationId: { type: Schema.Types.ObjectId, required: true },
+  caseId: { type: Schema.Types.ObjectId, ref: "CaseRecord", default: null },
+  createdById: { type: Schema.Types.ObjectId, ref: "User", default: null },
   key: { type: String, required: true }, fingerprint: { type: String, required: true, select: false },
   propertyCode: { type: String, required: true }, assetCode: { type: String, required: true },
   dueAt: { type: Date, required: true }, title: { type: String, required: true },

@@ -17,6 +17,7 @@ export interface PublicUserSource {
   mustChangePassword?: boolean;
   mfaEnabled?: boolean;
   aiSuggestionsHidden?: boolean;
+  aiVisibilityChangedAt?: Date | null;
   studyCode?: string | null;
 }
 

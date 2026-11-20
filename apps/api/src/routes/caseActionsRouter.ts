@@ -1,4 +1,5 @@
 import { Router, type Request } from "express";
+import { recordStudyConfirmation } from "../services/studyHandling.js";
 import { availablePersonnelFilter, isScheduledNow } from "../services/personnelPolicy.js";
 import mongoose from "mongoose";
 import { z } from "zod";
@@ -125,7 +126,10 @@ caseActionsRouter.patch(
     }
 
     const events: any[] = [];
+    // Set when this request confirms routing (button or service change): the study's "confirmed" moment.
+    let routingConfirmed = false;
     const markAiReviewed = (selectedCategory: string) => {
+      routingConfirmed = true;
       const reviewStatus = resolveAiReviewStatus(record.ai.classification, selectedCategory);
       record.ai.reviewStatus = reviewStatus;
       record.ai.processingStatus = "cancelled";
@@ -240,6 +244,9 @@ caseActionsRouter.patch(
     updateSlaPause(record, previousStatus, new Date(), organizationCalendar(calendarOrganization?.settings));
     record.events.push(...events);
     await record.save();
+    if (routingConfirmed) {
+      await recordStudyConfirmation(req.auth!, String(record._id), record.category, record.priority);
+    }
 
     const { resolutionNote: _resolutionNote, ...auditChanges } = input;
     await logAudit({

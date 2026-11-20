@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { exportStudyCsv } from "../services/studyExport.js";
 import { parsePatch } from "../services/parsePatch.js";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
@@ -15,6 +16,14 @@ import { auditFromReq, logAudit, notify } from "../services/helpers.js";
 import { newPasswordSchema as passwordSchema } from "../services/passwordPolicy.js";
 
 export const adminRouter = Router();
+adminRouter.get("/study/export.csv", requireRoles("org_admin", "platform_admin"), async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const result = await exportStudyCsv(req.auth!.organizationId, req.query);
+  await logAudit({ ...auditFromReq(req), action: "study.export", resource: "CaseHandlingRecord", changes: { rows: result.rows } }, req);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="caseflow-study.csv"');
+  res.send(result.csv);
+});
 
 
 

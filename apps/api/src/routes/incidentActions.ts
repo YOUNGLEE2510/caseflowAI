@@ -9,7 +9,7 @@ import { CaseRecord, Incident, User } from "../models.js";
 import { INCIDENT_STATUSES, SEVERITY_LEVELS } from "../models/constants.js";
 import { findRelatedCases } from "../services/aiClient.js";
 import { auditFromReq, logAudit, notifyMany } from "../services/helpers.js";
-import { hiddenShapes, requireAiVisible } from "../services/aiVisibility.js";
+import { hiddenShapes, isAiHidden, requireAiVisible } from "../services/aiVisibility.js";
 
 export const incidentActions = Router();
 const manage = requireRoles("manager", "org_admin", "platform_admin");
@@ -100,7 +100,7 @@ incidentActions.get("/incidents/:id/options", manage, validateObjectId("id"), as
     }).select("code title description propertyCode unitCode assetCode createdAt").sort({ createdAt: -1 }).limit(40).lean()
   ]);
   const first = linked[0];
-  const matches = await findRelatedCases(
+  const matches = isAiHidden(req.auth) ? [] : await findRelatedCases(
     { id: first ? String(first._id) : String(incident._id), title: first?.title || incident.title,
       text: first ? `${first.title}. ${first.description}` : incident.title, propertyCode: incident.propertyCode,
       unitCode: first?.unitCode || "", assetCode: first?.assetCode || "", createdAt: first?.createdAt || incident.detectedAt },

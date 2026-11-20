@@ -297,6 +297,19 @@ export function CaseDetailPage() {
             </select>
           </label>
           <label>
+            <span>{text("Mức ưu tiên", "Priority")}</span>
+            <select
+              value={record.priority}
+              aria-label={text("Mức ưu tiên", "Priority")}
+              onChange={(event) => updateCase({ priority: event.target.value })}
+              disabled={saving}
+            >
+              {([["low", "Thấp", "Low"], ["normal", "Bình thường", "Normal"], ["high", "Cao", "High"], ["urgent", "Khẩn cấp", "Urgent"]] as const).map(([value, vi, en]) => (
+                <option key={value} value={value}>{text(vi, en)}</option>
+              ))}
+            </select>
+          </label>
+          <label>
             <span>{text("Dịch vụ", "Service")}</span>
             <select
               value={record.serviceKey}

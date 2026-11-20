@@ -16,7 +16,8 @@ export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", config.TRUST_PROXY_HOPS);
 app.use(helmet());
-app.use(cors({ origin: allowedWebOrigins(config.WEB_ORIGIN, config.DEPLOYMENT_MODE), credentials: true }));
+app.use(cors({ origin: allowedWebOrigins(config.WEB_ORIGIN, config.DEPLOYMENT_MODE), credentials: true,
+  exposedHeaders: ["X-CaseFlow-AI-Hidden", "X-CaseFlow-AI-Version"] }));
 app.use(requestIdMiddleware);
 app.get("/internal/metrics", (req, res) => {
   const expected = process.env.METRICS_TOKEN;

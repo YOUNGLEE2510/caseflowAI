@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { withAiBudget } from "../services/aiBudget.js";
+import { recordStudyOpen } from "../services/studyHandling.js";
 import { config } from "../config.js";
 import { processCaseTriage } from "../jobs/caseTriage.js";
 import { suggestPriority } from "../services/prioritySuggestion.js";
@@ -389,6 +390,7 @@ casesRouter.get("/cases/:id", validateObjectId("id"), async (req, res) => {
   const filter: any = { _id: req.params.id, ...caseScope(req.auth!) };
   const record = await CaseRecord.findOne(filter).lean<any>();
   if (!record) throw new HttpError(404, "Không tìm thấy hồ sơ.");
+  await recordStudyOpen(req.auth!, String(record._id));
   const mergedCases = await CaseRecord.find({ ...caseScope(req.auth!), mergedIntoId: record._id })
     .select("code title status mergedAt").sort({ mergedAt: -1 }).limit(100).lean();
   res.json({ case: presentCase({ ...record, mergedCases }, req.auth!) });

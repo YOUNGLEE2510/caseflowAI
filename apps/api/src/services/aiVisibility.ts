@@ -21,7 +21,9 @@ export function stripAiFromCase<T extends Record<string, any>>(value: T): T {
       .filter((event: any) => event?.type !== "ai_triage")
       .map((event: any) => event?.type === "ai_reviewed"
         ? { ...event, label: NEUTRAL_REVIEW_LABEL, metadata: undefined }
-        : event);
+        : event?.type === "priority_changed"
+          ? { ...event, label: String(event.label || "").replace(/\s*\(theo gợi ý AI\)/g, ""), metadata: undefined }
+          : event);
   }
   return result as T;
 }

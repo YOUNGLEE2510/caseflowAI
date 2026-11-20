@@ -361,5 +361,7 @@ kbd { color: var(--ink); background: var(--surface-muted); }
 .ai-study-settings { display: grid; gap: 10px; }
 .ai-study-settings h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
 .ai-study-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; font-weight: 600; cursor: pointer; }
+.study-export { display: grid; gap: var(--space-3); padding: var(--space-4); }
+.study-export-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--space-3); }
 .ai-study-switch input { width: 20px; height: 20px; accent-color: var(--brand-solid); }
 .ai-hidden-badge { display: block; margin-top: 4px; padding: 1px 8px; width: fit-content; border-radius: var(--radius-pill); color: var(--warning); background: var(--warning-bg); font-size: 11px; font-weight: 700; }
