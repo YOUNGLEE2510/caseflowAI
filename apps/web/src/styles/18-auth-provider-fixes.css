@@ -33,10 +33,6 @@
   object-fit: contain;
 }
 
-.login-microsoft {
-  margin-top: 10px;
-}
-
 .login-panel .login-google {
   min-height: 44px;
   white-space: normal;

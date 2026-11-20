@@ -15,9 +15,10 @@ export type ReviewedCase = {
 export function redactTrainingText(value: string) {
   return value
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[EMAIL]")
-    .replace(/\b[BND]\d{2}[A-Z]{2,8}\d{3,6}\b/gi, "[STUDENT_ID]")
+    // Citizen ID (CCCD 12 digits, CMND 9 digits) before phones, then any other long number.
+    .replace(/\b(?:\d{12}|\d{9})\b/g, "[ID_NUMBER]")
     .replace(/(?:\+?\d[\d .()-]{7,}\d)/g, "[PHONE]")
-    .replace(/\b(?:SV|CT|IT)?\d{6,10}\b/gi, "[STUDENT_ID]")
+    .replace(/\b\d{6,12}\b/g, "[ID_NUMBER]")
     .replace(/\s+/g, " ")
     .trim();
 }

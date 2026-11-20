@@ -3,15 +3,15 @@ import { buildReviewedTrainingCsv, redactTrainingText } from "./trainingDataset.
 
 describe("reviewed training dataset export", () => {
   it("removes common identifiers before writing training text", () => {
-    expect(redactTrainingText("SV12345678 khong vao duoc, email a@example.com, 0912 345 678"))
-      .toBe("[STUDENT_ID] khong vao duoc, email [EMAIL], [PHONE]");
+    expect(redactTrainingText("CCCD 012345678901 khong vao duoc, email a@example.com, 0912 345 678"))
+      .toBe("CCCD [ID_NUMBER] khong vao duoc, email [EMAIL], [PHONE]");
   });
 
   it("uses a human correction as the training label and omits unreviewed cases", () => {
     const csv = buildReviewedTrainingCsv([
       {
         title: "Khong vao duoc",
-        description: "Tai khoan SV12345678 bi khoa",
+        description: "Hop dong 20240815 bi khoa",
         category: "internet",
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         ai: { classification: "water", confidence: 0.62, reviewStatus: "corrected", humanCorrectedLabel: "internet", reviewedAt: new Date("2026-01-02T00:00:00.000Z") }
@@ -19,7 +19,7 @@ describe("reviewed training dataset export", () => {
       { title: "Unreviewed", description: "Do not include", category: "water", ai: { reviewStatus: undefined } }
     ]);
 
-    expect(csv).toContain("Tai khoan [STUDENT_ID] bi khoa,internet,water,0.62");
+    expect(csv).toContain("Hop dong [ID_NUMBER] bi khoa,internet,water,0.62");
     expect(csv).not.toContain("Unreviewed");
   });
 });

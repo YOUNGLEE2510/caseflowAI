@@ -236,7 +236,7 @@ kbd { color: var(--ink); background: var(--surface-muted); }
   .repair-list { padding-inline: 16px; }
 }
 
-/* Google / Microsoft sign-in buttons: readable in every state and theme */
+/* Google sign-in button: readable in every state and theme */
 .login-panel .login-google,
 .login-google {
   border: 1px solid var(--provider-border);

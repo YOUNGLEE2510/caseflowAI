@@ -53,7 +53,7 @@ app.use("/api/auth/login", rateLimit({
   legacyHeaders: false,
   message: { message: "Đăng nhập quá nhiều lần. Vui lòng thử lại sau một phút." }
 }));
-app.use(["/api/auth/google", "/api/auth/microsoft"], rateLimit({
+app.use("/api/auth/google", rateLimit({
   windowMs: 60_000,
   limit: config.OAUTH_RATE_LIMIT_PER_MINUTE,
   standardHeaders: "draft-7",

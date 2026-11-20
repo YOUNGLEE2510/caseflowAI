@@ -6,7 +6,7 @@ import { emailPasswordReset } from "../src/services/emailService.js";
 describe("password reset email", () => {
   it("rejects unsafe or invalid URLs in both email formats", () => {
     for (const url of ["javascript:alert(1)", "not-a-url"]) {
-      const email = emailPasswordReset("Student", url);
+      const email = emailPasswordReset("Resident", url);
       expect(email.html).toContain('href="#"');
       expect(email.text).not.toContain(url);
     }

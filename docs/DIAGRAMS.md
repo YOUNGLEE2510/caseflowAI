@@ -21,7 +21,7 @@ flowchart LR
   API -->|HTTP nội bộ| AI[FastAPI AI Service]
   AI --> CLS[Phân loại và trích xuất]
   AI --> RET[Hồ sơ tương tự và retrieval]
-  AI --> SLA[Dự báo rủi ro SLA]
+  AI --> SLA[Dự báo rủi ro SLA - thử nghiệm]
   API --> FILES[Cloudinary: PDF và ảnh authenticated]
 ```
 

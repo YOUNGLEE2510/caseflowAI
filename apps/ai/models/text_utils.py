@@ -11,18 +11,14 @@ def summarize(text: str, limit: int = 180) -> str:
 
 
 def extract_entities(text: str) -> dict[str, str]:
-    """Trích xuất entity đơn giản bằng regex: mã SV, phòng, deadline.
+    """Trích xuất entity đơn giản bằng regex: vị trí, thời hạn, căn hộ, tòa nhà.
 
-    Đây là rule-based extraction, không phải NER model. Đủ dùng cho
-    các pattern phổ biến trong ngữ cảnh trường đại học. Với text phức tạp
-    hơn nên xem xét underthesea hoặc PhoBERT NER.
+    Đây là rule-based extraction, không phải NER model; đủ cho các mẫu thường gặp
+    trong phản ánh của người thuê. Không trích xuất số định danh cá nhân.
     """
     extracted: dict[str, str] = {}
 
-    # Chỉ nhận mã có tiền tố rõ ràng để không nhầm số điện thoại, mã hồ sơ hay số giao dịch.
-    student_id = re.search(r"\b(?:MSSV|MSV|SV|CT|IT)\s*[:#-]?\s*\d{6,10}\b", text, re.IGNORECASE)
-
-    # Phòng học: ví dụ A1-302, B2.105, Đ3-01
+    # Vị trí: ví dụ A1-302, B2.105, Đ3-01
     room = re.search(r"\b[A-ZĐ]\d{1,2}[-.]?\d{2,4}\b", text, re.IGNORECASE)
 
     # Deadline: "trước thứ Hai", "ngày 15/09", "hôm nay", "ngày mai"
@@ -32,8 +28,6 @@ def extract_entities(text: str) -> dict[str, str]:
         re.IGNORECASE,
     )
 
-    if student_id:
-        extracted["studentId"] = student_id.group(0).upper()
     if room:
         extracted["location"] = room.group(0).upper()
     if deadline:

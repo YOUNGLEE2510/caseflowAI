@@ -17,14 +17,13 @@ interface AuthContextValue {
   loading: boolean;
   login: (organizationSlug: string, email: string, password: string, remember?: boolean) => Promise<void>;
   loginWithGoogle: (ticket: string) => Promise<void>;
-  loginWithMicrosoft: (ticket: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const oauthExchanges = new Map<string, Promise<{ token: string; user: User; remember: boolean }>>();
-function exchangeOAuth(provider: "google" | "microsoft", ticket: string) {
+function exchangeOAuth(provider: "google", ticket: string) {
   const key = `${provider}:${ticket}`;
   const current = oauthExchanges.get(key);
   if (current) return current;
@@ -100,13 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loginWithMicrosoft = useCallback(async (ticket: string) => {
-    const response = await exchangeOAuth("microsoft", ticket);
-    setToken(response.token, response.remember);
-    setUser(response.user);
-  }, []);
-
-  const value = useMemo(() => ({ user, loading, login, loginWithGoogle, loginWithMicrosoft, logout }), [user, loading, login, loginWithGoogle, loginWithMicrosoft, logout]);
+  const value = useMemo(() => ({ user, loading, login, loginWithGoogle, logout }), [user, loading, login, loginWithGoogle, logout]);
   return <AuthContext.Provider value={value}>{authError ? <div className="boot-screen"><ErrorState message={authError} onRetry={() => { setLoading(true); setAttempt((value) => value + 1); }} /></div> : children}</AuthContext.Provider>;
 }
 

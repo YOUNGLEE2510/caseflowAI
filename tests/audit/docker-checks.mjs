@@ -13,8 +13,8 @@ await check('AI rejects missing internal authentication', async () => {
   if ((await ai('/classify', { text: 'Audit account access request' }, false)).status !== 401) throw new Error('AuthenticationNotEnforced');
 });
 await check('AI classifies authenticated requests', async () => {
-  const response = await ai('/classify', { text: 'Không đăng nhập được tài khoản sinh viên' });
-  if (!response.ok || (await response.json()).label !== 'it_access') throw new Error('ClassificationFailed');
+  const response = await ai('/classify', { text: 'Wifi trong căn mất kết nối từ tối qua' });
+  if (!response.ok || (await response.json()).label !== 'internet') throw new Error('ClassificationFailed');
 });
 await check('AI retrieves the supplied source', async () => {
   const response = await ai('/knowledge/retrieve', { query: 'khôi phục mật khẩu', articles: [{ id: 'audit-fixture', title: 'Khôi phục mật khẩu', content: 'Tài liệu kiểm thử khôi phục mật khẩu bằng xác minh tài khoản.', category: 'it_access', sourceLabel: 'Audit fixture' }], topK: 1 });
