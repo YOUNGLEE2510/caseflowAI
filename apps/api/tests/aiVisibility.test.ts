@@ -136,6 +136,19 @@ describe("AI suggestions hidden for a study account", () => {
     expect(dashboard.body.highRiskCases).toEqual([]);
   });
 
+  it("blanks AI averages and AI export columns in analytics for the hidden account only", async () => {
+    const categories = await call("/analytics/categories", people.hidden);
+    expect(categories.body.categories.length).toBeGreaterThan(0);
+    for (const row of categories.body.categories) expect(row).toMatchObject({ avgRisk: null, avgConfidence: null });
+    expect((await call("/analytics/categories", people.shown)).body.categories.some((row: any) => row.avgRisk > 0)).toBe(true);
+    for (const row of (await call("/analytics/team-performance", people.hidden)).body.agents) expect(row.avgRisk).toBeNull();
+
+    const hiddenCsv = (await call("/analytics/export/csv", people.hidden)).body as string;
+    expect(hiddenCsv).toContain("STUDY-1");
+    expect(hiddenCsv).not.toMatch(/0\.91|0\.92/);
+    expect((await call("/analytics/export/csv", people.shown)).body as string).toMatch(/0\.92/);
+  });
+
   it("hides predicted-risk notifications but keeps breaches", async () => {
     const inbox = await call("/notifications", people.hidden);
     expect(inbox.body.notifications.map((item: any) => item.title)).toEqual(["STUDY-1 đã quá hạn SLA"]);

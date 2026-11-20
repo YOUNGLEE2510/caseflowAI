@@ -7,7 +7,7 @@ import { pageNumber } from "../services/casePolicy.js";
 import { buildReviewedTrainingCsv, type ReviewedCase } from "../services/trainingDataset.js";
 import { businessHoursBetween, organizationCalendar } from "../services/workingHours.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
-import { requireAiVisible } from "../services/aiVisibility.js";
+import { isAiHidden, requireAiVisible } from "../services/aiVisibility.js";
 
 export const analyticsRouter = Router();
 
@@ -183,7 +183,8 @@ analyticsRouter.get(
         resolved: p.resolved,
         open: p.open,
         breached: p.breached,
-        avgRisk: Number((p.avgRisk || 0).toFixed(2)),
+        // Manual study condition: no AI risk scores, not even as averages.
+        avgRisk: isAiHidden(req.auth) ? null : Number((p.avgRisk || 0).toFixed(2)),
         resolutionRate: p.assigned ? Number(((p.resolved / p.assigned) * 100).toFixed(1)) : 0
       }))
     });
@@ -310,8 +311,8 @@ analyticsRouter.get(
       categories: distribution.map((c) => ({
         category: c._id,
         count: c.count,
-        avgRisk: Number((c.avgRisk || 0).toFixed(2)),
-        avgConfidence: Number((c.avgConfidence || 0).toFixed(2))
+        avgRisk: isAiHidden(req.auth) ? null : Number((c.avgRisk || 0).toFixed(2)),
+        avgConfidence: isAiHidden(req.auth) ? null : Number((c.avgConfidence || 0).toFixed(2))
       }))
     });
   }
@@ -377,6 +378,8 @@ analyticsRouter.get(
       "Đội xử lý", "Người yêu cầu", "Người xử lý", "Phân loại AI",
       "Độ tin cậy AI", "Rủi ro SLA", "Kênh", "Ngày tạo", "Ngày giải quyết"
     ];
+    // Manual study condition: keep the export, blank the AI columns.
+    const aiHidden = isAiHidden(req.auth);
     const rows = cases.map((c: any) => [
       c.code,
       c.title,
@@ -386,9 +389,9 @@ analyticsRouter.get(
       c.team,
       c.requesterName,
       c.assigneeName || "",
-      c.ai?.classification || "",
-      c.ai?.confidence || 0,
-      c.ai?.riskScore || 0,
+      aiHidden ? "" : c.ai?.classification || "",
+      aiHidden ? "" : c.ai?.confidence || 0,
+      aiHidden ? "" : c.ai?.riskScore || 0,
       c.channel || "",
       c.createdAt?.toISOString?.() || "",
       c.resolvedAt?.toISOString?.() || ""
