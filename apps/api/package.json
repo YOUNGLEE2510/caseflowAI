@@ -10,6 +10,7 @@
     "start": "node dist/index.js",
     "seed": "tsx src/seed.ts",
     "seed:force": "tsx src/seed.ts --force",
+    "pilot:setup": "tsx src/scripts/pilotSetup.ts",
     "rental:dataset": "tsx src/rentalDatasetSetup.ts",
     "evaluate:priority": "tsx src/evaluation/evaluatePriority.ts",
     "test": "vitest run",

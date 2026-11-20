@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import type { AuthUser } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
+import { isAiHidden, stripAiFromCase } from "./aiVisibility.js";
 import type { CaseStatus } from "../models.js";
 
 // FSM chuyển trạng thái hồ sơ — mỗi trạng thái chỉ có thể chuyển sang
@@ -24,14 +25,15 @@ export function caseScope(auth: AuthUser): Record<string, unknown> {
   };
 }
 
-export function presentCase(record: any, role: AuthUser["role"]) {
+export function presentCase(record: any, viewer: Pick<AuthUser, "role" | "aiHidden">) {
+  const role = viewer.role;
   const value = typeof record.toObject === "function" ? record.toObject({ flattenMaps: true }) : { ...record };
   delete value.idempotencyKeyHash;
   delete value.requestFingerprint;
   delete value.searchTokens;
   delete value.searchVersion;
     delete value.deliveryEvents;
-  if (role !== "requester") return value;
+  if (role !== "requester") return isAiHidden(viewer) ? stripAiFromCase(value) : value;
   return {
     ...value,
     // Requesters see whether a QR submission was verified, not staff notes or the callback number.

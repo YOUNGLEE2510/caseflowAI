@@ -2,6 +2,11 @@ import { Router } from "express";
 import { Notification } from "../models.js";
 import { z } from "zod";
 import { validateObjectId } from "../middleware/validateId.js";
+import { isAiHidden } from "../services/aiVisibility.js";
+
+// Predicted-risk warnings carry an AI score; hidden viewers only get breaches (facts).
+const hiddenAiNotifications = (req: import("express").Request): Record<string, unknown> =>
+  isAiHidden(req.auth) ? { $nor: [{ type: "sla_warning", title: { $regex: "nguy cơ" } }] } : {};
 
 export const notificationRouter = Router();
 
@@ -17,11 +22,12 @@ notificationRouter.get("/", async (req, res) => {
     userId: req.auth!.id
   };
   if (unread === "true") filter.read = false;
+  Object.assign(filter, hiddenAiNotifications(req));
 
   const [notifications, total, unreadCount] = await Promise.all([
     Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     Notification.countDocuments(filter),
-    Notification.countDocuments({ organizationId: req.auth!.organizationId, userId: req.auth!.id, read: false })
+    Notification.countDocuments({ organizationId: req.auth!.organizationId, userId: req.auth!.id, read: false, ...hiddenAiNotifications(req) })
   ]);
 
   res.json({ notifications, total, unreadCount });
@@ -32,7 +38,8 @@ notificationRouter.get("/unread-count", async (req, res) => {
   const count = await Notification.countDocuments({
     organizationId: req.auth!.organizationId,
     userId: req.auth!.id,
-    read: false
+    read: false,
+    ...hiddenAiNotifications(req)
   });
   res.json({ count });
 });

@@ -41,7 +41,13 @@ const userSchema = new Schema(
     mfaPendingSecret: { type: String, select: false },
     mfaPendingUntil: { type: Date, select: false },
     mfaLastStep: { type: Number, default: -1, select: false },
-    mfaRecoveryHashes: { type: [String], select: false }
+    mfaRecoveryHashes: { type: [String], select: false },
+    // User study: hide AI suggestions from this staff account (set by org admins only).
+    aiSuggestionsHidden: { type: Boolean, default: false },
+    aiVisibilityChangedAt: { type: Date, default: null },
+    aiVisibilityChangedById: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    // Pseudonymous participant code (p01, p02…); never a name.
+    studyCode: { type: String, default: null, match: /^p\d{2}$/ }
   },
   { timestamps: true }
 );
@@ -51,6 +57,7 @@ userSchema.index(
   { unique: true, partialFilterExpression: { googleSubject: { $type: "string" } } }
 );
 userSchema.index({ organizationId: 1, role: 1, team: 1, active: 1 });
+userSchema.index({ organizationId: 1, studyCode: 1 }, { unique: true, partialFilterExpression: { studyCode: { $type: "string" } } });
 userSchema.index({ organizationId: 1, microsoftTenantId: 1, microsoftObjectId: 1 }, {
   unique: true,
   partialFilterExpression: { microsoftTenantId: { $type: "string" }, microsoftObjectId: { $type: "string" } }

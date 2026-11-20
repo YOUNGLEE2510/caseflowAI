@@ -44,9 +44,10 @@ function ProgressWidget({ icon, label, value, displayValue, detail, loading, err
   );
 }
 
-export function OperationsProgress() {
+export function OperationsProgress({ hideAi = false }: { hideAi?: boolean }) {
   const { text } = useLocale();
   const csat = useApiData<CsatMetrics>("/analytics/csat");
+  // For hidden study accounts the API withholds this; the tile is not rendered either.
   const ai = useApiData<AiMetrics>("/analytics/ai-accuracy");
 
   const csatValue = csat.data?.averageScore === null || csat.data?.averageScore === undefined
@@ -66,7 +67,7 @@ export function OperationsProgress() {
           ? text(`${csat.data.responses}/${csat.data.eligible} phản hồi trong 30 ngày`, `${csat.data.responses}/${csat.data.eligible} responses in 30 days`)
           : text("Chưa có phản hồi để đánh giá", "No feedback available yet")}
       />
-      <ProgressWidget
+      {!hideAi ? <ProgressWidget
         icon={BrainCircuit}
         label={text("Kiểm duyệt AI", "AI review coverage")}
         value={aiValue}
@@ -74,7 +75,7 @@ export function OperationsProgress() {
         detail={ai.data
           ? text(`${ai.data.reviewed}/${ai.data.total} dự đoán đã được đánh giá`, `${ai.data.reviewed}/${ai.data.total} predictions reviewed`)
           : text("Chưa có dữ liệu phân luồng", "No routing data available yet")}
-      />
+      /> : null}
     </section>
   );
 }

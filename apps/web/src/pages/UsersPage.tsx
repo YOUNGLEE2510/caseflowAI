@@ -11,6 +11,8 @@ import { api } from "../api";
 import { useConfirmation } from "../components/ConfirmationProvider";
 import { matchesSearch } from "../utils/search";
 import { useToast } from "../components/Toast";
+import { AiStudySettings } from "../components/AiStudySettings";
+import { StudyExport } from "../components/StudyExport";
 
 const roleLabels: Record<Role, { vi: string; en: string }> = {
   requester: { vi: "Người yêu cầu", en: "Requester" },
@@ -106,6 +108,7 @@ export function UsersPage() {
         }
       />
 
+      {canManage ? <StudyExport /> : null}
       {loading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
       {!loading && !error && data ? (
@@ -152,6 +155,7 @@ export function UsersPage() {
                     <span>
                       <strong>{member.name}</strong>
                       <small>{member.email}</small>
+                      {member.aiSuggestionsHidden ? <small className="ai-hidden-badge">{text("AI ẩn", "AI hidden")}{member.studyCode ? ` · ${member.studyCode}` : ""}</small> : null}
                     </span>
                   </span>
                   <span className={`role-label role-${member.role}`}>
@@ -200,6 +204,10 @@ export function UsersPage() {
                   <dd>{selected.title || text("Chưa cập nhật", "Not provided")}</dd>
                 </div>
               </dl>
+              {selected.role !== "requester" && selected.role !== "platform_admin" && selected.id !== user?.id && (canManage || user?.role === "manager") ? <>
+                <div className="config-divider" />
+                {canManage ? <AiStudySettings member={selected} canChange onSaved={() => void reload()} /> : null}
+              </> : null}
               <div className="config-divider" />
               <section className="permission-section">
                 <h3>{text("Quyền hiệu lực", "Effective permissions")}</h3>

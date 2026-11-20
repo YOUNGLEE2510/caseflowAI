@@ -10,6 +10,7 @@ import { useLocale } from "../i18n";
 import type { KnowledgeArticle } from "../types";
 import { ReadMore } from "../components/ReadMore";
 import { categoryLabels } from "../utils/labels";
+import { AiHiddenNotice } from "../components/AiHiddenNotice";
 
 interface SearchResult {
   generation?: { mode: string; reason?: string };
@@ -28,6 +29,7 @@ export function KnowledgePage() {
   const { locale, text } = useLocale();
   const { user } = useAuth();
   const canWrite = user?.role !== "requester";
+  const aiHidden = Boolean(user?.aiSuggestionsHidden && user.role !== "requester");
   const canPublish = Boolean(user && ["manager", "org_admin", "platform_admin"].includes(user.role));
   const [editing, setEditing] = useState<KnowledgeArticle | "new" | null>(null);
   const [opened, setOpened] = useState<KnowledgeArticle | null>(null);
@@ -103,6 +105,7 @@ export function KnowledgePage() {
         )}
       />
 
+      {aiHidden ? <AiHiddenNotice /> : <>
       <section className="knowledge-search knowledge-search-premium" aria-labelledby="knowledge-ask-title">
         <div className="knowledge-section-head">
           <MessageCircleQuestion size={20} aria-hidden="true" />
@@ -154,6 +157,7 @@ export function KnowledgePage() {
           </div>
         ) : null}
       </section>
+      </>}
 
       <section className="panel">
         <div className="panel-heading">

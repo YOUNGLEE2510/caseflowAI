@@ -63,6 +63,13 @@ async function authenticatedFetch(path: string, options: RequestInit, token: str
       if (response.status === 401) expireSession(retryToken);
     } else expireSession(token);
   }
+  const visibility = response.headers.get("X-CaseFlow-AI-Hidden");
+  const requestToken = headers.get("Authorization")?.replace(/^Bearer /, "");
+  if (response.ok && requestToken && requestToken === getToken() && (visibility === "true" || visibility === "false")) {
+    window.dispatchEvent(new CustomEvent("caseflow:ai-visibility", { detail: {
+      hidden: visibility === "true", version: Number(response.headers.get("X-CaseFlow-AI-Version") || 0)
+    } }));
+  }
   return response;
 }
 

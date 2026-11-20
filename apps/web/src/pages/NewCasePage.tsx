@@ -11,6 +11,7 @@ import { useConfirmation } from "../components/ConfirmationProvider";
 import { categoryLabels } from "../utils/labels";
 import { RecommendationPanel } from "../components/RecommendationPanel";
 import { retainServiceFields } from "../utils/serviceFields";
+import { AiHiddenNotice } from "../components/AiHiddenNotice";
 
 interface IntakeAnalysis {
   classification: {
@@ -53,6 +54,7 @@ export function NewCasePage() {
   const { data: serviceData } = useApiData<{ services: ServiceDefinition[] }>("/services");
   // The draft lives in this tab's sessionStorage: it survives moving between pages and is gone when the tab closes.
   const draftKey = `caseflow.draft.new-case.${user?.id || "anonymous"}`;
+  const aiHidden = Boolean(user?.aiSuggestionsHidden && user.role !== "requester");
   const [initialDraft] = useState(() => readDraft(draftKey));
   const [title, setTitle] = useState(initialDraft?.title || "");
   const [description, setDescription] = useState(initialDraft?.description || "");
@@ -321,7 +323,7 @@ export function NewCasePage() {
           />
           {error ? <ErrorState message={error} /> : null}
           <div className="form-actions">
-            <button
+            {!aiHidden ? <button
               type="button"
               className="button button-secondary"
               onClick={analyze}
@@ -329,7 +331,7 @@ export function NewCasePage() {
             >
               {analyzing ? <span className="spinner" /> : <Sparkles size={17} />}
               {analyzing ? text("Đang phân tích", "Analyzing") : text("Phân tích bằng AI", "Analyze with AI")}
-            </button>
+            </button> : null}
             <button className="button button-primary" disabled={submitting || description.trim().length < 12}>
               {submitting ? <span className="spinner spinner-light" /> : null}
               {text("Tạo hồ sơ", "Create request")}
@@ -339,8 +341,8 @@ export function NewCasePage() {
         </section>
 
         <div className="page-stack" style={{ minWidth: 0 }}>
-        <RecommendationPanel autoSuggest description={description} serviceKey={serviceKey} customFields={customFields} />
-        {analysis ? <aside className="panel ai-preview">
+        {aiHidden ? <AiHiddenNotice /> : <RecommendationPanel autoSuggest description={description} serviceKey={serviceKey} customFields={customFields} />}
+        {analysis && !aiHidden ? <aside className="panel ai-preview">
           <div className="panel-heading">
             <div>
               <span className="eyebrow">{text("Gợi ý tiếp nhận", "Intake guidance")}</span>

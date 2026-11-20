@@ -73,6 +73,7 @@ function formatFileSize(bytes: number) {
 
 import { RelatedIncidentPanel } from "../components/RelatedIncidentPanel";
 import { IntakeVerificationPanel } from "../components/IntakeVerificationPanel";
+import { AiHiddenNotice } from "../components/AiHiddenNotice";
 
 export function CaseDetailPage() {
   const { id } = useParams();
@@ -121,6 +122,8 @@ export function CaseDetailPage() {
 
   const record = data.case;
   const aiReviewPending = !record.ai.reviewStatus || record.ai.reviewStatus === "pending";
+  // User study, manual condition: no AI panels; the server already withholds the values.
+  const aiHidden = Boolean(user?.aiSuggestionsHidden);
   const uploadWarning = (location.state as { uploadWarning?: string } | null)?.uploadWarning;
 
   async function updateCase(payload: Record<string, unknown>) {
@@ -265,7 +268,7 @@ export function CaseDetailPage() {
         {canOperate ? <div className="detail-header-actions">
           {user && ["manager", "org_admin", "platform_admin"].includes(user.role) && !record.mergedIntoId && !["resolved", "closed"].includes(record.status) && <CaseMergeButton caseId={record._id} onMerged={reload} />}
           <PriorityBadge priority={record.priority} />
-          <RiskBadge score={record.ai.riskScore} />
+          {!aiHidden ? <RiskBadge score={record.ai.riskScore} /> : null}
         </div> : null}
       </div>
 
@@ -290,6 +293,19 @@ export function CaseDetailPage() {
                 <option key={option.value} value={option.value}>
                   {option[locale]}
                 </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>{text("Mức ưu tiên", "Priority")}</span>
+            <select
+              value={record.priority}
+              aria-label={text("Mức ưu tiên", "Priority")}
+              onChange={(event) => updateCase({ priority: event.target.value })}
+              disabled={saving}
+            >
+              {([["low", "Thấp", "Low"], ["normal", "Bình thường", "Normal"], ["high", "Cao", "High"], ["urgent", "Khẩn cấp", "Urgent"]] as const).map(([value, vi, en]) => (
+                <option key={value} value={value}>{text(vi, en)}</option>
               ))}
             </select>
           </label>
@@ -348,11 +364,12 @@ export function CaseDetailPage() {
 
       {canOperate && record.intakeVerification ?
         <IntakeVerificationPanel caseId={record._id} unitCode={record.unitCode} intake={record.intakeVerification} onChanged={reload} /> : null}
-      {data?.case.propertyCode && ["manager", "org_admin", "platform_admin"].includes(user?.role || "") ?
+      {aiHidden && canOperate ? <AiHiddenNotice /> : null}
+      {!aiHidden && data?.case.propertyCode && ["manager", "org_admin", "platform_admin"].includes(user?.role || "") ?
         <RelatedIncidentPanel id={data.case._id} code={data.case.code} title={data.case.title} /> : null}
       <div className="case-detail-grid">
         <div className="case-main-column">
-          {canOperate && <RecommendationPanel key={record._id} caseId={record._id}
+          {canOperate && !aiHidden && <RecommendationPanel key={record._id} caseId={record._id}
             onAction={action => { const target = document.getElementById(["assign", "review_routing", "review_sla"].includes(action) ? "case-routing" : "case-conversation"); target?.scrollIntoView({ block: "center" }); target?.focus(); }}
             onDraft={value => { setComment(value); setInternal(true); }} />}
           <section className="panel case-description">
@@ -567,8 +584,8 @@ export function CaseDetailPage() {
         </div>
 
         <aside className="case-side-column">
-          {canOperate && !["resolved", "closed"].includes(record.status) ? <AssignmentSuggestions caseId={record._id} revision={record.updatedAt} saving={saving} onAssign={(assigneeId) => updateCase({ assigneeId })} /> : null}
-          {canOperate && !["resolved", "closed"].includes(record.status) ? <section className="panel ai-insight-panel">
+          {canOperate && !aiHidden && !["resolved", "closed"].includes(record.status) ? <AssignmentSuggestions caseId={record._id} revision={record.updatedAt} saving={saving} onAssign={(assigneeId) => updateCase({ assigneeId })} /> : null}
+          {canOperate && !aiHidden && !["resolved", "closed"].includes(record.status) ? <section className="panel ai-insight-panel">
             {record.ai.routingMismatch && aiReviewPending && <p role="status">{text("Dịch vụ tiếp nhận khác nhóm AI gợi ý. Cần xác minh phân luồng.", "The selected service differs from the AI suggestion. Review routing.")}</p>}
             <div className="panel-heading">
               <div>

@@ -62,6 +62,7 @@ export function MaintenancePanel({ assets }: { assets: { code: string; name: str
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       const body = JSON.stringify({ title: form.get("title"), assetCode: form.get("assetCode"), assigneeId: form.get("assigneeId"),
+        ...(String(form.get("caseCode") || "").trim() ? { caseCode: String(form.get("caseCode")).trim().toUpperCase() } : {}),
         dueAt: new Date(String(form.get("dueAt"))).toISOString() });
       if (!await confirm({ title: text("Tạo phiếu sửa", "Create repair task"), message: String(form.get("title")) })) return;
       if (pending.current?.body !== body) pending.current = { body, key: crypto.randomUUID() };
@@ -73,6 +74,7 @@ export function MaintenancePanel({ assets }: { assets: { code: string; name: str
       <div className="panel-heading"><h2>{text("Tạo phiếu mới", "New repair task")}</h2></div>
       <div className="rental-form-body">
         <label className="field"><span>{text("Nội dung sửa chữa", "Repair task")}</span><input name="title" required minLength={3} maxLength={160} /></label>
+        <label className="field"><span>{text("Mã hồ sơ liên quan (nếu có)", "Related request code (optional)")}</span><input name="caseCode" maxLength={64} /></label>
         <label className="field"><span>{text("Thiết bị", "Asset")}</span><select required name="assetCode"><option value="">{text("Chọn thiết bị", "Select asset")}</option>
           {assets.map(asset => <option key={asset.code} value={asset.code}>{asset.code} · {asset.name}</option>)}</select></label>
         <label className="field"><span>{text("Kỹ thuật viên", "Technician")}</span><select required name="assigneeId"><option value="">{text("Chọn người xử lý", "Select technician")}</option>
