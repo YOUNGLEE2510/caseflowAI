@@ -94,7 +94,9 @@ const routeMeta = [
   { prefix: "/overview", title: { vi: "Tổng quan vận hành", en: "Operations overview" }, subtitle: { vi: "Tình trạng dịch vụ theo thời gian thực", en: "Live service health" } }
 ];
 
-function canAccess(item: NavItem, role?: Role) {
+function canAccess(item: NavItem, role?: Role, personnelManager = false) {
+  // System operations: admins and the operations head only, not every team lead.
+  if (item.to === "/system" && role === "manager" && !personnelManager) return false;
   return !item.roles || (role ? item.roles.includes(role) : false);
 }
 
@@ -147,8 +149,8 @@ export function AppShell() {
   const [notificationError, setNotificationError] = useState("");
   const notificationRef = useRef<HTMLDivElement>(null);
   const meta = routeMeta.find((item) => location.pathname.startsWith(item.prefix)) || routeMeta.at(-1)!;
-  const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role));
-  const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role));
+  const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role, Boolean(user?.personnelManager)));
+  const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role, Boolean(user?.personnelManager)));
   const organizationName = user?.organizationName || text("Tổ chức của bạn", "Your organization");
   // Until a required security step is done every page except Profile is locked; say so instead of bouncing silently.
   const securityLocked = Boolean(user?.securityRequired);
@@ -187,12 +189,14 @@ export function AppShell() {
   }, [text]);
 
   useEffect(() => {
+    // While the account must finish security setup, the API refuses everything else (403).
+    if (securityLocked) return;
     void loadNotifications();
     const refresh = () => { if (document.visibilityState === "visible") void loadNotifications(); };
     const interval = window.setInterval(refresh, 45000);
     document.addEventListener("visibilitychange", refresh);
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refresh); };
-  }, [loadNotifications, user?.id]);
+  }, [loadNotifications, user?.id, securityLocked]);
 
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {

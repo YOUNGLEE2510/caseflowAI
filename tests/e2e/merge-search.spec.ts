@@ -23,7 +23,9 @@ test("indexed search finds unaccented prefixes and managers merge duplicates wit
   await page.getByRole("button", { name: "Gộp hồ sơ trùng", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveAccessibleName("Gộp hồ sơ trùng");
   const modal = page.getByRole("dialog");
-  await modal.getByRole("combobox", { name: "Hồ sơ chính", exact: true }).selectOption(target._id, { timeout: 15000 });
+  // Candidates load after the dialog opens; under load this can take a while.
+  await expect(modal.getByRole("combobox", { name: "Hồ sơ chính", exact: true })).toBeEnabled({ timeout: 30000 });
+  await modal.getByRole("combobox", { name: "Hồ sơ chính", exact: true }).selectOption(target._id);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await expect(modal).toBeVisible();

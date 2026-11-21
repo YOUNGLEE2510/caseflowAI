@@ -36,9 +36,8 @@ test("login provider logos and password borders render on desktop and mobile", a
     await expect(page.getByRole("button", { name: "Tiếp tục với Google", exact: true })).toBeVisible();
     expect(await page.getByRole("button", { name: "Tiếp tục với Google", exact: true }).evaluate((node) => getComputedStyle(node).borderTopWidth)).toBe("1px");
     await expect(page.getByRole("button", { name: /Microsoft/ })).toHaveCount(0);
-    const images = await page.locator(".login-panel .provider-mark").evaluateAll((nodes) => nodes.map((node) => ({ complete: (node as HTMLImageElement).complete, width: (node as HTMLImageElement).naturalWidth })));
-    expect(images).toHaveLength(1);
-    expect(images.every((item) => item.complete && item.width > 0)).toBe(true);
+    // The button appears after the provider check, so give its logo time to load.
+    await expect.poll(() => page.locator(".login-panel .provider-mark").evaluateAll((nodes) => nodes.map((node) => (node as HTMLImageElement).complete && (node as HTMLImageElement).naturalWidth > 0))).toEqual([true]);
     const dimensions = await page.locator(".password-field").evaluate((node) => {
       const box = node.getBoundingClientRect();
       const input = node.querySelector("input")!.getBoundingClientRect();

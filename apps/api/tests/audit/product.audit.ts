@@ -52,7 +52,7 @@ beforeEach(async () => {
     { name: "Resident", email: "s@audit.invalid", role: "requester", organizationId: org._id },
     { name: "Agent", email: "a@audit.invalid", role: "agent", team: "IT", organizationId: org._id },
     { name: "Colleague", email: "b@audit.invalid", role: "agent", team: "IT", organizationId: org._id },
-    { name: "Manager", email: "m@audit.invalid", role: "manager", organizationId: org._id },
+    { name: "Manager", email: "m@audit.invalid", role: "manager", personnelManager: true, organizationId: org._id },
     { name: "Other admin", email: "o@audit.invalid", role: "org_admin", organizationId: other._id }
   ].map(user => ({ ...user, passwordHash: "unused-by-token-auth-tests" })));
   await models.ServiceDefinition.create({ organizationId: org._id, key: "it_access", name: "IT", category: "it_access", team: "IT", slaHours: 8 });

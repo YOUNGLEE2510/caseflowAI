@@ -100,3 +100,13 @@
   .service-workspace .nav-section-label { margin-top: 6px; margin-bottom: 2px; }
 }
 @media (min-width: 761px) { .priority-table th, .cases-table th { white-space: nowrap; } }
+
+/* Overview: unit board at a glance (housekeeping, or an empty request queue) */
+.unit-work-summary { padding: 16px 18px; }
+.unit-work-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; margin-top: 12px; }
+.unit-work-item { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; color: var(--ink); text-decoration: none; transition: border-color 150ms ease, background-color 150ms ease; }
+.unit-work-item:hover { border-color: var(--brand-border); background: var(--brand-subtle); }
+.unit-work-item:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.unit-work-item svg { flex: none; color: var(--brand-text); }
+.unit-work-item span { flex: 1; color: var(--muted); font-size: 14px; }
+.unit-work-item strong { font-size: 22px; font-weight: 700; }

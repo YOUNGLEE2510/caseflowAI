@@ -29,7 +29,10 @@ test("queue pagination changes records, filters reset pages, sidebar collapse pe
   await expect(page.locator(".app-frame")).toHaveClass(/sidebar-collapsed/);
   await page.getByRole("button", { name: "Mở rộng sidebar", exact: true }).click();
   await expect(page.locator(".organization-summary")).toHaveCount(0);
+  // Team leads' plain queue starts on "My team"; pagination is checked on all work.
   await page.goto("/cases");
+  await expect(page.getByRole("combobox", { name: "Hàng đợi công việc" })).toHaveValue("team");
+  await page.getByRole("combobox", { name: "Hàng đợi công việc" }).selectOption("all");
   await expect(page.locator(".cases-table tbody tr")).toHaveCount(8);
   const first = await page.locator(".case-link").first().innerText();
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();

@@ -151,13 +151,16 @@ authRouter.post("/auth/login", async (req, res) => {
 });
 
 authRouter.post("/auth/refresh", async (req, res) => {
-  checkRefreshOrigin(req);
   res.setHeader("Cache-Control", "no-store");
   try {
+    checkRefreshOrigin(req);
     const session = await rotateRefreshSession(readCookie(req, REFRESH_COOKIE), res);
     res.json({ token: issueAccessToken(session.user, session.familyId), user: publicUser(session.user, session.organization, session.mfaVerified), remember: session.remember });
   } catch (error) {
     if (error instanceof HttpError && error.status === 401) clearRefreshCookie(res);
+    // Why a session could not be restored (no token values): diagnoses "reload signs me out".
+    if (error instanceof HttpError) console.warn(JSON.stringify({ level: "warn", event: "auth.refresh_rejected", status: error.status,
+      reason: (error as HttpError & { reason?: string }).reason || error.message, origin: req.headers.origin || null, requestId: req.requestId }));
     throw error;
   }
 });

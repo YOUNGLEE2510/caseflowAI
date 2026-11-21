@@ -9,6 +9,11 @@ import { auditFromReq, logAudit } from "../services/helpers.js";
 
 export const systemRouter = Router();
 systemRouter.use(requireRoles("manager", "org_admin", "platform_admin"));
+// System operations are for admins and the operations head (personnel manager), not every team lead.
+systemRouter.use((req, _res, next) => {
+  if (req.auth!.role === "manager" && !req.auth!.personnelManager) throw new HttpError(403, "Chỉ quản trị và trưởng phòng vận hành được xem vận hành hệ thống.");
+  next();
+});
 systemRouter.get("/jobs", async (req, res) => {
   const records = await CaseRecord.find({ organizationId: req.auth!.organizationId, $or: [
     { "ai.processingStatus": "failed", "ai.reviewStatus": "pending" },
@@ -37,11 +42,14 @@ systemRouter.post("/jobs/:id/retry", async (req, res) => {
 systemRouter.get("/status", async (req, res) => {
   const scope = { organizationId: req.auth!.organizationId };
   const [ai, overdueCases, unassignedCases, draftArticles, users, storage] = await Promise.all([
-    fetch(`${config.AI_SERVICE_URL}/health`, { signal: AbortSignal.timeout(3000) }).then(async (response) => {
+    // The serverless AI service can take several seconds to start; use the same timeout as real AI
+    // calls, and report a timeout as "warming up" rather than as a failure.
+    fetch(`${config.AI_SERVICE_URL}/health`, { signal: AbortSignal.timeout(config.AI_REQUEST_TIMEOUT_MS),
+      headers: config.AI_INTERNAL_TOKEN ? { "X-Internal-Token": config.AI_INTERNAL_TOKEN } : {} }).then(async (response) => {
       if (!response.ok) throw new Error("AI unavailable");
       const value = await response.json() as Record<string, unknown>;
       return { connected: true, classifier: value.classifier, modelVersion: value.modelVersion, trainingSamples: value.trainingSamples, categories: value.categories };
-    }).catch(() => ({ connected: false })),
+    }).catch((error: unknown) => ({ connected: false, warming: error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name) })),
     CaseRecord.countDocuments({ ...scope, status: { $nin: ["resolved", "closed", "waiting"] }, dueAt: { $lt: new Date() } }),
     CaseRecord.countDocuments({ ...scope, status: { $nin: ["resolved", "closed"] }, assigneeId: null }),
     KnowledgeArticle.countDocuments({ ...scope, active: true, status: { $ne: "published" } }),

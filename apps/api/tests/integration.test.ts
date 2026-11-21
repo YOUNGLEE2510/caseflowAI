@@ -1423,6 +1423,22 @@ describe("security audit and distributed jobs", () => {
     expect(saved.slaBreachedAt).toBeNull();
     expect(saved.dueAt.getTime()).toBeGreaterThan(Date.now());
   });
+  it("limits System to admins and the operations head, and offers team leads a My team queue", async () => {
+    const lead = await models.User.create({ organizationId: org._id, name: "IT lead", email: "it-lead@test.local", passwordHash: "unused", role: "manager", team: "IT" });
+    const head = await models.User.create({ organizationId: org._id, name: "Ops head", email: "ops-head@test.local", passwordHash: "unused", role: "manager", team: "Ops", personnelManager: true });
+    expect((await request("/system/status", lead)).status).toBe(403);
+    expect((await request("/system/status", head)).status).toBe(200);
+    expect((await request("/system/status", admin)).status).toBe(200);
+    const teamQueue = await request("/cases?queue=team&limit=100", lead);
+    expect(teamQueue.status).toBe(200);
+    expect(teamQueue.body.cases.every((item: { team: string; status: string }) => item.team === "IT" && !["resolved", "closed"].includes(item.status))).toBe(true);
+    expect((await request("/cases?queue=team", head)).body.cases).toHaveLength(0);
+    expect((await request("/cases?queue=team", requester)).status).toBe(403);
+    const summary = await request("/rental/units?view=summary", lead);
+    expect(summary.status).toBe(200);
+    expect(Object.keys(summary.body)).toEqual(["summary"]);
+    expect(summary.body.summary).toMatchObject({ total: expect.any(Number), rentable: expect.any(Number) });
+  });
   it("filters users by role and reports citable versus draft knowledge to staff only", async () => {
     const agents = await request("/users?role=agent", admin);
     expect(agents.status).toBe(200);

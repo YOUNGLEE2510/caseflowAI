@@ -27,6 +27,7 @@ import type { CaseRecord, DashboardData } from "../types";
 import { OperationsProgress } from "../components/OperationsProgress";
 import { RecommendationPanel } from "../components/RecommendationPanel";
 import { AiHiddenNotice } from "../components/AiHiddenNotice";
+import { UnitWorkSummary } from "../components/UnitWorkSummary";
 
 const DashboardCharts = lazy(async () => ({ default: (await import("../components/DashboardCharts")).DashboardCharts }));
 
@@ -160,6 +161,10 @@ export function OverviewPage() {
   const priorityCases = uniqueCases(data.highRiskCases, data.recentCases);
   const statusCount = (status: string) => data.statusDistribution.find(item => item.name === status)?.value || 0;
   const canSeeAnalytics = Boolean(user && ["manager", "org_admin", "platform_admin"].includes(user.role));
+  // Housekeeping works from the unit board, not the request queue: show it first for them, and
+  // for any staff member whose request queue is empty.
+  const housekeeping = /buồng phòng|housekeeping/i.test(user?.team || "");
+  const showUnitWork = Boolean(user && (housekeeping || data.metrics.open === 0));
 
   return (
     <div className="page-stack operations-overview">
@@ -174,6 +179,7 @@ export function OverviewPage() {
         }
       />
 
+      {showUnitWork && housekeeping ? <UnitWorkSummary /> : null}
       <section className="metric-grid" aria-label={text("Chỉ số tổng quan", "Overview metrics")}>
         {metrics.map((metric) => {
           const Icon = metric.icon;
@@ -203,6 +209,7 @@ export function OverviewPage() {
         <Link to="/cases?status=waiting"><TriangleAlert size={18} /><span>{text("Chờ phản hồi", "Waiting for a response")}</span><b className="queue-count">{statusCount("waiting")}</b><ArrowRight size={16} /></Link>
       </nav>
 
+      {showUnitWork && !housekeeping ? <UnitWorkSummary /> : null}
       <section className="priority-queue-panel">
         <div className="panel-heading">
           <div>
