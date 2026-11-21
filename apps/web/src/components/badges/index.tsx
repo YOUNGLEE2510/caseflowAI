@@ -53,9 +53,10 @@ export function RiskBadge({ score }: { score: number }) {
   const { text } = useLocale();
   const level = score >= 0.7 ? "high" : score >= 0.4 ? "medium" : "low";
   return (
-    <span className={`risk-badge risk-${level}`}>
+    // The score comes from an experimental model trained on simulated data: say so on hover.
+    <span className={`risk-badge risk-${level}`} title={text("Ước tính thử nghiệm từ mô hình học trên dữ liệu mô phỏng; hạn xử lý do SLA quyết định.", "Experimental estimate from a model trained on simulated data; deadlines follow the SLA.")}>
       <span className="risk-dot" />
-      {Math.round(score * 100)}% {text("rủi ro", "risk")}
+      {Math.round(score * 100)}% {text("rủi ro (ước tính)", "risk (estimate)")}
     </span>
   );
 }

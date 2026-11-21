@@ -24,8 +24,8 @@ def test_classifies_internet_request():
     assert result["confidence"] > 0.2
 
 
-def test_entity_extraction_requires_an_identifier_prefix():
-    assert "studentId" not in extract_entities("Số điện thoại của tôi là 0912345678")
+def test_entity_extraction_never_returns_personal_numbers():
+    assert not any("0912345678" in value for value in extract_entities("Số điện thoại của tôi là 0912345678").values())
 
 
 def test_classifies_appliance_request_with_location():
@@ -59,8 +59,8 @@ def test_retrieval_returns_source_citation():
             ),
             KnowledgeArticle(
                 id="finance-1",
-                title="Đối soát học phí",
-                content="Sinh viên cung cấp mã giao dịch thanh toán để đối soát.",
+                title="Đối soát tiền thuê",
+                content="Người thuê cung cấp mã giao dịch chuyển khoản để đối soát tiền thuê.",
                 category="finance",
                 sourceLabel="Quy trình tài chính",
             ),
@@ -74,10 +74,10 @@ def test_retrieval_returns_source_citation():
 
 
 def test_retrieval_cites_relevant_passage_beyond_document_opening():
-    filler = "Quy trình đăng ký hoạt động ngoại khóa và quản lý hội trường. " * 18
+    filler = "Quy trình đăng ký gửi xe và sử dụng phòng sinh hoạt chung. " * 18
     request = KnowledgeRequest(
         query="Tài khoản bị khóa thì đặt lại mật khẩu bằng cách nào?",
-        articles=[KnowledgeArticle(id="account", title="Hướng dẫn hỗ trợ", content=filler + "\n\nTài khoản bị khóa: sinh viên mở cổng SIS và chọn Đặt lại mật khẩu.", category="it_access", sourceLabel="IT")],
+        articles=[KnowledgeArticle(id="account", title="Hướng dẫn hỗ trợ", content=filler + "\n\nTài khoản bị khóa: người thuê mở trang đăng nhập CaseFlow và chọn Đặt lại mật khẩu.", category="it_access", sourceLabel="IT")],
     )
     result = retrieve_knowledge(request)
     assert result["citations"][0]["id"] == "account"
@@ -105,14 +105,14 @@ def test_punctuation_only_retrieval_has_no_matches():
 def test_retrieval_matches_query_in_title_only():
     """Query matching an article's title but NOT its body should still return a citation."""
     request = KnowledgeRequest(
-        query="điều chỉnh điểm học phần",
+        query="đổi thẻ từ ra vào",
         articles=[
             KnowledgeArticle(
                 id="title-match",
-                title="Hướng dẫn điều chỉnh điểm học phần",
-                content="Sinh viên liên hệ phòng đào tạo để được hỗ trợ thủ tục liên quan.",
-                category="academic_records",
-                sourceLabel="Quy trình đào tạo",
+                title="Hướng dẫn đổi thẻ từ ra vào",
+                content="Người thuê liên hệ ban quản lý để được hỗ trợ thủ tục liên quan.",
+                category="access_security",
+                sourceLabel="Quy trình an ninh",
             ),
             KnowledgeArticle(
                 id="unrelated",

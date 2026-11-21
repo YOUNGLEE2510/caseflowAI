@@ -11,7 +11,6 @@ import { OAuthLoginTicket, Organization, PasswordResetToken, RefreshSession, Use
 import { REFRESH_COOKIE, checkRefreshOrigin, clearRefreshCookie, createRefreshSession, hashRefreshToken, rotateRefreshSession } from "../services/refreshSession.js";
 import { enqueuePasswordReset } from "../services/emailOutbox.js";
 import { logAudit } from "../services/helpers.js";
-import { microsoftRouter } from "./microsoftAuth.js";
 import { publicUser, type PublicUserSource } from "../services/publicUser.js";
 import type { RefreshSessionRecord } from "../services/refreshSession.js";
 import { currentPasswordSchema, newPasswordSchema } from "../services/passwordPolicy.js";
@@ -30,10 +29,8 @@ interface LoginTicket { userId: import("mongoose").Types.ObjectId; organizationI
 
 const dummyPasswordHash = bcrypt.hashSync(randomBytes(32).toString("hex"), 12);
 export const authRouter = Router();
-authRouter.use(microsoftRouter);
 authRouter.get("/auth/providers", (_req, res) => {
-  res.json({ google: Boolean(config.GOOGLE_OAUTH_CLIENT_ID && config.GOOGLE_OAUTH_CLIENT_SECRET && config.GOOGLE_OAUTH_REDIRECT_URI),
-    microsoft: Boolean(config.MICROSOFT_OAUTH_CLIENT_ID && config.MICROSOFT_OAUTH_CLIENT_SECRET && config.MICROSOFT_OAUTH_REDIRECT_URI) });
+  res.json({ google: Boolean(config.GOOGLE_OAUTH_CLIENT_ID && config.GOOGLE_OAUTH_CLIENT_SECRET && config.GOOGLE_OAUTH_REDIRECT_URI) });
 });
 authRouter.get("/auth/organizations", async (req, res) => {
   const { domain } = z.object({ domain: z.enum(["rental"]).optional() }).parse(req.query);
@@ -154,13 +151,16 @@ authRouter.post("/auth/login", async (req, res) => {
 });
 
 authRouter.post("/auth/refresh", async (req, res) => {
-  checkRefreshOrigin(req);
   res.setHeader("Cache-Control", "no-store");
   try {
+    checkRefreshOrigin(req);
     const session = await rotateRefreshSession(readCookie(req, REFRESH_COOKIE), res);
     res.json({ token: issueAccessToken(session.user, session.familyId), user: publicUser(session.user, session.organization, session.mfaVerified), remember: session.remember });
   } catch (error) {
     if (error instanceof HttpError && error.status === 401) clearRefreshCookie(res);
+    // Why a session could not be restored (no token values): diagnoses "reload signs me out".
+    if (error instanceof HttpError) console.warn(JSON.stringify({ level: "warn", event: "auth.refresh_rejected", status: error.status,
+      reason: (error as HttpError & { reason?: string }).reason || error.message, origin: req.headers.origin || null, requestId: req.requestId }));
     throw error;
   }
 });
@@ -283,14 +283,14 @@ authRouter.get("/auth/google/callback", async (req, res) => {
   }
 });
 
-authRouter.post(["/auth/google/exchange", "/auth/microsoft/exchange"], async (req, res) => {
+authRouter.post("/auth/google/exchange", async (req, res) => {
   checkRefreshOrigin(req);
-  const provider = req.path.includes("microsoft") ? "microsoft" : "google";
+  const provider = "google";
   const input = googleExchangeSchema.parse(req.body);
   const ticket = await OAuthLoginTicket.findOneAndUpdate(
     {
       tokenHash: resetTokenHash(input.ticket),
-      ...(provider === "google" ? { $or: [{ provider: "google" }, { provider: { $exists: false } }] } : { provider }),
+      $or: [{ provider: "google" }, { provider: { $exists: false } }],
       usedAt: null,
       expiresAt: { $gt: new Date() }
     },

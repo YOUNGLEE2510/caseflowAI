@@ -8,14 +8,16 @@ Kiểm tra nhanh bằng `DOMAIN_PROFILE=rental python -m apps.ai.evaluate_rental
 
 Các ghi chú tạm hoãn bên dưới áp dụng cho dữ liệu nghiệp vụ thật, không cấm huấn luyện profile căn hộ mẫu theo yêu cầu. Không thu thập tệp riêng tư hay tự sinh thêm dữ liệu qua API.
 
-**Huấn luyện dữ liệu nghiệp vụ đang tạm hoãn.** Corpus PTIT đã bị loại khỏi phạm vi dữ liệu được sử dụng; công cụ crawl/OCR riêng đã được gỡ khỏi mã nguồn sau đợt kiểm tra ngày 01/11/2026: 282 mục gồm 268 mục cần duyệt, 11 trùng và 3 mục cách ly do dấu hiệu định danh; không có yêu cầu đã gán nhãn đủ điều kiện huấn luyện. Kiểm tra ngày 03/11/2026 xác nhận hai thư mục `artifacts/ptit-source` và `artifacts/ocr-build` không còn trên ổ đĩa. Không tự retrain và không gọi API để sinh thêm dữ liệu. Không thay đổi tài liệu nghiệp vụ trên Atlas hoặc Cloudinary.
+**Huấn luyện dữ liệu nghiệp vụ đang tạm hoãn.** Dữ liệu của đề tài trước (trường đại học) đã bị loại khỏi phạm vi; công cụ crawl/OCR riêng đã được gỡ khỏi mã nguồn sau đợt kiểm tra ngày 01/11/2026: 282 mục gồm 268 mục cần duyệt, 11 trùng và 3 mục cách ly do dấu hiệu định danh; không có yêu cầu đã gán nhãn đủ điều kiện huấn luyện. Kiểm tra ngày 03/11/2026 xác nhận hai thư mục `artifacts/ptit-source` và `artifacts/ocr-build` không còn trên ổ đĩa. Không tự retrain và không gọi API để sinh thêm dữ liệu. Không thay đổi tài liệu nghiệp vụ trên Atlas hoặc Cloudinary.
 
 Model phân loại kèm theo chỉ là baseline mẫu 300 mẫu/6 nhãn (macro-F1 0,95 trên 60 câu kiểm tra mô phỏng, xem EXPERIMENT_PROTOCOL.md), không phải bằng chứng chất lượng triển khai thực tế. SLA học từ dữ liệu mô phỏng chỉ là thử nghiệm; hạn xử lý thực tế do lịch phục vụ và quy tắc nghiệp vụ quyết định. Không công bố độ chính xác ngoài miền thành kết quả CaseFlow.
 
 ## Thành phần hiện có
 
-- Local FastAPI: TF-IDF + Logistic Regression, trích xuất có kiểm soát, similarity và truy xuất đoạn tài liệu.
-- Word/character/hybrid là các biến thể thực nghiệm, không phải nhiều dịch vụ chạy song song.
+- Dịch vụ FastAPI: phân loại bằng TF-IDF lai (từ + ký tự) + Logistic Regression (biến thể `hybrid`), trích xuất có kiểm soát, similarity và truy xuất đoạn tài liệu.
+- Biến thể chỉ từ (`word`) và chỉ ký tự (`character`) dùng để so sánh trong thực nghiệm; dịch vụ chỉ chạy biến thể lai.
+- Gợi ý mức ưu tiên là bộ luật giải thích được trong API (`prioritySuggestion.ts`), không phải mô hình học máy.
+- Dự báo nguy cơ trễ SLA là mô hình thử nghiệm học trên nhãn tổng hợp; không dùng trong kết quả báo cáo.
 - Gợi ý phản ánh căn hộ dùng `hashing-char-context-v1`: HashingVectorizer char_wb không fit IDF trên batch; lọc cơ sở và 48 giờ, kết hợp văn bản với tín hiệu cùng thiết bị/căn. Ngưỡng 0.5 là khởi tạo, chưa được hiệu chỉnh. Mô tả giống nhau không xác minh nguyên nhân chung; chỉ quản lý được liên kết.
 - `python -m apps.ai.evaluate_related` chạy 7 kịch bản mô phỏng và xuất false links/missed cases cùng precision/recall/F1. Có hard negative và ca diễn đạt khác bị bỏ sót; không báo điểm này là độ chính xác vận hành thực tế.
 - Gợi ý mức ưu tiên (`apps/api/src/services/prioritySuggestion.ts`) là lớp luật giải thích được, đặt trên kết quả ML: tín hiệu nguy hiểm (cháy, khói, gas, kẹt thang máy, ngập), mất dịch vụ thiết yếu, phạm vi nhiều căn, rò rỉ, an ninh; cộng thêm số phản ánh tương tự đang mở (≥ 2 → nâng một mức, có thể là sự cố chung). Mỗi gợi ý kèm lý do; chỉ nhân viên áp dụng, mọi thay đổi ghi vào lịch sử hồ sơ (có đánh dấu "theo gợi ý AI"). Chưa có dữ liệu ưu tiên đã gán nhãn nên đây không phải mô hình học máy và chưa được đo độ chính xác vận hành; khi có nhãn từ quyết định của nhân viên có thể huấn luyện và so sánh với baseline luật này.
@@ -41,7 +43,7 @@ Export phục vụ nghiên cứu và payload LLM dùng chung bước che định
 
 CLI `python -m apps.ai.retrain` yêu cầu xác nhận `--approved-data` trước khi xử lý đầu vào. Cờ này là xác nhận vận hành, không tự chứng minh dữ liệu đã đủ điều kiện. Không cấu hình lịch retrain mặc định. Registry/checksum được giữ để tái lập và rollback, không xây thêm hạ tầng MLOps.
 
-Không kèm crawler, OCR hoặc dữ liệu PTIT thô trong sản phẩm. Khi có nguồn mới được duyệt, nhập qua pipeline dữ liệu có kiểm soát thay vì cào toàn bộ cổng trường. Quy trình thực nghiệm tương lai: [EXPERIMENT_PROTOCOL.md](EXPERIMENT_PROTOCOL.md); danh mục xuất xứ: [SOURCES.md](../apps/ai/data/SOURCES.md).
+Không kèm crawler hoặc OCR trong sản phẩm. Khi có nguồn mới được duyệt, nhập qua pipeline dữ liệu có kiểm soát (ẩn email, số điện thoại, số CCCD/CMND). Quy trình thực nghiệm tương lai: [EXPERIMENT_PROTOCOL.md](EXPERIMENT_PROTOCOL.md); danh mục xuất xứ: [SOURCES.md](../apps/ai/data/SOURCES.md).
 
 ## Đánh giá
 

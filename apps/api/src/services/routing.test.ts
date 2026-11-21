@@ -13,6 +13,6 @@ describe("AI-assisted routing policy", () => {
 
   it("records whether a human confirmed or corrected the prediction", () => {
     expect(resolveAiReviewStatus("finance", "finance")).toBe("confirmed");
-    expect(resolveAiReviewStatus("finance", "student_services")).toBe("corrected");
+    expect(resolveAiReviewStatus("water", "electrical")).toBe("corrected");
   });
 });

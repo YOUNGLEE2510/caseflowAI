@@ -11,6 +11,8 @@
     "seed": "tsx src/seed.ts",
     "seed:force": "tsx src/seed.ts --force",
     "pilot:setup": "tsx src/scripts/pilotSetup.ts",
+    "db:backup": "tsx src/scripts/databaseBackup.ts backup",
+    "db:restore-test": "tsx src/scripts/databaseBackup.ts restore-test",
     "rental:dataset": "tsx src/rentalDatasetSetup.ts",
     "evaluate:priority": "tsx src/evaluation/evaluatePriority.ts",
     "test": "vitest run",

@@ -25,9 +25,9 @@ import { useApiData } from "../hooks/useApiData";
 import { useLocale } from "../i18n";
 import type { CaseRecord, DashboardData } from "../types";
 import { OperationsProgress } from "../components/OperationsProgress";
-import { SystemAlert } from "../components/SystemAlert";
 import { RecommendationPanel } from "../components/RecommendationPanel";
 import { AiHiddenNotice } from "../components/AiHiddenNotice";
+import { UnitWorkSummary } from "../components/UnitWorkSummary";
 
 const DashboardCharts = lazy(async () => ({ default: (await import("../components/DashboardCharts")).DashboardCharts }));
 
@@ -84,9 +84,11 @@ export function OverviewPage() {
             <Link to="/cases" className="text-link">{text("Xem tất cả", "View all")}</Link>
           </header>
           <div className="requester-summary-grid">
-            <article>
-              <strong>{data.metrics.open}</strong>
-              <span>{text("Yêu cầu chưa hoàn tất", "Open requests")}</span>
+            <article className="summary-tile-clickable">
+              <Link to="/cases" className="summary-tile-link">
+                <strong>{data.metrics.open}</strong>
+                <span>{text("Yêu cầu chưa hoàn tất", "Open requests")}</span>
+              </Link>
             </article>
             <Link to="/cases?status=waiting" className="requester-summary-warning">
               <strong>{waitingCount}</strong>
@@ -135,7 +137,8 @@ export function OverviewPage() {
       delta: data.metrics.atRiskTrend,
       detail: text("theo dự báo gần nhất", "latest available prediction"),
       icon: TriangleAlert,
-      trend: metricTrend(data.metrics.atRiskTrend, true)
+      trend: metricTrend(data.metrics.atRiskTrend, true),
+      to: "/cases?queue=at_risk"
     },
     {
       label: text("Đã giải quyết", "Resolved"),
@@ -151,12 +154,17 @@ export function OverviewPage() {
       delta: data.metrics.activeIncidentsTrend,
       detail: text("tại thời điểm truy vấn", "at time of query"),
       icon: Siren,
-      trend: metricTrend(data.metrics.activeIncidentsTrend, true)
+      trend: metricTrend(data.metrics.activeIncidentsTrend, true),
+      to: "/incidents"
     }
   ];
   const priorityCases = uniqueCases(data.highRiskCases, data.recentCases);
+  const statusCount = (status: string) => data.statusDistribution.find(item => item.name === status)?.value || 0;
   const canSeeAnalytics = Boolean(user && ["manager", "org_admin", "platform_admin"].includes(user.role));
-  const atRiskPercentage = data.metrics.open ? (data.metrics.atRisk / data.metrics.open) * 100 : 0;
+  // Housekeeping works from the unit board, not the request queue: show it first for them, and
+  // for any staff member whose request queue is empty.
+  const housekeeping = /buồng phòng|housekeeping/i.test(user?.team || "");
+  const showUnitWork = Boolean(user && (housekeeping || data.metrics.open === 0));
 
   return (
     <div className="page-stack operations-overview">
@@ -171,16 +179,17 @@ export function OverviewPage() {
         }
       />
 
+      {showUnitWork && housekeeping ? <UnitWorkSummary /> : null}
       <section className="metric-grid" aria-label={text("Chỉ số tổng quan", "Overview metrics")}>
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <article className="metric-card" key={metric.label}>
+            <article className={`metric-card${"to" in metric && metric.to && metric.value ? " metric-card-link" : ""}`} key={metric.label}>
               <div className="metric-card-heading">
                 <span className="metric-icon"><Icon size={16} /></span>
                 <span>{metric.label}</span>
               </div>
-              <strong>{metric.value}</strong>
+              {"to" in metric && metric.to && metric.value ? <Link to={metric.to} className="metric-card-anchor"><strong>{metric.value}</strong></Link> : <strong>{metric.value}</strong>}
               <div className="metric-card-footer">
                 {metric.delta !== null ? <span className={`metric-delta metric-delta-${metric.trend}`}>
                   {metric.delta > 0 ? "+" : ""}{new Intl.NumberFormat(locale === "vi" ? "vi-VN" : "en-GB", { maximumFractionDigits: 1 }).format(metric.delta)}%
@@ -192,39 +201,15 @@ export function OverviewPage() {
         })}
       </section>
 
-      {data.metrics.atRisk || data.metrics.activeIncidents ? (
-        <section className="system-alert-grid" aria-label={text("Cảnh báo vận hành", "Operational alerts")}>
-          {data.metrics.atRisk ? (
-            <Link to="/cases?queue=at_risk" className="system-alert-link">
-              <SystemAlert
-                type="warning"
-                title={text(`${data.metrics.atRisk} hồ sơ có nguy cơ trễ SLA`, `${data.metrics.atRisk} cases at SLA risk`)}
-                detail={text("Xem hồ sơ quá hạn hoặc có dự báo rủi ro cao.", "View overdue cases and high-risk predictions.")}
-                progress={atRiskPercentage}
-              />
-            </Link>
-          ) : null}
-          {data.metrics.activeIncidents ? (
-            <Link to="/incidents" className="system-alert-link">
-              <SystemAlert
-                type="breach"
-                title={text(`${data.metrics.activeIncidents} sự cố đang mở`, `${data.metrics.activeIncidents} active incidents`)}
-                detail={text("Kiểm tra mức độ ảnh hưởng và tiến độ khắc phục.", "Review impact and mitigation progress.")}
-              />
-            </Link>
-          ) : null}
-        </section>
-      ) : null}
 
-      {canSeeAnalytics ? <OperationsProgress hideAi={Boolean(user?.aiSuggestionsHidden)} /> : null}
-      {user?.aiSuggestionsHidden ? <AiHiddenNotice /> : ["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
 
       <nav className="work-queue-shortcuts" aria-label={text("Hàng đợi nhanh", "Quick queues")}>
-        <Link to="/cases?status=new"><Inbox size={18} /><span>{text("Chờ tiếp nhận", "Awaiting triage")}</span><ArrowRight size={16} /></Link>
-        <Link to="/cases?status=in_progress"><Clock3 size={18} /><span>{text("Đang xử lý", "In progress")}</span><ArrowRight size={16} /></Link>
-        <Link to="/cases?status=waiting"><TriangleAlert size={18} /><span>{text("Chờ phản hồi", "Waiting for a response")}</span><ArrowRight size={16} /></Link>
+        <Link to="/cases?status=new"><Inbox size={18} /><span>{text("Chờ tiếp nhận", "Awaiting triage")}</span><b className="queue-count">{statusCount("new")}</b><ArrowRight size={16} /></Link>
+        <Link to="/cases?status=in_progress"><Clock3 size={18} /><span>{text("Đang xử lý", "In progress")}</span><b className="queue-count">{statusCount("in_progress")}</b><ArrowRight size={16} /></Link>
+        <Link to="/cases?status=waiting"><TriangleAlert size={18} /><span>{text("Chờ phản hồi", "Waiting for a response")}</span><b className="queue-count">{statusCount("waiting")}</b><ArrowRight size={16} /></Link>
       </nav>
 
+      {showUnitWork && !housekeeping ? <UnitWorkSummary /> : null}
       <section className="priority-queue-panel">
         <div className="panel-heading">
           <div>
@@ -283,6 +268,8 @@ export function OverviewPage() {
           <span>{text(`Hiển thị ${priorityCases.length} hồ sơ ưu tiên`, `Showing ${priorityCases.length} priority cases`)}</span>
         </footer>
       </section>
+      {canSeeAnalytics ? <OperationsProgress hideAi={Boolean(user?.aiSuggestionsHidden)} /> : null}
+      {user?.aiSuggestionsHidden ? <AiHiddenNotice /> : ["manager", "org_admin", "platform_admin"].includes(user?.role || "") && <RecommendationPanel overview />}
       <Suspense fallback={<LoadingState label={text("Đang tải biểu đồ", "Loading charts")} />}><DashboardCharts data={data} /></Suspense>
     </div>
   );

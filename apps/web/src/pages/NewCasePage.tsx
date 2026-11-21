@@ -69,6 +69,12 @@ export function NewCasePage() {
     units: { propertyCode: string; code: string }[];
     assets: { propertyCode: string; unitCode: string; code: string; name: string }[];
   }>("/rental/catalog");
+  // A resident linked to exactly one unit does not need to pick it every time.
+  useEffect(() => {
+    if (user?.role !== "requester" || propertyCode || unitCode || catalog?.units.length !== 1) return;
+    setPropertyCode(catalog.units[0].propertyCode);
+    setUnitCode(catalog.units[0].code);
+  }, [user?.role, catalog, propertyCode, unitCode]);
   const selectedService = serviceData?.services.find((service) => service.key === serviceKey);
   function changeService(key: string) {
     setServiceKey(key);
@@ -323,9 +329,10 @@ export function NewCasePage() {
           />
           {error ? <ErrorState message={error} /> : null}
           <div className="form-actions">
-            {!aiHidden ? <button
+            {!aiHidden && user?.role !== "requester" ? <button
               type="button"
               className="button button-secondary"
+              title={description.trim().length < 12 ? text("Nhập mô tả ít nhất 12 ký tự để phân tích.", "Enter at least 12 characters to analyze.") : undefined}
               onClick={analyze}
               disabled={analyzing || description.trim().length < 12}
             >
@@ -341,7 +348,8 @@ export function NewCasePage() {
         </section>
 
         <div className="page-stack" style={{ minWidth: 0 }}>
-        {aiHidden ? <AiHiddenNotice /> : <RecommendationPanel autoSuggest description={description} serviceKey={serviceKey} customFields={customFields} />}
+        {aiHidden ? <AiHiddenNotice /> : user?.role === "requester"
+          ? <RecommendationPanel autoSuggest description={description} serviceKey={serviceKey} customFields={customFields} /> : null}
         {analysis && !aiHidden ? <aside className="panel ai-preview">
           <div className="panel-heading">
             <div>

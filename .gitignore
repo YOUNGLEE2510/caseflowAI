@@ -37,3 +37,5 @@ apps/web/vite.config.d.ts
 
 # Pilot scenarios written by real people stay out of Git
 docs/study/pilot_cases.csv
+# Real reports written by people stay out of Git
+docs/study/collected_reports.csv

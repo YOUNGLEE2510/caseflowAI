@@ -36,7 +36,7 @@ export function KnowledgePage() {
   const [page, setPage] = useState(1);
   const [libraryInput, setLibraryInput] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
-  const { data, loading, error, reload } = useApiData<{ articles: KnowledgeArticle[]; total: number }>(`/knowledge?page=${page}&limit=20&search=${encodeURIComponent(libraryQuery)}`);
+  const { data, loading, error, reload } = useApiData<{ articles: KnowledgeArticle[]; total: number; counts?: { searchable: number; drafts: number } }>(`/knowledge?page=${page}&limit=20&search=${encodeURIComponent(libraryQuery)}`);
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResult | null>(null);
   const [searching, setSearching] = useState(false);
@@ -75,8 +75,6 @@ export function KnowledgePage() {
   async function search(event: React.FormEvent) {
     event.preventDefault();
     if (searching || query.trim().length < 3) return;
-    setLibraryQuery(query.trim().slice(0, 160));
-    setPage(1);
     setSearching(true);
     setSearchError("");
     setResult(null);
@@ -112,6 +110,10 @@ export function KnowledgePage() {
           <div>
             <h2 id="knowledge-ask-title">{text("Hỏi kho tri thức", "Ask the knowledge base")}</h2>
             <p>{text("Đặt câu hỏi bằng lời; hệ thống trả lời kèm nguồn trích từ tài liệu đã duyệt.", "Ask in your own words; answers cite approved documents.")}</p>
+            {data?.counts ? <p className="knowledge-coverage" role="note">
+              <strong>{data.counts.searchable}</strong> {text("tài liệu đã công bố (AI tra cứu được)", "published documents the assistant can cite")}
+              {data.counts.drafts ? <> · <strong>{data.counts.drafts}</strong> {text("bản nháp chờ duyệt (AI chưa dùng)", "drafts awaiting review (not used yet)")}</> : null}
+            </p> : null}
           </div>
         </div>
         <form onSubmit={search} className="knowledge-query-bar">
@@ -151,7 +153,9 @@ export function KnowledgePage() {
                 </article>
               ))}
               {!result.citations.length ? (
-                <div className="inline-empty">{text("Không có trích dẫn đủ liên quan để trả lời.", "No sufficiently relevant source was found.")}</div>
+                <div className="inline-empty">{data?.counts && !data.counts.searchable
+                  ? text("Chưa có tài liệu nào được công bố nên AI chưa có gì để trích dẫn. Duyệt và công bố tài liệu ở danh mục bên dưới.", "No document is published yet, so there is nothing to cite. Review and publish documents in the library below.")
+                  : text("Không có trích dẫn đủ liên quan để trả lời.", "No sufficiently relevant source was found.")}</div>
               ) : null}
             </div>
           </div>
@@ -189,7 +193,9 @@ export function KnowledgePage() {
                     <footer>
                       <span>{article.sourceLabel}</span>
                       <span>{text("Phiên bản", "Version")} {article.version}</span>
-                      {canWrite ? <span>{article.status === "published" ? text("Đã duyệt", "Published") : text("Chờ duyệt", "Draft")}</span> : null}
+                      {canWrite ? (article.status === "published"
+                        ? <span className="article-status article-status-published">{text("Đã công bố", "Published")}</span>
+                        : <span className="article-status article-status-draft">{text("Bản nháp · AI chưa dùng", "Draft · not used by AI")}</span>) : null}
                     </footer>
                   </div>
                   <button className="icon-button" onClick={() => setOpened(article)} title={text("Mở tài liệu", "Open document")} aria-label={text("Mở tài liệu", "Open document")}>

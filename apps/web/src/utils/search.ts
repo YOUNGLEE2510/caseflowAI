@@ -3,7 +3,7 @@ export function normalizeSearch(value: string) {
 }
 
 const aliases: Record<string, string> = {
-  mssv: "ma sinh vien", sv: "sinh vien", hp: "hoc phi", ktx: "ky tuc xa", mk: "mat khau", cntt: "cong nghe thong tin", wifi: "wi fi"
+  bql: "ban quan ly", dh: "dieu hoa", nl: "nong lanh", tm: "thang may", mk: "mat khau", wifi: "wi fi"
 };
 
 export function searchTokens(value: string) {

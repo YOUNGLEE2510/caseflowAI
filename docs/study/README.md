@@ -17,6 +17,8 @@ Các tệp ở đây do **người thật** điền. Công cụ không tự sinh
 
 ## 2. Tập kiểm tra do người thật viết
 
+Bộ biểu mẫu sẵn dùng (câu đồng ý, 30 thẻ tình huống, 4 phiên bản, cách chia tập kiểm tra/dev): [data_collection_kit.md](data_collection_kit.md).
+
 1. Nhờ 5–10 người (đóng vai người thuê) mỗi người viết 6–12 phản ánh theo cách họ thường nhắn, mỗi câu một dòng trong `human_test_template.csv` (`text`, để trống `label`, `writer` là mã người viết, `written_at` là ngày).
 2. Hai người gán nhãn như bước 1, chốt cột `label`.
 3. Chỉ giữ hai cột `text,label`, rồi chạy `python apps/ai/evaluate.py --dataset docs/study/human_test.csv --output artifacts/ai-evaluation/human-test`. Đây là con số nên đưa vào báo cáo; điểm trên tập mô phỏng chỉ để so sánh tương đối.

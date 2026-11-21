@@ -62,7 +62,7 @@ Không có Atlas thì `npm run docker:up` dùng Mongo local qua profile `local-d
 
 ## Pilot
 
-Đặt DEPLOYMENT_MODE=pilot, WEB_ORIGIN và OAuth callbacks là HTTPS, cấu hình JWT/MFA/email encryption keys, scanner và internal AI token. Giữ ClamAV và kiểm tra quyền tải tệp; không tắt bảo mật để giảm RAM. OAuth/SMTP: [OAUTH_SETUP.md](OAUTH_SETUP.md).
+Đặt DEPLOYMENT_MODE=pilot, WEB_ORIGIN và OAuth callbacks là HTTPS, cấu hình JWT/MFA/email encryption keys, scanner và internal AI token. Giữ ClamAV và kiểm tra quyền tải tệp; không tắt bảo mật để giảm RAM. OAuth/SMTP: [OAUTH_SETUP.md](../OAUTH_SETUP.md).
 
 Không bật seed ở pilot. Không đổi secret hoặc encryption key khi chưa hiểu ảnh hưởng đến phiên và dữ liệu đã mã hóa. Backup S3/offsite đã loại khỏi dự án. Trước lưu dữ liệu thật, chọn khả năng phục hồi phù hợp gói Atlas và chính sách tệp Cloudinary; không giả định metadata backup sẽ khôi phục được tệp gốc.
 
@@ -74,7 +74,7 @@ npm test
 npm run test:audit
 ```
 
-Các test dùng database tạm, không seed Atlas. Kiểm thử thực tế OAuth, SMTP, scanner, Cloudinary và phục hồi là các bước riêng có xác nhận; báo đúng ngày/version đã chạy. Huấn luyện nghiệp vụ vẫn để chờ dữ liệu được duyệt, xem [AI_AND_DATA.md](AI_AND_DATA.md).
+Các test dùng database tạm, không seed Atlas. Kiểm thử thực tế OAuth, SMTP, scanner, Cloudinary và phục hồi là các bước riêng có xác nhận; báo đúng ngày/version đã chạy. Huấn luyện nghiệp vụ vẫn để chờ dữ liệu được duyệt, xem [AI_AND_DATA.md](../AI_AND_DATA.md).
 
 E2E tắt SMTP/LLM và dùng kho tệp local cô lập. Server test có kênh đóng riêng trên localhost với token ngẫu nhiên; không nằm trong API sản phẩm. Teardown chờ xác nhận đã đóng Vite/API, Mongo tạm và dọn upload, tối đa 12 giây; thiếu xác nhận làm suite thất bại. Không dựa vào SIGTERM trên Windows. Bài manager-stability kiểm tra nạp lại trang nhiều lần; lỗi render được đính kèm trong artifacts để phân tích, không coi một lần chạy lại xanh là bằng chứng đã tìm được nguyên nhân gốc.
 

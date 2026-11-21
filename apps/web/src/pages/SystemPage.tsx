@@ -14,6 +14,7 @@ interface SystemStatus {
   };
   ai: {
     connected: boolean;
+    warming?: boolean;
     classifier?: string;
     trainingSamples?: number;
     modelVersion?: string;
@@ -170,7 +171,9 @@ export function SystemPage() {
                 <dd>
                   {status.data.ai.connected
                     ? text("Đã kết nối", "Connected")
-                    : text("Đang dùng bộ quy tắc dự phòng", "Rule-based fallback active")}
+                    : status.data.ai.warming
+                      ? text("Đang khởi động, tải lại sau vài giây", "Starting up, reload in a few seconds")
+                      : text("Đang dùng bộ quy tắc dự phòng", "Rule-based fallback active")}
                   {status.data.ai.connected ? <small className="system-model-detail">{status.data.ai.classifier || text("Bộ phân loại", "Classifier")} · {status.data.ai.modelVersion || "—"}{status.data.ai.trainingSamples !== undefined ? ` · ${status.data.ai.trainingSamples} ${text("mẫu huấn luyện", "training samples")}` : ""}</small> : null}
                 </dd>
               </div>

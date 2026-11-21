@@ -1,0 +1,112 @@
+/* Language/theme dropdowns, and fitting the sign-in page and workspace to laptop screens. */
+
+/* ── Preference dropdown (language, theme) ── */
+.preference-menu { position: relative; display: inline-flex; }
+.preference-menu-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 40px; min-width: 40px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 10px;
+  color: var(--ink); background: var(--surface);
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.preference-menu-compact .preference-menu-button { padding: 0 9px; }
+.theme-menu .preference-menu-button { width: 40px; padding: 0; }
+.preference-menu-button:hover, .preference-menu-button[aria-expanded="true"] { border-color: var(--brand-border); background: var(--surface-muted); }
+.preference-menu-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.preference-menu-button svg { flex: none; color: var(--muted); }
+.preference-menu-chevron { transition: transform 150ms ease; }
+.preference-menu-button[aria-expanded="true"] .preference-menu-chevron { transform: rotate(180deg); }
+.preference-menu-list {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 80;
+  display: grid; gap: 2px; min-width: 184px; padding: 6px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: 0 16px 40px rgba(15, 30, 26, 0.16), 0 2px 6px rgba(15, 30, 26, 0.08);
+  animation: preference-menu-in 140ms ease-out;
+}
+.preference-menu-list button {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px;
+  border: 0; border-radius: 8px; color: var(--ink); background: transparent;
+  font: inherit; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer;
+}
+.preference-menu-list button:hover { background: var(--surface-muted); }
+.preference-menu-list button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; background: var(--surface-muted); }
+.preference-menu-list button.selected { color: var(--brand-text); font-weight: 600; }
+.preference-menu-icon { display: inline-flex; color: var(--muted); }
+.preference-menu-list button.selected .preference-menu-icon { color: var(--brand-text); }
+.preference-menu-check { margin-left: auto; }
+@keyframes preference-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .preference-menu-list { animation: none; } .preference-menu-chevron { transition: none; } }
+/* In the phone menu the switches sit at the bottom: open upwards from the left edge */
+.sidebar-preferences .preference-menu-list { top: auto; right: auto; bottom: calc(100% + 6px); left: 0; }
+.login-locale { display: flex; align-items: center; gap: 8px; }
+
+/* ── Sign-in, reset and QR pages: one screen on laptops ── */
+@media (min-width: 901px) {
+  .auth-screen { min-height: 100dvh; }
+  .auth-showcase { min-height: 100dvh; }
+}
+@media (min-width: 901px) and (max-height: 920px) {
+  .auth-showcase { gap: 16px; padding: 28px clamp(28px, 4.5vw, 64px) 24px; }
+  .auth-showcase-copy h2 { margin: 12px 0 10px; font-size: clamp(26px, 2.3vw, 34px); }
+  .auth-showcase-copy p { font-size: 15px; line-height: 1.5; }
+  .auth-preview { padding-top: 46px; padding-bottom: 34px; }
+  .auth-points { gap: 8px; }
+  .auth-points li { font-size: 14px; }
+  .auth-screen .login-form-area { padding-top: 64px; padding-bottom: 12px; }
+  .auth-screen .login-locale { top: 14px; right: 20px; }
+  .auth-screen .login-panel { padding: 26px 30px 22px; }
+  .auth-screen .login-heading { margin-bottom: 16px; }
+  .auth-screen .login-heading h1 { margin-bottom: 4px; font-size: 25px; }
+  .auth-screen .login-heading p { font-size: 14px; line-height: 1.45; }
+  .auth-screen .login-panel .field { gap: 6px; }
+  .auth-screen form { gap: 12px; }
+  .auth-screen .field input, .auth-screen .field select, .auth-screen .password-field { min-height: 42px; }
+  .auth-screen .login-button { min-height: 44px; }
+  .auth-screen .login-provider-separator { margin: 12px 0 6px; }
+  .auth-screen .login-google { min-height: 42px; margin-top: 6px; }
+  .auth-screen .login-security, .auth-screen .login-help { margin-top: 12px; padding: 9px 12px; }
+  .auth-screen .login-footer { margin-top: 10px; }
+}
+@media (min-width: 901px) and (max-height: 760px) {
+  .auth-showcase-copy p, .auth-points { display: none; }
+  .auth-preview { padding-top: 40px; padding-bottom: 28px; }
+  .auth-screen .login-heading p { display: none; }
+  /* Short screens: drop the decorative security note, keep "no account?" help on one compact line */
+  .auth-screen .login-security { display: none; }
+  .auth-screen .login-help { margin-top: 10px; padding: 6px 10px; font-size: 12px; line-height: 1.35; }
+  .auth-screen .login-help svg { width: 15px; height: 15px; }
+  .auth-screen .login-help strong, .auth-screen .login-help small { display: inline; font-size: 12px; }
+  .auth-screen .login-help strong::after { content: " "; }
+  .auth-screen .login-form-area { padding-top: 58px; }
+}
+@media (min-width: 901px) and (max-height: 640px) {
+  .auth-preview { display: none; }
+  .auth-screen .login-help { display: none; }
+}
+
+/* ── Workspace on laptop screens: compact sidebar and top bar so navigation fits without scrolling ── */
+@media (min-width: 901px) and (max-height: 900px) {
+  .service-workspace .topbar { min-height: 60px; height: 60px; }
+  .service-workspace .main-nav { gap: 2px; }
+  .service-workspace .nav-item { min-height: 38px; padding-block: 0; font-size: 14px; }
+  .service-workspace .nav-section-label { margin-top: 10px; margin-bottom: 4px; }
+  .service-workspace .sidebar-footer .nav-item { min-height: 38px; }
+}
+@media (min-width: 901px) and (max-height: 660px) {
+  .service-workspace .nav-item { min-height: 34px; }
+  .service-workspace .sidebar-footer .nav-item { min-height: 34px; }
+  .service-workspace .nav-section-label { margin-top: 6px; margin-bottom: 2px; }
+}
+@media (min-width: 761px) { .priority-table th, .cases-table th { white-space: nowrap; } }
+
+/* Overview: unit board at a glance (housekeeping, or an empty request queue) */
+.unit-work-summary { padding: 16px 18px; }
+.unit-work-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; margin-top: 12px; }
+.unit-work-item { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; color: var(--ink); text-decoration: none; transition: border-color 150ms ease, background-color 150ms ease; }
+.unit-work-item:hover { border-color: var(--brand-border); background: var(--brand-subtle); }
+.unit-work-item:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.unit-work-item svg { flex: none; color: var(--brand-text); }
+.unit-work-item span { flex: 1; color: var(--muted); font-size: 14px; }
+.unit-work-item strong { font-size: 22px; font-weight: 700; }

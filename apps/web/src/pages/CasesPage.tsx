@@ -31,6 +31,7 @@ const statusTabs: Array<{ value: string; vi: string; en: string }> = [
 ];
 
 const queueLabels: Record<string, { vi: string; en: string }> = {
+  team: { vi: "Tổ của tôi", en: "My team" },
   unassigned: { vi: "Chưa phân công", en: "Unassigned" },
   assigned: { vi: "Giao cho tôi", en: "Assigned to me" },
   overdue: { vi: "Quá hạn", en: "Overdue" },
@@ -46,7 +47,11 @@ export function CasesPage() {
   const priority = user?.role === "requester" ? "all" : searchParams.get("priority") || "all";
   const search = searchParams.get("search") || "";
   const page = searchParams.get("page") || "1";
-  const queue = user?.role === "requester" ? "all" : searchParams.get("queue") || "all";
+  // Team leads opening the plain queue start on their own team's work; any search or filter link
+  // (and the operations head and admins) start on everything.
+  const plainQueue = ![...searchParams.keys()].some(key => key !== "page");
+  const defaultQueue = user?.role === "manager" && user.team && !user.personnelManager && plainQueue ? "team" : "all";
+  const queue = user?.role === "requester" ? "all" : searchParams.get("queue") || defaultQueue;
   const propertyCode = searchParams.get("propertyCode") || "";
   const unitCode = propertyCode ? searchParams.get("unitCode") || "" : "";
   const canUseBoard = user?.role !== "requester";
@@ -78,7 +83,8 @@ export function CasesPage() {
 
   function updateFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
-    if (value && value !== "all") next.set(key, value);
+    // The queue keeps an explicit "all": for team leads an absent queue means "my team".
+    if (value && (value !== "all" || (key === "queue" && defaultQueue !== "all"))) next.set(key, value);
     else next.delete(key);
     if (key !== "page") next.delete("page");
     setSearchParams(next);
@@ -139,6 +145,7 @@ export function CasesPage() {
           {user?.role !== "requester" ? <label className="compact-select">
             <select aria-label={text("Hàng đợi công việc", "Work queue")} value={queue} onChange={(event) => updateFilter("queue", event.target.value)}>
               <option value="all">{text("Tất cả công việc", "All work")}</option>
+              {user?.team ? <option value="team">{text("Tổ của tôi", "My team")}</option> : null}
               <option value="unassigned">{text("Chưa phân công", "Unassigned")}</option>
               <option value="assigned">{text("Giao cho tôi", "Assigned to me")}</option>
               <option value="overdue">{text("Quá hạn", "Overdue")}</option>

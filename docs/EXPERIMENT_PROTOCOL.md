@@ -8,6 +8,8 @@ Tài liệu này định nghĩa cách đánh giá các thành phần AI và hi�
 
 Yêu cầu dịch vụ gồm phản ánh của người thuê (gửi qua cổng, mã QR trong căn) và yêu cầu do nhân viên tiếp nhận hộ (điện thoại, email, quầy lễ tân). Tất cả đi vào một hàng đợi, ghi kênh tiếp nhận, và được bộ phận phụ trách xử lý nội bộ. Sáu nhóm dịch vụ và bộ phận phụ trách:
 
+**Đối chiếu với tên đề tài.** Tên đề tài dùng cụm "yêu cầu hỗ trợ/dịch vụ của đơn vị". Trong đơn vị vận hành căn hộ, phần lớn yêu cầu đến từ người thuê và được các bộ phận nội bộ (kỹ thuật, an ninh, chăm sóc cư dân, buồng phòng) tiếp nhận, phân loại, giao việc và xử lý. Vì vậy "yêu cầu dịch vụ" ở đây là mọi yêu cầu đi vào hàng đợi của đơn vị, kể cả yêu cầu nhân viên tạo hộ hoặc tự tạo (ví dụ lễ tân ghi nhận sự cố khu chung, buồng phòng báo hỏng thiết bị khi dọn căn) với kênh `counter`/`phone`/`email`. Luồng xử lý, phân quyền, SLA và AI giống nhau cho mọi nguồn; không có luồng riêng cho yêu cầu giữa hai bộ phận nội bộ không liên quan đến căn hộ (ví dụ mua sắm, nhân sự). Định nghĩa này cần đưa vào chương 1 của báo cáo.
+
 | Nhãn | Nhóm dịch vụ | Bộ phận |
 |---|---|---|
 | `water` | Cấp thoát nước: nước yếu/mất nước, rò rỉ, tắc nghẽn, thấm dột | Kỹ thuật điện nước |
@@ -115,3 +117,13 @@ Bộ công cụ và mẫu biểu ở `docs/study/` (`README.md` hướng dẫn c
 4. **Bảng hỏi SUS** sau buổi thử → `python -m apps.ai.analyze_study sus …`.
 
 Mọi báo cáo ghi phiên bản dữ liệu, mã nguồn (commit), ngày chạy và nêu rõ dữ liệu nào là mô phỏng. Không điền số giả cho các mục chưa đo.
+
+## 7. Hạn chế đã biết (đưa vào báo cáo)
+
+- **Dữ liệu:** toàn bộ tập huấn luyện và kiểm tra hiện có là mô phỏng; 240/300 câu huấn luyện do trợ lý AI soạn. Điểm phân loại 0,95 vì thế cao hơn thực tế và chỉ dùng để so sánh tương đối.
+- **Gợi ý mức ưu tiên** là bộ luật giải thích được, không phải mô hình học máy; nó là mốc so sánh cho mô hình học khi có nhãn ưu tiên thật. Recall khẩn cấp 0,79, chưa đạt tiêu chí 0,95.
+- **Dự báo nguy cơ trễ SLA** (`apps/ai/models/sla_predictor.py`) học trên nhãn tổng hợp, chỉ là thử nghiệm: giao diện ghi "rủi ro (ước tính)", không đưa vào kết quả. Hạn xử lý thực tế do SLA theo giờ làm việc quyết định.
+- **Gợi ý phản ánh liên quan** mới có 7 kịch bản; F1 0,67 chưa đủ để kết luận.
+- **Truy xuất tri thức:** ngày 20/11/2026 kiểm tra lại trên dữ liệu Atlas (28 quy trình đã công bố, chỉ đọc), cả đường dịch vụ AI và đường dự phòng đều trả trích dẫn đúng chủ đề cho các câu thử; hiện tượng "0 trích dẫn" ghi ngày 18/11 không còn tái hiện. Chưa kiểm tra lại trên bản production đang chạy vì cần đăng nhập tài khoản thật. Một câu về rò nước dưới bồn rửa trích quy trình "tắc thoát" thay vì "rò rỉ ống", cho thấy giới hạn của tìm theo từ.
+- **Triển khai trên Vercel gói miễn phí:** không có máy quét virus (ClamAV chỉ có trong cấu hình Docker) nên bản Vercel **không nhận tệp đính kèm mới** (chọn từ chối thay vì nhận tệp chưa quét); muốn trình diễn tải tệp phải dùng bản Docker ở máy cá nhân. Không có tiến trình chạy nền thường trực cho kiểm tra SLA và hàng đợi email; các việc này chạy theo lượt truy cập nên không bảo đảm đúng lịch khi không có ai dùng hệ thống.
+- **Phạm vi:** bảng trạng thái căn/buồng phòng, lịch bảo trì và lịch nghỉ của nhân sự chỉ phục vụ phân công và theo dõi sự cố, không phải chức năng chính của đề tài.

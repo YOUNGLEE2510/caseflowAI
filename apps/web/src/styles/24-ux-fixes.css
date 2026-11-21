@@ -1,0 +1,78 @@
+/* UX review fixes, 20/11/2026 */
+
+/* Knowledge base: what the assistant can cite, and which documents are still drafts */
+.knowledge-coverage { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.knowledge-coverage strong { color: var(--ink); }
+.article-status { display: inline-flex; align-items: center; padding: 1px 8px; border: 1px solid; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; }
+.article-status-published { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+.article-status-draft { color: var(--warning); background: var(--warning-bg); border-color: var(--warning-border); }
+
+/* Case detail: say why the status list is short */
+.action-bar .action-hint { flex-basis: 100%; order: 10; margin: 0; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; }
+/* Desktop: the four dropdowns share one row, the routing button sits at its end, the hint wraps below */
+@media (min-width: 761px) {
+  .action-bar { flex-wrap: wrap; align-items: flex-end; row-gap: 8px; }
+  .action-bar > label { flex: 1 1 0; min-width: 150px; }
+  .action-bar > .action-spacer { display: none; }
+  .action-bar > .button, .action-bar > .saving-label { flex: none; }
+}
+
+/* Resident home: the "open requests" tile opens the request list like its neighbour */
+.requester-summary-grid .summary-tile-clickable { position: relative; cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.summary-tile-link { display: flex; align-items: inherit; gap: inherit; flex-direction: inherit; color: inherit; text-decoration: none; }
+.summary-tile-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.requester-summary-grid .summary-tile-clickable:hover { border-color: var(--brand-border); background: var(--brand-subtle); }
+.requester-summary-grid .summary-tile-clickable:has(:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
+.summary-tile-link:focus-visible { outline: none; }
+
+/* Mobile top bar: move language/theme into the menu so the organisation name fits on one line */
+.topbar-preferences { display: contents; }
+.sidebar-preferences { display: none; }
+@media (max-width: 600px) {
+  .topbar-preferences { display: none; }
+  .sidebar-preferences { display: flex; align-items: center; gap: 8px; padding: 0 0 10px; }
+}
+@media (max-width: 600px) {
+  .topbar .topbar-title { min-width: 0; }
+  .topbar .topbar-title strong, .topbar .mobile-brand small { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}
+
+/* Login showcase: floating chips were dark-on-dark and crowded the card corner */
+.auth-float { color: #12201c; background: #f4fbf8; border-color: #b9e6d4; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38); }
+.auth-float svg { color: #1d846a; }
+.auth-float small { color: #3f5a51; }
+.auth-preview { padding-top: 52px; padding-bottom: 40px; }
+.auth-float-ai { top: 0; right: 0; }
+.auth-float-sla { right: 12px; bottom: 0; }
+
+/* Dark mode: search inputs inherit the rounded field instead of painting their own grey box */
+:is(.search-box, .knowledge-query-bar, .units-search-input, .global-search, .library-filter) input { background: transparent; box-shadow: none; }
+
+/* Tables: relative times stay on one line ("31 phút trước") */
+.data-table td.cell-updated, .priority-table td:last-child { white-space: nowrap; }
+
+/* Kanban card footer: keep icons visible, let the name shrink instead */
+.case-board-card footer { flex-wrap: wrap; row-gap: 4px; font-size: 11px; }
+.case-board-card footer span svg { flex: none; }
+.case-board-card footer span:last-child { flex: none; }
+
+/* Unit tile: code and "ready to let" badge get a little room when the badge wraps */
+.unit-tile-head { flex-wrap: wrap; row-gap: 4px; column-gap: 6px; }
+.unit-rentable { white-space: nowrap; }
+
+/* Overview: clickable KPI cards and counts on the queue shortcuts */
+.metric-card-link { position: relative; transition: border-color 150ms ease; }
+.metric-card-link:hover { border-color: var(--brand-border); }
+.metric-card-anchor { color: inherit; text-decoration: none; }
+.metric-card-anchor::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.metric-card-link:has(:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
+.metric-card-anchor:focus-visible { outline: none; }
+.work-queue-shortcuts .queue-count { margin-left: auto; min-width: 28px; padding: 1px 8px; border-radius: var(--radius-pill); color: var(--brand-text); background: var(--brand-subtle); font-size: 13px; font-weight: 700; text-align: center; }
+
+/* Kanban: one-click moves on the card */
+.case-board-actions { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.case-board-actions:empty { display: none; }
+.case-board-actions .text-link { min-height: 32px; font-size: 13px; }
+
+/* Knowledge citations: keep the source label and "Open source" apart */
+.citation-list footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; font-size: 12px; }

@@ -23,13 +23,15 @@ export const isRentable = (unit: Pick<BoardUnit, "occupancyStatus" | "readinessS
 
 rentalUnitsRouter.get("/rental/units", staff, async (req, res) => {
   const organizationId = new mongoose.Types.ObjectId(req.auth!.organizationId);
-  const filter = z.object({ propertyCode: code.optional() }).parse({ propertyCode: req.query.propertyCode || undefined });
+  const filter = z.object({ propertyCode: code.optional(), view: z.enum(["board", "summary"]).default("board") })
+    .parse({ propertyCode: req.query.propertyCode || undefined, view: req.query.view || undefined });
   const [properties, units, openCases] = await Promise.all([
     RentalProperty.find({ organizationId, active: true }).select("code name address").sort({ code: 1 }).limit(100).lean(),
     RentalUnit.find({ organizationId, ...(filter.propertyCode ? { propertyCode: filter.propertyCode } : {}) })
       .select("propertyCode code floor residentIds occupancyStatus readinessStatus availableFrom statusNote statusUpdatedAt statusUpdatedByName qrEnabled")
       .sort({ propertyCode: 1, code: 1 }).limit(1000).lean<BoardUnit[]>(),
-    CaseRecord.aggregate<{ _id: { propertyCode: string; unitCode: string }; open: number }>([
+    // The overview only needs counts: skip the per-unit open-case aggregation.
+    filter.view === "summary" ? Promise.resolve([]) : CaseRecord.aggregate<{ _id: { propertyCode: string; unitCode: string }; open: number }>([
       { $match: { organizationId, unitCode: { $type: "string" }, status: { $nin: ["resolved", "closed"] } } },
       { $group: { _id: { propertyCode: "$propertyCode", unitCode: "$unitCode" }, open: { $sum: 1 } } }
     ])
@@ -43,14 +45,13 @@ rentalUnitsRouter.get("/rental/units", staff, async (req, res) => {
     rentable: isRentable(unit), qrEnabled: Boolean(unit.qrEnabled)
   }));
   const count = (predicate: (row: typeof rows[number]) => boolean) => rows.filter(predicate).length;
-  res.json({
-    properties, units: rows,
-    summary: {
+  const summary = {
       total: rows.length, rentable: count(row => row.rentable),
       occupancy: Object.fromEntries(UNIT_OCCUPANCY.map(key => [key, count(row => row.occupancyStatus === key)])),
       readiness: Object.fromEntries(UNIT_READINESS.map(key => [key, count(row => row.readinessStatus === key)]))
-    }
-  });
+  };
+  if (filter.view === "summary") { res.json({ summary }); return; }
+  res.json({ properties, units: rows, summary });
 });
 
 async function findUnit(req: Request, history = false) {

@@ -29,13 +29,16 @@ async function renderCard(url: string, unitCode: string, propertyName: string) {
   return card.toDataURL("image/png");
 }
 
-export function UnitQrPanel({ properties, units }: {
-  properties: { code: string; name: string }[]; units: { propertyCode: string; code: string }[]
+export function UnitQrPanel({ properties, units, initialProperty = "", initialUnit = "" }: {
+  properties: { code: string; name: string }[]; units: { propertyCode: string; code: string }[];
+  /** Preselect a unit when opened from the unit board. */
+  initialProperty?: string; initialUnit?: string;
 }) {
   const { text } = useLocale();
   const confirm = useConfirmation();
-  const [property, setProperty] = useState("");
-  const [unit, setUnit] = useState("");
+  const known = units.some(item => item.propertyCode === initialProperty && item.code === initialUnit);
+  const [property, setProperty] = useState(known ? initialProperty : "");
+  const [unit, setUnit] = useState(known ? initialUnit : "");
   const [state, setState] = useState<QrState | null>(null);
   const [image, setImage] = useState("");
   const [busy, setBusy] = useState(false);

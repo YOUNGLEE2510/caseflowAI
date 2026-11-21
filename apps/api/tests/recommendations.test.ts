@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { nextStep, isRecommendationManager, categoryResolver } from "../src/services/recommendations.js";
 
 it("resolves category labels and keys without guessing ambiguous aliases", () => {
-  const resolve = categoryResolver([{ key: "finance", name: "Học phí", category: "Tài chính" }, { key: "other", name: "Khác", category: "Chung" }, { key: "general", name: "Hỗ trợ", category: "Chung" }]);
-  expect(resolve(" HOC PHI ")).toBe("Tài chính");
+  const resolve = categoryResolver([{ key: "finance", name: "Tiền thuê", category: "Tài chính" }, { key: "other", name: "Khác", category: "Chung" }, { key: "general", name: "Hỗ trợ", category: "Chung" }]);
+  expect(resolve(" TIEN THUE ")).toBe("Tài chính");
   expect(resolve("finance")).toBe("Tài chính");
   expect(resolve("Tài chính")).toBe("Tài chính");
   expect(resolve("Chung")).toBe("Chung");

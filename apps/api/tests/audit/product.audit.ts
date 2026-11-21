@@ -14,7 +14,7 @@ let base: string;
 let models: typeof import("../../src/models.js");
 let recommendations: typeof import("../../src/models/recommendation.js");
 let org: { _id: mongoose.Types.ObjectId };
-let student: UserFixture, agent: UserFixture, colleague: UserFixture, manager: UserFixture, outsider: UserFixture;
+let resident: UserFixture, agent: UserFixture, colleague: UserFixture, manager: UserFixture, outsider: UserFixture;
 let record: { _id: mongoose.Types.ObjectId };
 
 async function request(path: string, user: UserFixture | null, method = "GET", body?: unknown) {
@@ -48,15 +48,15 @@ beforeEach(async () => {
   for (const collection of Object.values(mongoose.connection.collections)) await collection.deleteMany({});
   org = await models.Organization.create({ name: "Audit fixture", slug: "audit-fixture" });
   const other = await models.Organization.create({ name: "Other fixture", slug: "other-fixture" });
-  [student, agent, colleague, manager, outsider] = await models.User.create([
-    { name: "Student", email: "s@audit.invalid", role: "requester", organizationId: org._id },
+  [resident, agent, colleague, manager, outsider] = await models.User.create([
+    { name: "Resident", email: "s@audit.invalid", role: "requester", organizationId: org._id },
     { name: "Agent", email: "a@audit.invalid", role: "agent", team: "IT", organizationId: org._id },
     { name: "Colleague", email: "b@audit.invalid", role: "agent", team: "IT", organizationId: org._id },
-    { name: "Manager", email: "m@audit.invalid", role: "manager", organizationId: org._id },
+    { name: "Manager", email: "m@audit.invalid", role: "manager", personnelManager: true, organizationId: org._id },
     { name: "Other admin", email: "o@audit.invalid", role: "org_admin", organizationId: other._id }
   ].map(user => ({ ...user, passwordHash: "unused-by-token-auth-tests" })));
   await models.ServiceDefinition.create({ organizationId: org._id, key: "it_access", name: "IT", category: "it_access", team: "IT", slaHours: 8 });
-  record = await models.CaseRecord.create({ organizationId: org._id, code: "AUDIT-01", title: "Audit case", description: "Isolated audit fixture", serviceKey: "it_access", category: "it_access", requesterId: student._id, requesterName: student.name, team: "IT", assigneeId: agent._id, assigneeName: agent.name, status: "in_progress", dueAt: new Date(Date.now() + 86400000), ai: { reviewStatus: "confirmed" } });
+  record = await models.CaseRecord.create({ organizationId: org._id, code: "AUDIT-01", title: "Audit case", description: "Isolated audit fixture", serviceKey: "it_access", category: "it_access", requesterId: resident._id, requesterName: resident.name, team: "IT", assigneeId: agent._id, assigneeName: agent.name, status: "in_progress", dueAt: new Date(Date.now() + 86400000), ai: { reviewStatus: "confirmed" } });
 });
 
 afterAll(async () => {
@@ -74,7 +74,7 @@ describe("authentication and resource boundaries", () => {
     expect((await request(`/cases/${record._id}${suffix}`, outsider)).status).toBe(404);
   });
   it("rejects requester case reassignment", async () => {
-    expect((await request(`/cases/${record._id}`, student, "PATCH", { assigneeId: String(colleague._id) })).status).toBe(403);
+    expect((await request(`/cases/${record._id}`, resident, "PATCH", { assigneeId: String(colleague._id) })).status).toBe(403);
   });
   it("allows managers to reassign within the organization", async () => {
     expect((await request(`/cases/${record._id}`, manager, "PATCH", { assigneeId: String(colleague._id) })).status).toBe(200);
@@ -128,7 +128,7 @@ describe("SLA and lifecycle contracts", () => {
   it("F10: returns reopened cases with inactive assignees to triage", async () => {
     await models.User.updateOne({ _id: agent._id }, { $set: { active: false } });
     await models.CaseRecord.updateOne({ _id: record._id }, { $set: { status: "resolved", resolvedAt: new Date() } });
-    const response = await request(`/cases/${record._id}/reopen`, student, "POST", {});
+    const response = await request(`/cases/${record._id}/reopen`, resident, "POST", {});
     expect(response.status).toBe(200);
     expect(response.body.case).toMatchObject({ status: "triaged", assigneeId: null });
     expect(await models.Notification.countDocuments({ organizationId: org._id, userId: manager._id, relatedCaseId: record._id })).toBe(1);
@@ -147,22 +147,22 @@ describe("recommendation and notification accounting", () => {
     expect((await request("/recommendations/metrics", manager)).body.pending).toBe(1);
   });
   it("does not expose recommendation metrics to requesters", async () => {
-    expect((await request("/recommendations/metrics", student)).status).toBe(403);
+    expect((await request("/recommendations/metrics", resident)).status).toBe(403);
   });
   it("notification total reflects the active unread filter", async () => {
-    await models.Notification.create([false, true].map(read => ({ organizationId: org._id, userId: student._id, type: "system", title: "Audit notification", read })));
-    const response = await request("/notifications?unread=true", student);
+    await models.Notification.create([false, true].map(read => ({ organizationId: org._id, userId: resident._id, type: "system", title: "Audit notification", read })));
+    const response = await request("/notifications?unread=true", resident);
     expect(response.body.notifications).toHaveLength(1);
     expect(response.body.total).toBe(1);
   });
   it("rejects non-finite notification offsets as invalid input", async () => {
-    expect((await request("/notifications?skip=Infinity", student)).status).toBe(400);
+    expect((await request("/notifications?skip=Infinity", resident)).status).toBe(400);
   });
 });
 
 describe("training export contracts", () => {
-  it.each(["B22DCCN019", "B21DCCN123"])("F04: removes PTIT identifier %s", id => {
-    expect(redactTrainingText(`MSSV ${id}`)).not.toContain(id);
+  it.each(["012345678901", "123456789"])("F04: removes citizen ID %s", id => {
+    expect(redactTrainingText(`CCCD ${id}`)).not.toContain(id);
   });
   it("F05: does not expose a spreadsheet formula in a reviewed training export", () => {
     const csv = buildReviewedTrainingCsv([{ title: '=1+N("', description: '")', category: "it_access", ai: { reviewStatus: "confirmed" } }]);
