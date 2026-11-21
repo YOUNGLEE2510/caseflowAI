@@ -29,9 +29,14 @@ it("backs up and restores documents with their BSON types and indexes into an em
   await source.createCollection("users_view", { viewOn: "users", pipeline: [] });
   await source.collection("empty").insertOne({ x: 1 });
   await source.collection("empty").deleteMany({});
+  // Collection options survive, and more than one insert batch is streamed back.
+  await source.createCollection("rules", { validator: { $jsonSchema: { required: ["code"] } }, collation: { locale: "vi", strength: 2 } });
+  await source.collection("rules").insertOne({ code: "R1" });
+  await source.collection("bulk").insertMany(Array.from({ length: 2500 }, (_, i) => ({ i })));
 
   const manifest = await backupDatabase(source, dir);
-  expect(manifest.collections.map(item => [item.name, item.documents])).toEqual([["empty", 0], ["users", 2]]);
+  expect(manifest.collections.map(item => [item.name, item.documents])).toEqual([["bulk", 2500], ["empty", 0], ["rules", 1], ["users", 2]]);
+  expect(manifest.consistentSnapshot).toBe(false); // standalone test server: no snapshot sessions
 
   const target = mongoose.connection.useDb("backup_restore", { useCache: false }).db!;
   const report = await restoreDatabase(target, dir);
@@ -44,6 +49,11 @@ it("backs up and restores documents with their BSON types and indexes into an em
   const partial = (await target.collection("users").indexes()).find(index => index.name === "recent_only");
   expect(partial?.partialFilterExpression?.joinedAt?.$gte).toBeInstanceOf(Date);
   expect(manifest.collections.map(item => item.name)).not.toContain("users_view");
+  const rules = (await target.listCollections({ name: "rules" }).toArray())[0] as { options?: Record<string, any> };
+  expect(rules.options?.validator).toEqual({ $jsonSchema: { required: ["code"] } });
+  expect(rules.options?.collation?.locale).toBe("vi");
+  await expect(target.collection("rules").insertOne({ other: 1 })).rejects.toThrow();
+  expect(await target.collection("bulk").countDocuments()).toBe(2500);
   expect(await target.collection("empty").countDocuments()).toBe(0);
 
   // A second restore into the same (now non-empty) database is refused.
@@ -58,3 +68,21 @@ it("refuses a backup whose file no longer matches its checksum", async () => {
   await expect(restoreDatabase(target, dir)).rejects.toThrow(/Checksum mismatch/);
   await writeFile(file, original);
 });
+
+it("reads every collection from one snapshot on a replica set", async () => {
+  const { MongoMemoryReplSet } = await import("mongodb-memory-server");
+  const replSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+  const connection = await mongoose.createConnection(replSet.getUri(), { dbName: "snapshot_source" }).asPromise();
+  const out = await mkdtemp(join(tmpdir(), "caseflow-snapshot-"));
+  try {
+    await connection.db!.collection("a").insertOne({ x: 1 });
+    await connection.db!.collection("b").insertOne({ y: 1 });
+    const manifest = await backupDatabase(connection.db!, out);
+    expect(manifest.consistentSnapshot).toBe(true);
+    expect(manifest.collections.map(item => [item.name, item.documents])).toEqual([["a", 1], ["b", 1]]);
+  } finally {
+    await connection.close();
+    await replSet.stop();
+    await rm(out, { recursive: true, force: true });
+  }
+}, 120000);

@@ -30,7 +30,8 @@
   border: 0; border-radius: 8px; color: var(--ink); background: transparent;
   font: inherit; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer;
 }
-.preference-menu-list button:hover, .preference-menu-list button:focus-visible { outline: none; background: var(--surface-muted); }
+.preference-menu-list button:hover { background: var(--surface-muted); }
+.preference-menu-list button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; background: var(--surface-muted); }
 .preference-menu-list button.selected { color: var(--brand-text); font-weight: 600; }
 .preference-menu-icon { display: inline-flex; color: var(--muted); }
 .preference-menu-list button.selected .preference-menu-icon { color: var(--brand-text); }
@@ -72,11 +73,17 @@
   .auth-showcase-copy p, .auth-points { display: none; }
   .auth-preview { padding-top: 40px; padding-bottom: 28px; }
   .auth-screen .login-heading p { display: none; }
-  .auth-screen .login-security, .auth-screen .login-help { display: none; }
+  /* Short screens: drop the decorative security note, keep "no account?" help on one compact line */
+  .auth-screen .login-security { display: none; }
+  .auth-screen .login-help { margin-top: 10px; padding: 6px 10px; font-size: 12px; line-height: 1.35; }
+  .auth-screen .login-help svg { width: 15px; height: 15px; }
+  .auth-screen .login-help strong, .auth-screen .login-help small { display: inline; font-size: 12px; }
+  .auth-screen .login-help strong::after { content: " "; }
   .auth-screen .login-form-area { padding-top: 58px; }
 }
 @media (min-width: 901px) and (max-height: 640px) {
   .auth-preview { display: none; }
+  .auth-screen .login-help { display: none; }
 }
 
 /* ── Workspace on laptop screens: compact sidebar and top bar so navigation fits without scrolling ── */
@@ -92,4 +99,4 @@
   .service-workspace .sidebar-footer .nav-item { min-height: 34px; }
   .service-workspace .nav-section-label { margin-top: 6px; margin-bottom: 2px; }
 }
-.priority-table th, .cases-table th { white-space: nowrap; }
+@media (min-width: 761px) { .priority-table th, .cases-table th { white-space: nowrap; } }
