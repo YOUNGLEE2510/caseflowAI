@@ -9,7 +9,7 @@ test("organization selection, CSV preview and knowledge pagination remain usable
   await page.goto("/users");
   await page.getByRole("button", { name: "Nhập CSV", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.locator('input[type="file"]').setInputFiles({ name: "users.csv", mimeType: "text/csv", buffer: Buffer.from("name,email,role,team\nPreview Student,preview@example.com,requester,") });
+  await dialog.locator('input[type="file"]').setInputFiles({ name: "users.csv", mimeType: "text/csv", buffer: Buffer.from("name,email,role,team\nPreview Tenant,preview@example.com,requester,") });
   await expect(dialog).toContainText("preview@example.com");
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });

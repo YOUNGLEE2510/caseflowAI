@@ -87,10 +87,8 @@ test("facilitator switches conditions, staff work manually, then export pseudony
     await staff.setViewportSize({ width: 1440, height: 950 });
     await staff.goto(path);
     await staff.getByRole("combobox", { name: "Mức ưu tiên", exact: true }).selectOption("urgent");
-    await staff.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(staff.getByRole("combobox", { name: "Mức ưu tiên", exact: true })).toHaveValue("urgent");
     await staff.getByRole("button", { name: "Xác nhận phân luồng", exact: true }).click();
-    await staff.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(staff.getByRole("button", { name: "Xác nhận phân luồng", exact: true })).toHaveCount(0);
 
     await settings.getByRole("switch").click();
@@ -98,6 +96,8 @@ test("facilitator switches conditions, staff work manually, then export pseudony
     await expect(settings.getByRole("switch")).not.toBeChecked();
     // SPA navigation, with the same session: the server's current flag refreshes the web account.
     await staff.getByRole("link", { name: "Hồ sơ", exact: true }).click();
+    // A team lead's plain queue starts on "My team"; the case may belong to another team.
+    await staff.getByRole("combobox", { name: "Hàng đợi công việc" }).selectOption("all");
     await staff.getByRole("link", { name: item.code, exact: true }).click();
     await expect(staff.locator(".ai-hidden-notice")).toHaveCount(0);
     await expect(staff.locator(".ai-insight-panel")).toBeVisible();

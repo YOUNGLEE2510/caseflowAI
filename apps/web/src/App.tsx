@@ -40,6 +40,12 @@ function ProtectedRoutes() {
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
+function SystemRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const allowed = user && (["org_admin", "platform_admin"].includes(user.role) || (user.role === "manager" && user.personnelManager));
+  return allowed ? children : <Navigate to="/overview" replace />;
+}
+
 function AdminRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   return user && ["manager", "org_admin", "platform_admin"].includes(user.role) ? (
@@ -88,7 +94,7 @@ export default function App() {
               }
             />
             <Route path="/knowledge" element={<KnowledgePage />} />
-            <Route path="/system" element={<AdminRoute><SystemPage /></AdminRoute>} />
+            <Route path="/system" element={<SystemRoute><SystemPage /></SystemRoute>} />
             <Route
               path="/services"
               element={

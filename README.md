@@ -2,15 +2,15 @@
 
 Nền tảng quản lý yêu cầu dịch vụ và hồ sơ tác nghiệp có AI hỗ trợ. Hướng ứng dụng hiện tại là tiếp nhận phản ánh và điều phối sửa chữa cho chuỗi căn hộ cho thuê: quản lý cơ sở/căn/thiết bị, quyền gửi theo căn, liên kết phản ánh vào sự cố chung, giao kỹ thuật và lịch hẹn. Sản phẩm chỉ còn một miền nghiệp vụ là căn hộ cho thuê; chế độ trường học đã được gỡ khỏi mã, dữ liệu và test.
 
-Bộ phân loại dùng TF-IDF + Logistic Regression huấn luyện từ 300 câu mô phỏng (60 câu nhóm tự viết và 240 câu do AI hỗ trợ soạn), không phải dữ liệu khách thuê thật. Kết quả đánh giá và phần cần người thật thực hiện nằm trong [EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md). Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
+Bộ phân loại dùng TF-IDF lai (từ + ký tự) + Logistic Regression huấn luyện từ 300 câu mô phỏng (60 câu nhóm tự viết và 240 câu do AI hỗ trợ soạn), không phải dữ liệu khách thuê thật. Kết quả đánh giá và phần cần người thật thực hiện nằm trong [EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md). Gợi ý liên quan kết hợp vị trí, cửa sổ thời gian và độ tương đồng; quản lý quyết định liên kết. Chưa chứng minh hiệu quả trên dữ liệu vận hành thực tế.
 
 ## Giá trị chính
 
-Hệ thống dùng refresh token HttpOnly, quét tệp với ClamAV, MongoDB Atlas cho metadata và Cloudinary cho PDF/ảnh riêng tư. AI local là baseline mẫu; huấn luyện nghiệp vụ đang chờ dữ liệu được duyệt.
+Hệ thống dùng refresh token HttpOnly, MongoDB Atlas cho metadata và Cloudinary cho PDF/ảnh riêng tư. AI local là baseline mẫu; huấn luyện nghiệp vụ đang chờ dữ liệu được duyệt.
 
 - Một hồ sơ xuyên suốt từ tiếp nhận, phân loại, giao việc, phản hồi đến đóng yêu cầu.
 - Cổng làm việc theo vai trò: người yêu cầu, nhân viên, quản lý và quản trị tổ chức.
-- AI tiếng Việt hỗ trợ phân loại, trích xuất thông tin, phát hiện hồ sơ tương tự, truy xuất kho tri thức và dự báo nguy cơ trễ SLA.
+- AI tiếng Việt hỗ trợ phân loại, trích xuất thông tin, phát hiện hồ sơ tương tự và truy xuất kho tri thức. Gợi ý mức ưu tiên là bộ luật giải thích được; dự báo nguy cơ trễ SLA chỉ là thử nghiệm.
 - Quản lý tạo sự cố, liên kết/gỡ phản ánh, giao người phụ trách, đặt lịch và cập nhật kết quả; có audit và thông báo. AI chỉ gợi ý các phản ánh có thể liên quan, không tự xác nhận nguyên nhân chung hoặc đóng hồ sơ riêng.
 - MongoDB Atlas lưu dữ liệu nghiệp vụ và metadata; Cloudinary lưu PDF/ảnh gốc riêng tư. Dịch vụ AI tách riêng khỏi hệ thống lõi.
 
@@ -25,7 +25,8 @@ docs/
   ARCHITECTURE.md
   AI_AND_DATA.md
   DIAGRAMS.md
-  DEPLOYMENT.md
+  VERCEL_DEPLOYMENT.md
+  archive/            phương án triển khai không dùng (Docker, Oracle, Railway)
   EXPERIMENT_PROTOCOL.md
   OAUTH_SETUP.md
   QUICKSTART.md
@@ -33,7 +34,7 @@ docs/
 
 ## Chạy dự án
 
-Cấu hình Docker local và hướng dẫn pilot tại [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). CI tự chạy build và kiểm thử API, web, AI khi push hoặc tạo pull request.
+Phương án triển khai chính: Vercel + MongoDB Atlas + Cloudinary, xem [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md). Cấu hình Docker và các phương án khác được lưu ở [docs/archive](docs/archive/). CI tự chạy build và kiểm thử API, web, AI khi push hoặc tạo pull request.
 
 Yêu cầu Node.js 20+, npm và Python 3.11+.
 
@@ -62,8 +63,6 @@ GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
 GOOGLE_OAUTH_REDIRECT_URI=http://localhost:4000/api/auth/google/callback
 ```
-
-Đăng nhập Outlook/Microsoft dùng OAuth authorization code + PKCE. Người dùng liên kết trong Hồ sơ cá nhân sau khi xác nhận mật khẩu CaseFlow; không tự ghép tài khoản theo email. Hướng dẫn cấu hình Google/Microsoft cho local và Docker: [OAUTH_SETUP.md](docs/OAUTH_SETUP.md).
 
 Khi deploy, callback phải dùng HTTPS trên domain do nhóm kiểm soát và phải được khai báo đúng trong Google Cloud. Luồng OAuth dùng state cookie chống CSRF; Google callback chỉ trả về mã nội bộ dùng một lần trong 60 giây, còn JWT CaseFlow được trả qua API nên không nằm trong URL.
 
@@ -138,7 +137,7 @@ Integration test và E2E dùng MongoDB tạm, không sử dụng Atlas trong `.e
 
 Trang **Vận hành** hiển thị kết nối, hồ sơ quá hạn và nhật ký. Atlas giữ metadata, Cloudinary giữ PDF/ảnh authenticated. S3 chỉ còn adapter tương thích với tệp cũ và không cần chạy mặc định.
 
-Tải tệp đính kèm có kiểm tra kích thước, phần mở rộng và chữ ký định dạng. Docker bật quét ClamAV trước khi cho phép sử dụng tệp; nếu scanner lỗi thì từ chối upload. Chế độ local có thể tắt scanner nên cần kiểm tra `MALWARE_SCAN_MODE` trước pilot. Quét malware không bảo đảm phát hiện mọi mã độc.
+Tải tệp đính kèm có kiểm tra kích thước, phần mở rộng và chữ ký định dạng. Bản Docker bật quét ClamAV trước khi cho phép sử dụng tệp; bản Vercel không có máy quét nên từ chối tệp mới; nếu scanner lỗi thì từ chối upload. Chế độ local có thể tắt scanner nên cần kiểm tra `MALWARE_SCAN_MODE` trước pilot. Quét malware không bảo đảm phát hiện mọi mã độc.
 
 Docker không tự tạo tài khoản mẫu mặc định. Giữ `AUTO_SEED=false`; dữ liệu căn hộ được thêm riêng bằng công cụ quản trị có bước xác nhận mô tả trong QUICKSTART, không bật seed trường trên Atlas. `TRUST_PROXY_HOPS=1` chỉ dành cho API nằm sau một nginx không có cổng công khai; nginx ghi đè IP chuyển tiếp để không tin header do khách gửi.
 

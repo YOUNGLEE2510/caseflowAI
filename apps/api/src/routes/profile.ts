@@ -33,7 +33,7 @@ profileRouter.get("/profile", async (req, res) => {
     _id: req.auth!.id,
     organizationId: req.auth!.organizationId,
     active: true
-  }).select("+microsoftObjectId +microsoftTenantId").lean<any>();
+  }).lean<any>();
   if (!user) throw new HttpError(404, "Không tìm thấy tài khoản.");
 
   res.json({
@@ -41,7 +41,6 @@ profileRouter.get("/profile", async (req, res) => {
       id: String(user._id),
       name: user.name,
       email: user.email,
-      microsoftLinked: Boolean(user.microsoftObjectId && user.microsoftTenantId),
       role: user.role,
       team: user.team,
       title: user.title,

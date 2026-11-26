@@ -29,9 +29,6 @@ vi.mock("../src/services/aiClient.js", () => ({
   predictSla: async () => ({ riskScore: 0.3, factors: [] }),
   retrieveKnowledge: async (_query: string, articles: any[]) => ({ answer: "Source retrieval", citations: articles })
 }));
-vi.mock("../src/services/microsoftOAuth.js", () => ({
-  verifyMicrosoftIdentity: async () => ({ objectId: "22222222-2222-4222-8222-222222222222", tenantId: "11111111-1111-4111-8111-111111111111" })
-}));
 
 const secret = "isolated-test-secret-not-for-production";
 let database: MongoMemoryServer;
@@ -64,8 +61,6 @@ beforeAll(async () => {
   vi.stubEnv("AUTO_SEED", "false");
   vi.stubEnv("API_RATE_LIMIT_PER_MINUTE", "10000");
   vi.stubEnv("OAUTH_RATE_LIMIT_PER_MINUTE", "10000");
-  vi.stubEnv("MICROSOFT_OAUTH_CLIENT_ID", "test-client");
-  vi.stubEnv("MICROSOFT_OAUTH_CLIENT_SECRET", "test-client-secret");
   vi.stubEnv("UPLOAD_DIR", uploads);
   const { app } = await import("../src/app.js");
   models = await import("../src/models.js");
@@ -84,7 +79,7 @@ beforeEach(async () => {
   const otherOrg = await models.Organization.create({ name: "Other Apartments", slug: "other-apartments" });
   const passwordHash = await bcrypt.hash("TestPassword123!", 4);
   [requester, outsider, agent, admin] = await models.User.create([
-    { organizationId: org._id, name: "Student", email: "student@test.local", passwordHash, role: "requester" },
+    { organizationId: org._id, name: "Tenant", email: "tenant@test.local", passwordHash, role: "requester" },
     { organizationId: otherOrg._id, name: "Other", email: "other@test.local", passwordHash, role: "org_admin" },
     { organizationId: org._id, name: "Agent", email: "agent@test.local", passwordHash, role: "agent", team: "IT" },
     { organizationId: org._id, name: "Admin", email: "admin@test.local", passwordHash, role: "org_admin" }
@@ -467,15 +462,15 @@ describe("service completion boundaries", () => {
     expect(await models.AuditLog.countDocuments({ action: "case.view" })).toBe(0);
   });
   it("requires admin permission and confirmation for CSV import", async () => {
-    const csv = "name,email,role,team\nNew Student,newstudent@example.com,requester,";
+    const csv = "name,email,role,team\nNew Tenant,newtenant@example.com,requester,";
     expect((await request("/users/import", requester, "POST", { csv })).status).toBe(403);
     const preview = await request("/users/import", admin, "POST", { csv });
     expect(preview.status).toBe(200);
-    expect(await models.User.exists({ email: "newstudent@example.com" })).toBeNull();
+    expect(await models.User.exists({ email: "newtenant@example.com" })).toBeNull();
     const imported = await request("/users/import", admin, "POST", { csv, confirm: true });
     expect(imported.status).toBe(200);
     expect(imported.body.results[0].status).toBe("created");
-    const user = await models.User.findOne({ email: "newstudent@example.com" });
+    const user = await models.User.findOne({ email: "newtenant@example.com" });
     expect(user.mustChangePassword).toBe(true);
     expect(String(user.organizationId)).toBe(String(org._id));
     const retry = await request("/users/import", admin, "POST", { csv, confirm: true });
@@ -872,7 +867,7 @@ describe("tenant and privacy boundaries", () => {
   });
   it("does not leak other requesters via similar cases", async () => {
     await models.CaseRecord.updateOne({ _id: record._id }, { requesterId: agent._id, title: "PRIVATE_TITLE" });
-    const result = await request("/ai/analyze-intake", requester, "POST", { text: "Cannot access student account" });
+    const result = await request("/ai/analyze-intake", requester, "POST", { text: "Cannot open the apartment door lock" });
     expect(result.status).toBe(200);
     expect(result.body.similar).toEqual([]);
   });
@@ -981,7 +976,7 @@ describe("case workflow and validation", () => {
     expect(compliance.body.overall.total).toBe(1);
   });
   it("validates explicit services and their required fields", async () => {
-    const body = { description: "Cannot access student account", serviceKey: "missing" };
+    const body = { description: "Cannot open the apartment door lock", serviceKey: "missing" };
     expect((await request("/cases", requester, "POST", body)).status).toBe(422);
     expect((await request("/cases", requester, "POST", { ...place, ...body, serviceKey: "internet" })).status).toBe(422);
     const valid = await request("/cases", requester, "POST", { ...place, ...body, serviceKey: "internet", customFields: { "Contract code": "SV001" } });
@@ -1190,7 +1185,7 @@ describe("knowledge governance and AI metrics", () => {
 
   it("persists validity dates and rejects contradictory partial updates", async () => {
     const created = await request("/knowledge", admin, "POST", {
-      title: "Validity controlled guide", content: "Approved procedural guidance for students.",
+      title: "Validity controlled guide", content: "Approved procedural guidance for residents.",
       category: "internet", sourceLabel: "School", status: "published",
       effectiveAt: "2020-01-01T00:00:00.000Z", expiresAt: "2090-01-01T00:00:00.000Z"
     });
@@ -1203,13 +1198,12 @@ describe("knowledge governance and AI metrics", () => {
     expect((await request(path, admin, "PATCH", { expiresAt: null, status: "published" })).body.article.expiresAt).toBeNull();
   });
 
-  it("shares a step-up attempt budget across password change and account linking", async () => {
+  it("limits repeated password step-up attempts", async () => {
     const { consumeAuthAttempt } = await import("../src/services/authThrottle.js");
     for (let i = 0; i < 20; i++) await consumeAuthAttempt(`${org._id}:${requester._id}`, "password-step-up");
     expect((await request("/profile/change-password", requester, "POST", {
       currentPassword: "TestPassword123!", newPassword: "Replacement123!"
     })).status).toBe(429);
-    expect((await request("/auth/microsoft/link", requester, "POST", { currentPassword: "TestPassword123!" })).status).toBe(429);
   });
   it("requires review before documents reach users and retrieval", async () => {
     const draft = await request("/knowledge", agent, "POST", { title: "Account policy", content: "This is a test policy with enough content.", category: "internet", sourceLabel: "Test handbook" });
@@ -1380,67 +1374,16 @@ describe("security audit and distributed jobs", () => {
     await releaseJobLease("test-sla-lease", first!.ownerId);
     expect(await acquireJobLease("test-sla-lease", 60_000)).not.toBeNull();
   });
-  it("keeps Microsoft and Google login tickets isolated and single-use", async () => {
+  it("rejects legacy Microsoft tickets and routes now that Microsoft sign-in is removed", async () => {
     const rawTicket = randomBytes(32).toString("hex");
     await models.OAuthLoginTicket.create({ organizationId: org._id, userId: requester._id, provider: "microsoft", tokenHash: createHash("sha256").update(rawTicket).digest("hex"), remember: false, expiresAt: new Date(Date.now() + 60000) });
     expect((await request("/auth/google/exchange", requester, "POST", { ticket: rawTicket })).status).toBe(401);
-    const result = await request("/auth/microsoft/exchange", requester, "POST", { ticket: rawTicket });
-    expect(result.status).toBe(200);
-    expect(result.body.user.email).toBe(requester.email);
-    expect((await request("/auth/microsoft/exchange", requester, "POST", { ticket: rawTicket })).status).toBe(401);
-  });
-  it("rejects a Microsoft callback without matching state before calling the provider", async () => {
-    const response = await fetch(`${base}/api/auth/microsoft/callback?state=bad&code=1234567890`, { redirect: "manual" });
-    expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toContain("oauthError=invalid_request");
-    expect(response.headers.get("location")).toContain("oauthProvider=microsoft");
-  });
-  it("requires password confirmation when linking Microsoft", async () => {
-    expect((await request("/auth/microsoft/link", requester, "POST", { currentPassword: "wrong-password" })).status).toBe(401);
-  });
-  it("links a password-confirmed account, then signs in only by its immutable Microsoft identity", async () => {
-    const link = await fetch(`${base}/api/auth/microsoft/link`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token(requester)}` }, body: JSON.stringify({ currentPassword: "TestPassword123!" }) });
-    expect(link.status).toBe(200);
-    const { url } = await link.json() as { url: string };
-    const authorize = new URL(url);
-    expect(authorize.searchParams.get("code_challenge_method")).toBe("S256");
-    expect(authorize.searchParams.get("scope")).toBe("openid profile");
-    expect(authorize.searchParams.has("code_verifier")).toBe(false);
-    const cookie = link.headers.get("set-cookie")!.split(";")[0];
-    const originalFetch = globalThis.fetch;
-    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, options) => {
-      if (String(url).startsWith("https://login.microsoftonline.com/")) return new Response(JSON.stringify({ id_token: "mock-id-token" }));
-      return originalFetch(url, options);
-    });
-    try {
-      const callback = await fetch(`${base}/api/auth/microsoft/callback?state=${authorize.searchParams.get("state")}&code=1234567890`, { headers: { Cookie: cookie }, redirect: "manual" });
-      expect(callback.status).toBe(302);
-      expect(callback.headers.get("location")).toContain("microsoftLinked=true");
-      const saved = await models.User.findById(requester._id).select("+microsoftObjectId +microsoftTenantId").lean<any>();
-      expect(saved.microsoftObjectId).toBe("22222222-2222-4222-8222-222222222222");
-      expect((await request("/profile")).body.profile.microsoftLinked).toBe(true);
-      const start = await fetch(`${base}/api/auth/microsoft?organization=test-apartments&remember=false`, { redirect: "manual" });
-      const startUrl = new URL(start.headers.get("location")!);
-      const signIn = await fetch(`${base}/api/auth/microsoft/callback?state=${startUrl.searchParams.get("state")}&code=1234567890`, { headers: { Cookie: start.headers.get("set-cookie")!.split(";")[0] }, redirect: "manual" });
-      const ticket = new URL(signIn.headers.get("location")!).searchParams.get("microsoftCode");
-      expect(ticket).toMatch(/^[a-f0-9]{64}$/);
-      expect((await request("/auth/microsoft/exchange", requester, "POST", { ticket })).status).toBe(200);
-    } finally { spy.mockRestore(); }
-  });
-  it("does not auto-link an unbound Microsoft account by an email claim", async () => {
-    const start = await fetch(`${base}/api/auth/microsoft?organization=test-apartments`, { redirect: "manual" });
-    const url = new URL(start.headers.get("location")!);
-    const originalFetch = globalThis.fetch;
-    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, options) => String(url).startsWith("https://login.microsoftonline.com/") ? new Response(JSON.stringify({ id_token: "mock-token" })) : originalFetch(url, options));
-    try {
-      const callback = await fetch(`${base}/api/auth/microsoft/callback?state=${url.searchParams.get("state")}&code=1234567890`, { headers: { Cookie: start.headers.get("set-cookie")!.split(";")[0] }, redirect: "manual" });
-      expect(callback.headers.get("location")).toContain("oauthError=not_linked");
-      expect(await models.OAuthLoginTicket.countDocuments()).toBe(0);
-    } finally { spy.mockRestore(); }
+    expect((await request("/auth/microsoft/exchange", requester, "POST", { ticket: rawTicket })).status).toBe(404);
+    expect((await request("/auth/microsoft/link", requester, "POST", { currentPassword: "TestPassword123!" })).status).toBe(404);
   });
   it("does not revoke a session when only a user's name changes", async () => {
     const oldToken = token(requester);
-    expect((await request(`/users/${requester._id}`, admin, "PATCH", { name: "Renamed student" })).status).toBe(200);
+    expect((await request(`/users/${requester._id}`, admin, "PATCH", { name: "Renamed tenant" })).status).toBe(200);
     expect((await request("/auth/me", oldToken)).status).toBe(200);
     const saved = await models.User.findById(requester._id).lean<any>();
     expect(saved.tokenVersion).toBe(requester.tokenVersion);
@@ -1480,13 +1423,40 @@ describe("security audit and distributed jobs", () => {
     expect(saved.slaBreachedAt).toBeNull();
     expect(saved.dueAt.getTime()).toBeGreaterThan(Date.now());
   });
+  it("limits System to admins and the operations head, and offers team leads a My team queue", async () => {
+    const lead = await models.User.create({ organizationId: org._id, name: "IT lead", email: "it-lead@test.local", passwordHash: "unused", role: "manager", team: "IT" });
+    const head = await models.User.create({ organizationId: org._id, name: "Ops head", email: "ops-head@test.local", passwordHash: "unused", role: "manager", team: "Ops", personnelManager: true });
+    expect((await request("/system/status", lead)).status).toBe(403);
+    expect((await request("/system/status", head)).status).toBe(200);
+    expect((await request("/system/status", admin)).status).toBe(200);
+    const teamQueue = await request("/cases?queue=team&limit=100", lead);
+    expect(teamQueue.status).toBe(200);
+    expect(teamQueue.body.cases.every((item: { team: string; status: string }) => item.team === "IT" && !["resolved", "closed"].includes(item.status))).toBe(true);
+    expect((await request("/cases?queue=team", head)).body.cases).toHaveLength(0);
+    expect((await request("/cases?queue=team", requester)).status).toBe(403);
+    const summary = await request("/rental/units?view=summary", lead);
+    expect(summary.status).toBe(200);
+    expect(Object.keys(summary.body)).toEqual(["summary"]);
+    expect(summary.body.summary).toMatchObject({ total: expect.any(Number), rentable: expect.any(Number) });
+  });
+  it("filters users by role and reports citable versus draft knowledge to staff only", async () => {
+    const agents = await request("/users?role=agent", admin);
+    expect(agents.status).toBe(200);
+    expect(agents.body.users.length).toBeGreaterThan(0);
+    expect(agents.body.users.every((user: { role: string }) => user.role === "agent")).toBe(true);
+    expect((await request("/users?role=superuser", admin)).status).toBe(400);
+    const staffView = await request("/knowledge", admin);
+    expect(staffView.body.counts).toEqual({ searchable: expect.any(Number), drafts: expect.any(Number) });
+    const published = await models.KnowledgeArticle.countDocuments({ organizationId: org._id, active: true, status: "published", effectiveAt: { $lte: new Date() }, $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] });
+    expect(staffView.body.counts.searchable).toBe(published);
+    expect((await request("/knowledge", requester)).body).not.toHaveProperty("counts");
+  });
   it("publishes only boolean OAuth provider availability without credentials", async () => {
     const response = await fetch(`${base}/api/auth/providers`);
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(Object.keys(body).sort()).toEqual(["google", "microsoft"]);
+    expect(Object.keys(body)).toEqual(["google"]);
     expect(typeof body.google).toBe("boolean");
-    expect(typeof body.microsoft).toBe("boolean");
   });
   it("persists AI model provenance and extracted information", async () => {
     const result = await request("/cases", requester, "POST", { ...place, title: "Need account assistance", description: "Unable to access my account in Building A", serviceKey: "general_support", priority: "normal", channel: "portal" });

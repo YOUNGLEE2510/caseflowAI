@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, Home, Inbox, Search, Users } from "lucide-react";
+import { CalendarClock, Home, Inbox, Search, Users, QrCode } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { useApiData } from "../hooks/useApiData";
@@ -156,6 +156,8 @@ function UnitDialog({ unit, canLease, onClose, onSaved }: { unit: UnitRow; canLe
         {unit.statusNote ? <span>{unit.statusNote}</span> : null}
       </p>
       {unit.statusUpdatedAt ? <p className="unit-dialog-meta">{text("Cập nhật", "Updated")} {formatDate(unit.statusUpdatedAt)}{unit.statusUpdatedByName ? ` · ${unit.statusUpdatedByName}` : ""}</p> : null}
+      {canLease ? <p><Link className="button button-secondary button-small" to={`/rental?${new URLSearchParams({ tab: "qr", property: unit.propertyCode, unit: unit.code })}`}>
+        <QrCode size={15} aria-hidden="true" />{text("Mã QR báo sự cố của căn", "This unit's report QR code")}</Link></p> : null}
       {unit.openCases ? <p><Link to={`/cases?${new URLSearchParams({ propertyCode: unit.propertyCode, unitCode: unit.code, status: "open" })}`}>{text(`${unit.openCases} phản ánh đang mở`, `${unit.openCases} open requests`)}</Link></p> : null}
       {data?.residents.length ? <div><h3>{text("Người thuê", "Tenants")}</h3><ul className="unit-residents">
         {data.residents.map(person => <li key={person._id}><Home size={14} aria-hidden="true" />{person.name} <small>{person.email}</small></li>)}</ul></div> : null}

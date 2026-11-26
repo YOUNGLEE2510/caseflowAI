@@ -20,7 +20,7 @@ describe("recommendation feedback", () => {
     try {
       vi.mocked(api).mockResolvedValue({ recommendation: { _id: "r2", items: [], citations: [] } });
       container = document.createElement("div"); document.body.append(container); root = createRoot(container);
-      await act(async () => root!.render(<RecommendationPanel autoSuggest description="Em cần hướng dẫn làm thủ tục xác nhận sinh viên đang học." />));
+      await act(async () => root!.render(<RecommendationPanel autoSuggest description="Em cần hướng dẫn làm thủ tục đăng ký gửi xe máy cho căn hộ." />));
       expect(api).not.toHaveBeenCalled();
       await act(async () => { await vi.advanceTimersByTimeAsync(4000); });
       expect(vi.mocked(api).mock.calls[0][0]).toBe("/recommendations");

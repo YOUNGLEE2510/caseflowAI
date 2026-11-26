@@ -14,7 +14,9 @@ import {
   Search,
   Siren,
   Users,
-  Workflow,
+  Warehouse,
+  ClipboardList,
+  UserCog,
   Building2,
   Lock,
   X
@@ -53,19 +55,19 @@ const workspaceItems: NavItem[] = [
 
 const adminItems: NavItem[] = [
   { to: "/units", label: { vi: "Căn hộ", en: "Units" }, icon: Building2, roles: ["agent", "manager", "org_admin", "platform_admin"] },
-  { to: "/rental", label: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, icon: Workflow, roles: ["agent", "manager", "org_admin", "platform_admin"] },
+  { to: "/rental", label: { vi: "Cơ sở và thiết bị", en: "Properties and assets" }, icon: Warehouse, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/personnel", label: { vi: "Nhân sự", en: "Personnel" }, icon: Users, roles: ["agent", "manager", "org_admin", "platform_admin"] },
   { to: "/system", label: { vi: "Vận hành", en: "System" }, icon: Activity, roles: ["manager", "org_admin", "platform_admin"] },
   {
     to: "/services",
     label: { vi: "Dịch vụ", en: "Services" },
-    icon: Workflow,
+    icon: ClipboardList,
     roles: ["manager", "org_admin", "platform_admin"]
   },
   {
     to: "/users",
     label: { vi: "Tài khoản", en: "Accounts" },
-    icon: Users,
+    icon: UserCog,
     roles: ["manager", "org_admin", "platform_admin"]
   }
 ];
@@ -92,7 +94,9 @@ const routeMeta = [
   { prefix: "/overview", title: { vi: "Tổng quan vận hành", en: "Operations overview" }, subtitle: { vi: "Tình trạng dịch vụ theo thời gian thực", en: "Live service health" } }
 ];
 
-function canAccess(item: NavItem, role?: Role) {
+function canAccess(item: NavItem, role?: Role, personnelManager = false) {
+  // System operations: admins and the operations head only, not every team lead.
+  if (item.to === "/system" && role === "manager" && !personnelManager) return false;
   return !item.roles || (role ? item.roles.includes(role) : false);
 }
 
@@ -145,8 +149,8 @@ export function AppShell() {
   const [notificationError, setNotificationError] = useState("");
   const notificationRef = useRef<HTMLDivElement>(null);
   const meta = routeMeta.find((item) => location.pathname.startsWith(item.prefix)) || routeMeta.at(-1)!;
-  const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role));
-  const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role));
+  const allowedWorkspaceItems = workspaceItems.filter((item) => canAccess(item, user?.role, Boolean(user?.personnelManager)));
+  const allowedAdminItems = adminItems.filter((item) => canAccess(item, user?.role, Boolean(user?.personnelManager)));
   const organizationName = user?.organizationName || text("Tổ chức của bạn", "Your organization");
   // Until a required security step is done every page except Profile is locked; say so instead of bouncing silently.
   const securityLocked = Boolean(user?.securityRequired);
@@ -185,12 +189,14 @@ export function AppShell() {
   }, [text]);
 
   useEffect(() => {
+    // While the account must finish security setup, the API refuses everything else (403).
+    if (securityLocked) return;
     void loadNotifications();
     const refresh = () => { if (document.visibilityState === "visible") void loadNotifications(); };
     const interval = window.setInterval(refresh, 45000);
     document.addEventListener("visibilitychange", refresh);
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refresh); };
-  }, [loadNotifications, user?.id]);
+  }, [loadNotifications, user?.id, securityLocked]);
 
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
@@ -318,6 +324,8 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar-footer">
+          {/* On phones the language and theme switches live here to keep the top bar uncluttered. */}
+          <div className="sidebar-preferences"><LocaleSwitcher compact /><ThemeSwitcher /></div>
           <button className="nav-item logout-button" title={text("Đăng xuất", "Sign out")} aria-label={text("Đăng xuất", "Sign out")} onClick={async () => {
             if (await confirm({ title: text("Đăng xuất?", "Sign out?"), message: text("Bạn sẽ kết thúc phiên làm việc hiện tại.", "Your current session will end.") })) await logout();
           }}>
@@ -368,8 +376,7 @@ export function AppShell() {
           </form>
 
           <div className="topbar-actions">
-            <LocaleSwitcher compact />
-            <ThemeSwitcher />
+            <span className="topbar-preferences"><LocaleSwitcher compact /><ThemeSwitcher /></span>
             <div className="notification-center" ref={notificationRef}>
               <button
                 className="icon-button notification-button"

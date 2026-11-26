@@ -8,6 +8,7 @@ const userSchema = new Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
     googleSubject: { type: String, select: false },
+    // Legacy: Microsoft sign-in was removed; kept so existing documents and the index stay valid.
     microsoftObjectId: { type: String, select: false },
     microsoftTenantId: { type: String, select: false },
     passwordHash: { type: String, required: true, select: false },

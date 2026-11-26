@@ -178,7 +178,7 @@ adminRouter.post(
   requireRoles("org_admin", "platform_admin"),
   async (req, res) => {
     const input = createUserSchema.parse(req.body);
-    if (input.role === "requester" && input.personnelManager) throw new HttpError(422, "Sinh viên không được cấp quyền quản lý nhân sự.");
+    if (input.role === "requester" && input.personnelManager) throw new HttpError(422, "Người thuê không được cấp quyền quản lý nhân sự.");
     if (input.role === "agent" && !input.team) throw new HttpError(422, "Nhân viên cần được gán đơn vị phụ trách.");
     const exists = await User.findOne({
       organizationId: req.auth!.organizationId,
@@ -227,7 +227,7 @@ adminRouter.patch(
     if (!current) throw new HttpError(404, "Không tìm thấy người dùng.");
     if (current.role === "platform_admin" || (["org_admin"].includes(current.role) && (input.active === false || (input.role && input.role !== current.role)))) throw new HttpError(403, "Tài khoản quản trị được bảo vệ khỏi thao tác khóa hoặc hạ quyền.");
     const nextRole = input.role || current.role;
-    if (nextRole === "requester" && input.personnelManager === true) throw new HttpError(422, "Sinh viên không được cấp quyền quản lý nhân sự.");
+    if (nextRole === "requester" && input.personnelManager === true) throw new HttpError(422, "Người thuê không được cấp quyền quản lý nhân sự.");
     if (nextRole === "requester") input.personnelManager = false;
     const nextTeam = input.team ?? current.team;
     if (nextRole === "agent" && !nextTeam) throw new HttpError(422, "Nhân viên cần có đơn vị phụ trách.");

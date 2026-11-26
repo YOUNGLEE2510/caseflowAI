@@ -52,7 +52,7 @@ test("manager creates catalog and completes a repair task", async ({ page, reque
   await page.getByLabel("Tên", { exact: true }).fill("Co so kiem thu");
   await page.getByRole("button", { name: "Lưu danh mục", exact: true }).click();
   await page.getByRole("button", { name: "Xác nhận", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Đã lưu.");
+  await expect(page.locator(".toast").filter({ hasText: "Đã lưu danh mục." })).toBeVisible();
   const managerLogin = await request.post("/api/auth/login", { data: {
     organizationSlug: "caseflow-rental-local", email: "pham.ha@canho.local", password: "Canho123!"
   } });

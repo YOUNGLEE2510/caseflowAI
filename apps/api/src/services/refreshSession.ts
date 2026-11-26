@@ -18,6 +18,8 @@ export interface RefreshSessionRecord {
   mfaVerified?: boolean;
   authMethod?: "password" | "google" | "microsoft";
   authenticatedAt?: Date | null;
+  consumedAt?: Date | null;
+  revokedAt?: Date | null;
 }
 
 export const REFRESH_COOKIE = "caseflow_refresh";
@@ -51,15 +53,20 @@ export async function createRefreshSession(res: Response, user: Pick<PublicUserS
   return session;
 }
 
+/** Generic 401 for the client; the specific reason stays in the server log only. */
+export function sessionExpired(reason: string) {
+  return Object.assign(new HttpError(401, "Session expired."), { reason });
+}
+
 export async function rotateRefreshSession(rawToken: string, res: Response) {
-  if (!/^[a-f0-9]{64}$/.test(rawToken)) throw new HttpError(401, "Session expired.");
+  if (!/^[a-f0-9]{64}$/.test(rawToken)) throw sessionExpired("malformed token");
   const session = await RefreshSession.findOneAndUpdate({
     tokenHash: hashRefreshToken(rawToken), consumedAt: null, revokedAt: null, expiresAt: { $gt: new Date() }
   }, { $set: { consumedAt: new Date() } }, { new: true }).lean<RefreshSessionRecord>();
   if (!session) {
     const replay = await RefreshSession.findOne({ tokenHash: hashRefreshToken(rawToken), consumedAt: { $ne: null } }).lean<RefreshSessionRecord>();
     if (replay) await RefreshSession.updateMany({ familyId: replay.familyId }, { $set: { revokedAt: new Date() } });
-    throw new HttpError(401, "Session expired or reused.");
+    throw sessionExpired(replay ? (replay.revokedAt ? "family already revoked" : "spent token reused; family revoked") : "unknown or expired token");
   }
   const [user, organization] = await Promise.all([
     User.findOne({ _id: session.userId, organizationId: session.organizationId, active: true }).lean<PublicUserSource>(),
@@ -67,7 +74,7 @@ export async function rotateRefreshSession(rawToken: string, res: Response) {
   ]);
   if (!user || !organization || (user.tokenVersion || 0) !== session.tokenVersion) {
     await RefreshSession.updateMany({ familyId: session.familyId }, { $set: { revokedAt: new Date() } });
-    throw new HttpError(401, "Account unavailable.");
+    throw sessionExpired("account inactive, organization suspended or password changed");
   }
   await createRefreshSession(res, user, session.remember, session);
   return { user, organization, remember: session.remember, familyId: session.familyId, mfaVerified: Boolean(session.mfaVerified) };

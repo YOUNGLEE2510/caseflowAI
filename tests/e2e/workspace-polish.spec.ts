@@ -29,7 +29,10 @@ test("queue pagination changes records, filters reset pages, sidebar collapse pe
   await expect(page.locator(".app-frame")).toHaveClass(/sidebar-collapsed/);
   await page.getByRole("button", { name: "Mở rộng sidebar", exact: true }).click();
   await expect(page.locator(".organization-summary")).toHaveCount(0);
+  // Team leads' plain queue starts on "My team"; pagination is checked on all work.
   await page.goto("/cases");
+  await expect(page.getByRole("combobox", { name: "Hàng đợi công việc" })).toHaveValue("team");
+  await page.getByRole("combobox", { name: "Hàng đợi công việc" }).selectOption("all");
   await expect(page.locator(".cases-table tbody tr")).toHaveCount(8);
   const first = await page.locator(".case-link").first().innerText();
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
@@ -46,7 +49,7 @@ test("queue pagination changes records, filters reset pages, sidebar collapse pe
   await expect(page).toHaveURL(/\/cases$/);
 });
 
-test("student sees relevant controls and live unaccented knowledge matches", async ({ page }) => {
+test("resident sees relevant controls and live unaccented knowledge matches", async ({ page }) => {
   await login(page, "nguyen.anh@cudan.canho.local");
   await expect(page.locator(".requester-home")).toBeVisible();
   await expect(page.locator(".requester-summary-grid article").first()).toHaveCSS("border-top-width", "1px");
@@ -109,12 +112,10 @@ test("failed attachment upload retains file for retry and successful retry survi
   await page.route(endpoint, route => route.request().method() === "POST" ? route.fulfill({ status: 503, json: { message: "Temporary storage failure" } }) : route.continue());
   await page.locator('input[type="file"]').setInputFiles({ name: "retry.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nRetry test\n%%EOF") });
   await page.getByRole("button", { name: "Tải tệp lên", exact: true }).click();
-  await page.getByRole("dialog", { name: "Tải tệp lên?", exact: true }).getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.locator(".file-upload-item").filter({ hasText: "retry.pdf" })).toBeVisible();
   await expect(page.getByText("Không thể tải lên: retry.pdf.", { exact: true })).toBeVisible();
   await page.unroute(endpoint);
   await page.getByRole("button", { name: "Tải tệp lên", exact: true }).click();
-  await page.getByRole("dialog", { name: "Tải tệp lên?", exact: true }).getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.locator(".attachment-list").getByText("retry.pdf", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.locator(".attachment-list").getByText("retry.pdf", { exact: true })).toBeVisible();

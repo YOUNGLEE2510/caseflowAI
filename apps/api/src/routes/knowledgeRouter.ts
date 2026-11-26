@@ -52,11 +52,16 @@ knowledgeRouter.get("/knowledge", async (req, res) => {
     ...(id ? { _id: id } : {}),
     ...(search ? { $text: { $search: knowledgeTerms(expandKnowledgeQuery(search)).join(" ") || search } } : {})
   };
-  const [articles, total] = await Promise.all([
+  // Staff see how many documents the assistant can actually cite versus drafts awaiting review,
+  // so an empty answer is not mistaken for a broken assistant.
+  const staff = req.auth!.role !== "requester";
+  const [articles, total, searchable, drafts] = await Promise.all([
     KnowledgeArticle.find(filter).sort({ updatedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
-    KnowledgeArticle.countDocuments(filter)
+    KnowledgeArticle.countDocuments(filter),
+    staff ? KnowledgeArticle.countDocuments({ organizationId: req.auth!.organizationId, active: true, ...published }) : Promise.resolve(undefined),
+    staff ? KnowledgeArticle.countDocuments({ organizationId: req.auth!.organizationId, active: true, ...visibility, status: { $ne: "published" } }) : Promise.resolve(undefined)
   ]);
-  res.json({ articles, total, page, limit });
+  res.json({ articles, total, page, limit, ...(staff ? { counts: { searchable, drafts } } : {}) });
 });
 
 knowledgeRouter.post("/knowledge/search", requireAiVisible(hiddenShapes.knowledge), async (req, res) => {

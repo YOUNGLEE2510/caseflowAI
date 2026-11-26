@@ -3,11 +3,12 @@ import { test, expect } from "@playwright/test";
 for (const [role, email, routes, denied] of [
   ["requester", "nguyen.anh@cudan.canho.local", ["/overview", "/cases", "/cases/new", "/knowledge", "/profile"], ["/api/users", "/api/incidents"]],
   ["agent", "tran.khoi@canho.local", ["/overview", "/cases", "/incidents", "/rental", "/profile"], []],
-  ["manager", "pham.ha@canho.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
+  ["manager", "pham.ha@canho.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/profile"], ["/api/system/status"]],
+  ["manager", "nguyen.trang@canho.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
   ["org_admin", "tran.khoa@canho.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []],
   ["platform_admin", "platform@caseflow.local", ["/overview", "/cases", "/incidents", "/rental", "/users", "/services", "/system", "/profile"], []]
 ] as const) {
-  test(`${role} navigates allowed screens and respects API restrictions`, async ({ page, request }, info) => {
+  test(`${role} ${email} navigates allowed screens and respects API restrictions`, async ({ page, request }, info) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("response", response => { if (response.url().includes("/api/") && response.status() >= 500) errors.push(`HTTP ${response.status()}`); });

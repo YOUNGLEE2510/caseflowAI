@@ -21,8 +21,8 @@ describe("release safety", () => {
     expect(canUseAiRouting(0.99, "fallback")).toBe(false);
     expect(canUseAiRouting(0.8, "ml-service")).toBe(true);
   });
-  it("redacts Vietnamese student identifiers before an external draft", () => {
-    for (const id of ["B22DCCN019", "N21DCCN001", "D20CQCN001"]) expect(redactCommonIdentifiers(`Mã ${id}`)).not.toContain(id);
+  it("redacts citizen IDs and phone numbers before an external draft", () => {
+    for (const id of ["012345678901", "123456789", "0912345678"]) expect(redactCommonIdentifiers(`Số ${id}`)).not.toContain(id);
   });
   it("uses the account capacity ceiling for personnel too", () => {
     expect(personnelPatch.safeParse({ maxCaseload: 150 }).success).toBe(false);

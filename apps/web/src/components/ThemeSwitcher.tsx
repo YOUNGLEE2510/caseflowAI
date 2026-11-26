@@ -1,24 +1,26 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useLocale } from "../i18n";
 import { useTheme, type ThemePreference } from "../theme";
+import { PreferenceMenu } from "./PreferenceMenu";
 
-const order: ThemePreference[] = ["system", "light", "dark"];
-
-/** One button that cycles system → light → dark; the label names the current mode and the next one. */
+/** Theme picker: a button that opens a short list (system / light / dark). */
 export function ThemeSwitcher() {
   const { preference, setPreference } = useTheme();
   const { text } = useLocale();
-  const labels: Record<ThemePreference, string> = {
-    system: text("Theo hệ thống", "System"),
-    light: text("Sáng", "Light"),
-    dark: text("Tối", "Dark")
-  };
-  const next = order[(order.indexOf(preference) + 1) % order.length];
   const Icon = preference === "dark" ? Moon : preference === "light" ? Sun : Monitor;
-  const label = text(`Giao diện: ${labels[preference]}. Chuyển sang ${labels[next].toLowerCase()}`, `Theme: ${labels[preference]}. Switch to ${labels[next].toLowerCase()}`);
   return (
-    <button type="button" className="icon-button theme-switcher" onClick={() => setPreference(next)} aria-label={label} title={label}>
-      <Icon size={18} aria-hidden="true" />
-    </button>
+    <PreferenceMenu<ThemePreference>
+      className="theme-menu"
+      compact
+      label={text("Giao diện", "Theme")}
+      value={preference}
+      onChange={setPreference}
+      options={[
+        { value: "system", label: text("Theo hệ thống", "System"), icon: <Monitor size={16} /> },
+        { value: "light", label: text("Sáng", "Light"), icon: <Sun size={16} /> },
+        { value: "dark", label: text("Tối", "Dark"), icon: <Moon size={16} /> }
+      ]}
+      buttonContent={<Icon size={18} aria-hidden="true" />}
+    />
   );
 }

@@ -13,7 +13,7 @@ import { useConfirmation } from "../components/ConfirmationProvider";
 const defaultOrganizationSlug = "caseflow-rental";
 
 export function LoginPage() {
-  const { user, login, loginWithGoogle, loginWithMicrosoft } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const { text } = useLocale();
   const confirm = useConfirmation();
   const navigate = useNavigate();
@@ -21,10 +21,10 @@ export function LoginPage() {
   const [organizationSlug, setOrganizationSlug] = useState(defaultOrganizationSlug);
   const [organizations, setOrganizations] = useState<Array<{ name: string; slug: string }>>([]);
   const [organizationsLoaded, setOrganizationsLoaded] = useState(false);
-  const [providers, setProviders] = useState({ google: false, microsoft: false });
+  const [providers, setProviders] = useState({ google: false });
   useEffect(() => {
     let active = true;
-    void api<{ google: boolean; microsoft: boolean }>("/auth/providers")
+    void api<{ google: boolean }>("/auth/providers")
       .then(value => { if (active) setProviders(value); }).catch(() => undefined);
     return () => { active = false; };
   }, []);
@@ -51,8 +51,7 @@ export function LoginPage() {
   const [resetMessage, setResetMessage] = useState("");
   const googleCode = searchParams.get("googleCode");
   const oauthError = searchParams.get("oauthError");
-  const microsoftCode = searchParams.get("microsoftCode");
-  const oauthProvider = searchParams.get("oauthProvider") === "microsoft" ? "Microsoft" : "Google";
+  const oauthProvider = "Google";
 
   useEffect(() => {
     if (user) navigate("/overview", { replace: true });
@@ -79,25 +78,15 @@ export function LoginPage() {
     if (!oauthError) return;
     const message = oauthError === "not_configured"
       ? text(`Đăng nhập ${oauthProvider} chưa được cấu hình cho môi trường này.`, `${oauthProvider} sign-in has not been configured for this environment.`)
-      : oauthError === "not_linked"
-        ? text("Tài khoản Microsoft chưa được liên kết. Đăng nhập bằng mật khẩu rồi liên kết trong Hồ sơ cá nhân.", "Your Microsoft account is not linked. Sign in with your password and link it in your profile.")
-        : text(`Không thể đăng nhập bằng ${oauthProvider}. Vui lòng thử lại hoặc dùng mật khẩu.`, `${oauthProvider} sign-in could not be completed. Please try again or use your password.`);
+      : text(`Không thể đăng nhập bằng ${oauthProvider}. Vui lòng thử lại hoặc dùng mật khẩu.`, `${oauthProvider} sign-in could not be completed. Please try again or use your password.`);
     setError(message);
   }, [oauthError, oauthProvider, text]);
 
-  useEffect(() => {
-    if (!microsoftCode) return;
-    let current = true;
-    setLoading(true);
-    void loginWithMicrosoft(microsoftCode)
-      .then(() => { if (current) navigate("/overview", { replace: true }); })
-      .catch(() => { if (current) { setError(text("Không thể hoàn tất đăng nhập Microsoft.", "Unable to complete Microsoft sign-in.")); navigate("/login", { replace: true }); } })
-      .finally(() => { if (current) setLoading(false); });
-    return () => { current = false; };
-  }, [microsoftCode, loginWithMicrosoft, navigate, text]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    // Until the organization list arrives the code is only the default guess: wait for it.
+    if (!organizationsLoaded || loading) return;
     setLoading(true);
     setError("");
     try {
@@ -240,25 +229,18 @@ export function LoginPage() {
             </div>
 
             {error ? <div className="form-error" role="alert">{error}</div> : null}
-            <button className="button button-primary login-button" disabled={loading}>
+            <button className="button button-primary login-button" disabled={loading || !organizationsLoaded}>
               {loading ? <span className="spinner spinner-light" /> : <ArrowRight size={18} />}
               <span>{loading ? text("Đang đăng nhập", "Signing in") : text("Đăng nhập", "Sign in")}</span>
             </button>
           </form>
 
-          <div className="login-provider-separator" aria-hidden="true"><span>{text("hoặc", "or")}</span></div>
-          <button className="button login-google" type="button" onClick={startGoogleLogin} title={!providers.google ? text("Chưa cấu hình đăng nhập Google", "Google sign-in is not configured") : undefined} disabled={loading || !organizationSlug.trim() || !providers.google}>
+          {/* Google sign-in appears only when the deployment has it configured. */}
+          {providers.google ? <div className="login-provider-separator" aria-hidden="true"><span>{text("hoặc", "or")}</span></div> : null}
+          {providers.google ? <button className="button login-google" type="button" onClick={startGoogleLogin} title={!providers.google ? text("Chưa cấu hình đăng nhập Google", "Google sign-in is not configured") : undefined} disabled={loading || !organizationSlug.trim() || !providers.google}>
             <img className="provider-mark" src="/google-logo.png" width="20" height="20" alt="" />
             <span>{text("Tiếp tục với Google", "Continue with Google")}</span>
-          </button>
-
-          <button className="button login-google login-microsoft" type="button" title={!providers.microsoft ? text("Chưa cấu hình đăng nhập Microsoft", "Microsoft sign-in is not configured") : undefined} disabled={loading || !organizationSlug.trim() || !providers.microsoft} onClick={() => {
-            const query = new URLSearchParams({ organization: organizationSlug, remember: String(remember) });
-            window.location.assign(apiUrl(`/auth/microsoft?${query}`));
-          }}>
-            <img className="provider-mark" src="/microsoft-logo.svg" width="20" height="20" alt="" />
-            {text("Tiếp tục với Outlook / Microsoft", "Continue with Outlook / Microsoft")}
-          </button>
+          </button> : null}
 
           <div className="login-security">
             <ShieldCheck size={19} />
@@ -276,7 +258,7 @@ export function LoginPage() {
             </span>
           </div>
         </section>
-        <footer className="login-footer">© 2026 CaseFlow · {text("Quyền riêng tư · Điều khoản", "Privacy · Terms")}</footer>
+        <footer className="login-footer">© 2026 CaseFlow</footer>
         {resetOpen ? <Modal title={text("Đặt lại mật khẩu", "Reset password")} onClose={() => setResetOpen(false)}>
           <form className="form-stack" onSubmit={requestPasswordReset}>
             <p className="modal-copy">{text("Nhập mã đơn vị vận hành và email tài khoản. Nếu thông tin hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi qua email.", "Enter your property operator code and account email. If the details are valid, password reset instructions will be emailed to you.")}</p>

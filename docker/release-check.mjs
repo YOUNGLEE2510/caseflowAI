@@ -36,7 +36,7 @@ await check("organization_directory", async () => {
   const body = await response.json(); organization = body.organizations?.[0]?.slug;
   return response.ok && typeof organization === "string";
 });
-for (const [provider, host, prefix] of [["google", "accounts.google.com", "GOOGLE"], ["microsoft", "login.microsoftonline.com", "MICROSOFT"]]) {
+for (const [provider, host, prefix] of [["google", "accounts.google.com", "GOOGLE"]]) {
   await check(`${provider}_oauth_start`, async () => {
     if (!organization || !env[`${prefix}_OAUTH_CLIENT_ID`] || !env[`${prefix}_OAUTH_CLIENT_SECRET`]) return false;
     const response = await get(`/api/auth/${provider}?organization=${encodeURIComponent(organization)}`);
@@ -49,8 +49,7 @@ for (const [provider, host, prefix] of [["google", "accounts.google.com", "GOOGL
     return callback.origin === origin.origin && callback.pathname.endsWith(`/auth/${provider}/callback`) &&
       destination.searchParams.get("client_id") === env[`${prefix}_OAUTH_CLIENT_ID`] &&
       destination.searchParams.has("state") && /httponly/i.test(cookie) && /samesite=lax/i.test(cookie) &&
-      (origin.protocol !== "https:" || /secure/i.test(cookie)) &&
-      (provider !== "microsoft" || destination.searchParams.get("code_challenge_method") === "S256");
+      (origin.protocol !== "https:" || /secure/i.test(cookie));
   }, process.argv.includes("--require-oauth"));
 }
 if (process.argv.includes("--smtp")) await check("smtp_connection", async () => {
