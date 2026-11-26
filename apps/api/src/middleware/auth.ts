@@ -15,6 +15,9 @@ export interface AuthUser {
   sessionId?: string;
   mfaVerified?: boolean;
   personnelManager?: boolean;
+  /** Staff account in the "manual" study condition: AI-derived data is withheld. */
+  aiHidden?: boolean;
+  studyCode?: string | null;
 }
 
 declare global {
@@ -57,6 +60,11 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     }
     req.auth = { id: String(user._id), organizationId: String(user.organizationId), name: user.name, email: user.email, role: user.role, team: user.team || "", sessionId: typeof claims.sid === "string" ? claims.sid : undefined, mfaVerified: Boolean(session?.mfaVerified) };
     req.auth.personnelManager = Boolean(user.personnelManager);
+    req.auth.aiHidden = user.role !== "requester" && Boolean(user.aiSuggestionsHidden);
+    req.auth.studyCode = user.studyCode || null;
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-CaseFlow-AI-Hidden", String(req.auth.aiHidden));
+    res.setHeader("X-CaseFlow-AI-Version", String(user.aiVisibilityChangedAt ? new Date(user.aiVisibilityChangedAt).getTime() : 0));
     const securityPath = /^\/api\/(auth\/(me|logout|logout-all)|profile(?:\/.*)?)$/.test(req.originalUrl.split("?")[0]);
     if (!securityPath && user.mustChangePassword) {
       res.status(403).json({ message: "Bạn cần đổi mật khẩu được cấp trước khi tiếp tục.", code: "PASSWORD_CHANGE_REQUIRED" });

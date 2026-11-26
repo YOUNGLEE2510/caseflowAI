@@ -31,12 +31,14 @@ describe("case policy", () => {
   });
   it("redacts internal content without mutating the record", () => {
     const record = { comments: [{ internal: true }, { internal: false }], events: [{ internal: true }], ai: { similarCaseIds: ["private"], suggestedResponse: "private" } };
-    const visible = presentCase(record, "requester");
+    const visible = presentCase(record, { role: "requester" });
     expect(visible.comments).toHaveLength(1);
     expect(visible.events).toEqual([]);
     expect(visible.ai.similarCaseIds).toEqual([]);
     expect(record.comments).toHaveLength(2);
-    expect(presentCase(record, "agent").ai.suggestedResponse).toBe("private");
+    expect(presentCase(record, { role: "agent" }).ai.suggestedResponse).toBe("private");
+    // A staff viewer in the study's manual condition gets no AI fields at all.
+    expect(presentCase(record, { role: "agent", aiHidden: true }).ai.suggestedResponse).toBeUndefined();
   });
   it("bounds pagination and rejects invalid values", () => {
     expect(pageNumber("999", 1, 100)).toBe(100);

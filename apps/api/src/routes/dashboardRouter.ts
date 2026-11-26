@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { CASE_STATUSES, CaseRecord, Incident, Organization } from "../models.js";
 import { caseScope, presentCase } from "../services/casePolicy.js";
+import { isAiHidden } from "../services/aiVisibility.js";
 export const dashboardRouter = Router();
 dashboardRouter.get("/dashboard", async (req, res) => {
   const organizationId = new mongoose.Types.ObjectId(req.auth!.organizationId);
@@ -16,7 +17,10 @@ dashboardRouter.get("/dashboard", async (req, res) => {
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 3_600_000);
 
   const openScope = { ...scope, status: { $nin: ["resolved", "closed"] } };
-  const riskScope = { ...openScope, status: { $nin: ["resolved", "closed", "waiting"] }, $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] };
+  // Hidden viewers (user study) see only overdue cases as "at risk": no AI risk scores.
+  const aiHidden = isAiHidden(req.auth);
+  const riskScope = { ...openScope, status: { $nin: ["resolved", "closed", "waiting"] },
+    ...(aiHidden ? { dueAt: { $lt: now } } : { $or: [{ "ai.riskScore": { $gte: 0.65 } }, { dueAt: { $lt: now } }] }) };
   const aggregateScope: Record<string, unknown> = scope;
   const incidentScope = {
     organizationId,
@@ -49,7 +53,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
               _id: workloadGroupKey,
               open: { $sum: 1 },
               risk: {
-                $sum: { $cond: [{ $and: [{ $ne: ["$status", "waiting"] }, { $or: [{ $gte: ["$ai.riskScore", 0.65] }, { $lt: ["$dueAt", now] }] }] }, 1, 0] }
+                $sum: { $cond: [{ $and: [{ $ne: ["$status", "waiting"] }, aiHidden ? { $lt: ["$dueAt", now] } : { $or: [{ $gte: ["$ai.riskScore", 0.65] }, { $lt: ["$dueAt", now] }] }] }, 1, 0] }
               }
             }
           },
@@ -58,7 +62,7 @@ dashboardRouter.get("/dashboard", async (req, res) => {
       : Promise.resolve([]),
     CaseRecord.find(scope).sort({ updatedAt: -1 }).limit(8).lean(),
     CaseRecord.find(riskScope)
-      .sort({ "ai.riskScore": -1, dueAt: 1 })
+      .sort(aiHidden ? { dueAt: 1 } : { "ai.riskScore": -1, dueAt: 1 })
       .limit(8)
       .lean(),
     canViewOperations
@@ -113,10 +117,10 @@ dashboardRouter.get("/dashboard", async (req, res) => {
       open: item.open,
       risk: item.risk
     })),
-    recentCases: recentCases.map((item) => presentCase(item, req.auth!.role)),
-    highRiskCases: highRiskCases.map((item) => presentCase(item, req.auth!.role)),
+    recentCases: recentCases.map((item) => presentCase(item, req.auth!)),
+    highRiskCases: highRiskCases.map((item) => presentCase(item, req.auth!)),
     incidents: activeIncidents,
-    priorityCases: priorityCases.map((item) => presentCase(item, req.auth!.role)),
+    priorityCases: priorityCases.map((item) => presentCase(item, req.auth!)),
     totalCases
   });
 });

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode
 } from "react";
@@ -39,6 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const visibilityVersion = useRef(-1);
+  useEffect(() => { visibilityVersion.current = -1; }, [user?.id]);
+  useEffect(() => {
+    const update = (event: Event) => {
+      const detail = (event as CustomEvent<{ hidden: boolean; version: number }>).detail;
+      if (!detail || typeof detail.hidden !== "boolean" || !Number.isFinite(detail.version) || detail.version < visibilityVersion.current) return;
+      visibilityVersion.current = detail.version;
+      setUser(current => current && current.aiSuggestionsHidden !== detail.hidden
+        ? { ...current, aiSuggestionsHidden: current.role !== "requester" && detail.hidden } : current);
+    };
+    window.addEventListener("caseflow:ai-visibility", update);
+    return () => window.removeEventListener("caseflow:ai-visibility", update);
+  }, []);
 
   useEffect(() => {
     let current = true;

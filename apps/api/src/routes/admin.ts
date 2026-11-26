@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { exportStudyCsv } from "../services/studyExport.js";
 import { parsePatch } from "../services/parsePatch.js";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
@@ -7,6 +8,7 @@ import { parseUserCsv } from "../services/userCsv.js";
 import { enqueuePasswordReset } from "../services/emailOutbox.js";
 import { Organization } from "../models.js";
 import { z } from "zod";
+import { validateObjectId } from "../middleware/validateId.js";
 import { requireRoles } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { CaseRecord, KnowledgeArticle, ServiceDefinition, User } from "../models.js";
@@ -14,6 +16,14 @@ import { auditFromReq, logAudit, notify } from "../services/helpers.js";
 import { newPasswordSchema as passwordSchema } from "../services/passwordPolicy.js";
 
 export const adminRouter = Router();
+adminRouter.get("/study/export.csv", requireRoles("org_admin", "platform_admin"), async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const result = await exportStudyCsv(req.auth!.organizationId, req.query);
+  await logAudit({ ...auditFromReq(req), action: "study.export", resource: "CaseHandlingRecord", changes: { rows: result.rows } }, req);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="caseflow-study.csv"');
+  res.send(result.csv);
+});
 
 
 
@@ -252,6 +262,46 @@ adminRouter.patch(
         active: user.active
       }
     });
+  }
+);
+
+/* ── User study: hide AI suggestions per staff account (org admins only) ── */
+const aiVisibilitySchema = z.object({
+  aiSuggestionsHidden: z.boolean(),
+  studyCode: z.string().trim().regex(/^p\d{2}$/).nullable().optional()
+}).strict();
+
+adminRouter.patch(
+  "/users/:id/ai-visibility",
+  validateObjectId("id"),
+  requireRoles("agent", "manager", "org_admin", "platform_admin"),
+  async (req, res) => {
+    const input = aiVisibilitySchema.parse(req.body);
+    const denied = async (status: number, message: string, reason: string) => {
+      await logAudit({ ...auditFromReq(req), action: "user.ai_visibility.denied", resource: "User", resourceId: String(req.params.id), changes: { reason } }, req);
+      throw new HttpError(status, message);
+    };
+    if (!["org_admin", "platform_admin"].includes(req.auth!.role)) await denied(403, "Chỉ quản trị tổ chức được đổi chế độ gợi ý AI.", "role");
+    if (String(req.params.id) === req.auth!.id) await denied(403, "Không thể tự đổi chế độ gợi ý AI của chính mình.", "self");
+    const target = await User.findOne({ _id: req.params.id, organizationId: req.auth!.organizationId }).select("role aiSuggestionsHidden studyCode").lean<any>();
+    if (!target) throw new HttpError(404, "Không tìm thấy người dùng.");
+    if (target.role === "requester") throw new HttpError(422, "Chế độ gợi ý AI chỉ áp dụng cho tài khoản nhân viên.");
+    const now = new Date();
+    try {
+      await User.updateOne({ _id: target._id, organizationId: req.auth!.organizationId }, { $set: {
+        aiSuggestionsHidden: input.aiSuggestionsHidden, aiVisibilityChangedAt: now, aiVisibilityChangedById: req.auth!.id,
+        ...(input.studyCode !== undefined ? { studyCode: input.studyCode } : {})
+      } }, { runValidators: true });
+    } catch (error) {
+      if (typeof error === "object" && error && "code" in error && error.code === 11000) throw new HttpError(409, "Mã người tham gia đã được dùng.");
+      throw error;
+    }
+    // Audit the transition only: no names or other payload.
+    await logAudit({ ...auditFromReq(req), action: "user.ai_visibility.change", resource: "User", resourceId: String(target._id),
+      changes: { from: Boolean(target.aiSuggestionsHidden), to: input.aiSuggestionsHidden,
+        ...(input.studyCode !== undefined ? { studyCodeChanged: (target.studyCode || null) !== input.studyCode } : {}) } }, req);
+    res.json({ user: { id: String(target._id), aiSuggestionsHidden: input.aiSuggestionsHidden,
+      studyCode: input.studyCode !== undefined ? input.studyCode : target.studyCode || null, aiVisibilityChangedAt: now } });
   }
 );
 

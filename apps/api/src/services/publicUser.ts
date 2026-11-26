@@ -16,6 +16,9 @@ export interface PublicUserSource {
   active: boolean;
   mustChangePassword?: boolean;
   mfaEnabled?: boolean;
+  aiSuggestionsHidden?: boolean;
+  aiVisibilityChangedAt?: Date | null;
+  studyCode?: string | null;
 }
 
 export function publicUser(user: PublicUserSource, organization?: { name: string; slug: string } | null, mfaVerified = false) {
@@ -26,6 +29,8 @@ export function publicUser(user: PublicUserSource, organization?: { name: string
     personnelManager: Boolean(user.personnelManager),
     title: user.title, avatarColor: user.avatarColor, active: user.active,
     mustChangePassword: Boolean(user.mustChangePassword), mfaEnabled: Boolean(user.mfaEnabled),
+    aiSuggestionsHidden: user.role !== "requester" && Boolean(user.aiSuggestionsHidden),
+    studyCode: user.role !== "requester" ? user.studyCode || null : null,
     securityRequired: Boolean(user.mustChangePassword || (user.mfaEnabled && !mfaVerified) || (config.DEPLOYMENT_MODE === "pilot" && ["org_admin", "platform_admin"].includes(user.role) && !user.mfaEnabled))
   };
 }

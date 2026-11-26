@@ -11,10 +11,10 @@ const auditLogSchema = new Schema(
     action: {
       type: String,
       enum: [
-        "case.create", "case.view", "case.update", "case.triage", "case.assign", "case.comment", "case.resolve", "case.close", "case.reopen",
+        "study.export", "case.create", "case.view", "case.update", "case.triage", "case.assign", "case.comment", "case.resolve", "case.close", "case.reopen",
         "case.satisfaction", "case.close_by_requester", "case.reopen_by_requester", "case.merge",
         "service.create", "service.update", "service.delete",
-        "user.create", "user.update", "user.deactivate",
+        "user.create", "user.update", "user.deactivate", "user.ai_visibility.change", "user.ai_visibility.denied",
         "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.draft",
         "incident.create", "incident.update", "incident.resolve", "incident.link", "incident.unlink", "rental.catalog.update",
         "rental.qr.issue", "rental.unit.status", "rental.qr.disable", "case.qr_intake", "case.qr_intake.review",

@@ -30,7 +30,7 @@ caseMergeRouter.post("/cases/:id/merge", validateObjectId("id"), managers, async
   if (!source || !target) throw new HttpError(404, "Không tìm thấy hồ sơ.");
   if (source.mergedIntoId) {
     if (String(source.mergedIntoId) !== String(target._id)) throw new HttpError(409, "Hồ sơ đã được gộp vào hồ sơ khác.");
-    res.json({ case: presentCase(source, req.auth!.role), targetId: String(target._id), alreadyMerged: true }); return;
+    res.json({ case: presentCase(source, req.auth!), targetId: String(target._id), alreadyMerged: true }); return;
   }
   // Immutable creation time and ID ordering keep concurrent merges acyclic on standalone MongoDB.
   const targetTime = new Date(target.createdAt).getTime(), sourceTime = new Date(source.createdAt).getTime();
@@ -49,5 +49,5 @@ caseMergeRouter.post("/cases/:id/merge", validateObjectId("id"), managers, async
   await notify({ organizationId: req.auth!.organizationId, userId: String(source.requesterId), type: "case_updated",
     title: `Hồ sơ ${source.code} đã được gộp`, message: `Tiếp tục theo dõi tiến độ tại ${target.code}.`,
     relatedCaseId: String(target._id), actionUrl: `/cases/${target._id}` });
-  res.json({ case: presentCase(merged, req.auth!.role), targetId: String(target._id), alreadyMerged: false });
+  res.json({ case: presentCase(merged, req.auth!), targetId: String(target._id), alreadyMerged: false });
 });

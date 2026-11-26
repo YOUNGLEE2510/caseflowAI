@@ -16,6 +16,8 @@ export interface User {
   active?: boolean;
   personnelManager?: boolean;
   mustChangePassword?: boolean;
+  aiSuggestionsHidden?: boolean;
+  studyCode?: string | null;
   mfaEnabled?: boolean;
   securityRequired?: boolean;
 }

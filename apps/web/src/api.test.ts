@@ -5,6 +5,21 @@ beforeEach(() => { setToken(null); localStorage.clear(); sessionStorage.clear();
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("API session handling", () => {
+  it("publishes the server AI visibility only for the current authenticated session", async () => {
+    setToken("current");
+    const listener = vi.fn();
+    window.addEventListener("caseflow:ai-visibility", listener);
+    try {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { headers: { "X-CaseFlow-AI-Hidden": "true", "X-CaseFlow-AI-Version": "123" } })));
+      await api("/cases");
+      expect(listener).toHaveBeenCalledOnce();
+      expect(listener.mock.calls[0][0].detail).toMatchObject({ hidden: true, version: 123 });
+      listener.mockClear();
+      vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => { setToken("new-session"); return new Response("{}", { headers: { "X-CaseFlow-AI-Hidden": "true" } }); }));
+      await api("/cases");
+      expect(listener).not.toHaveBeenCalled();
+    } finally { window.removeEventListener("caseflow:ai-visibility", listener); }
+  });
   it("reuses an upload key after a network failure and scopes keys to case and visibility", async () => {
     const fetcher = vi.fn().mockRejectedValueOnce(new Error("Network interrupted"))
       .mockImplementation(async () => new Response("{}", { status: 201 }));

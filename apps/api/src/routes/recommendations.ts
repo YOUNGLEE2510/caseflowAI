@@ -12,6 +12,7 @@ import { groundedAnswer } from "../services/groundedAnswer.js";
 import { expandKnowledgeQuery, knowledgeTerms } from "../services/knowledgeQuery.js";
 import { nextStep, isRecommendationManager, categoryResolver } from "../services/recommendations.js";
 import { auditFromReq, logAudit } from "../services/helpers.js";
+import { hiddenShapes, requireAiVisible } from "../services/aiVisibility.js";
 
 const fingerprint = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 let retentionReady: Promise<void> | undefined;
@@ -72,7 +73,7 @@ recommendationsRouter.get("/recommendations/feedback-history", async (req, res) 
   res.json({ items, total, page, limit: 50 });
 });
 
-recommendationsRouter.post("/recommendations/overview", async (req, res) => {
+recommendationsRouter.post("/recommendations/overview", requireAiVisible(hiddenShapes.recommendation), async (req, res) => {
   z.object({}).strict().parse(req.body);
   const auth = req.auth!;
   if (!isRecommendationManager(auth.role)) throw new HttpError(403, "Chỉ quản lý được xem khuyến nghị tổng hợp.");
@@ -109,7 +110,7 @@ recommendationsRouter.post("/recommendations/overview", async (req, res) => {
   res.json({ recommendation });
 });
 
-recommendationsRouter.post("/recommendations", async (req, res) => {
+recommendationsRouter.post("/recommendations", requireAiVisible(hiddenShapes.recommendation), async (req, res) => {
   const input = z.object({ caseId: objectId.optional(), text: z.string().trim().min(12).max(5000).optional(),
     serviceKey: z.string().max(100).optional(), customFields: z.record(z.string(), z.string().max(2000)).default({}) }).strict().parse(req.body);
   const auth = req.auth!;

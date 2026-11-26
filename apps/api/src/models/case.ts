@@ -98,6 +98,7 @@ const caseSchema = new Schema(
       }, { _id: false }),
       default: undefined
     },
+    study: { scenarioGroup: { type: String, enum: ["g1", "g2"], default: undefined } },
     propertyCode: { type: String },
     unitCode: { type: String },
     assetCode: { type: String },
