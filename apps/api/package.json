@@ -31,7 +31,7 @@
     "helmet": "^8.1.0",
     "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "8.24.7",
+    "mongoose": "9.12.3",
     "morgan": "^1.10.0",
     "nodemailer": "^10.1.4",
     "otpauth": "9.4.1",
